@@ -1,0 +1,97 @@
+{
+  "_doc": "Loot profiles keyed by name. rolls=[min,max] picks per container; each entry weight/min/max. 'empty' chance leaves container bare. Restock is controlled by settings.lootRespawnMinutes.",
+  "profiles": {
+    "residential": { "rolls": [1, 3], "empty": 0.2, "entries": [
+      { "item": "can_beans", "weight": 8 }, { "item": "crackers", "weight": 6 }, { "item": "soda", "weight": 6 },
+      { "item": "water_bottle", "weight": 6 }, { "item": "cloth", "weight": 8, "min": 1, "max": 4 },
+      { "item": "hoodie", "weight": 3 }, { "item": "raincoat", "weight": 2 }, { "item": "cap", "weight": 3 },
+      { "item": "pack_small", "weight": 2 }, { "item": "flashlight", "weight": 2 }, { "item": "battery", "weight": 4, "min": 1, "max": 2 },
+      { "item": "bandage", "weight": 4 }, { "item": "painkillers", "weight": 3 }, { "item": "cigarettes", "weight": 3, "min": 1, "max": 3 },
+      { "item": "watch", "weight": 1 }, { "item": "nails", "weight": 3, "min": 10, "max": 30 }, { "item": "field_journal", "weight": 2 },
+      { "item": "ammo_9mm", "weight": 2, "min": 6, "max": 15 }, { "item": "ammo_12ga", "weight": 2, "min": 3, "max": 6 },
+      { "item": "map_vesper", "weight": 1 }, { "item": "wpn_knife", "weight": 1 }
+    ]},
+    "kitchen": { "rolls": [1, 3], "empty": 0.15, "entries": [
+      { "item": "can_beans", "weight": 8 }, { "item": "can_meat", "weight": 6 }, { "item": "crackers", "weight": 6 },
+      { "item": "soda", "weight": 6 }, { "item": "water_bottle", "weight": 8 }, { "item": "apple", "weight": 4, "min": 1, "max": 3 },
+      { "item": "empty_bottle", "weight": 3 }, { "item": "energy_bar", "weight": 3 }
+    ]},
+    "farm": { "rolls": [1, 3], "empty": 0.2, "entries": [
+      { "item": "apple", "weight": 8, "min": 1, "max": 4 }, { "item": "rope", "weight": 6 }, { "item": "wood_plank", "weight": 8, "min": 2, "max": 6 },
+      { "item": "nails", "weight": 6, "min": 15, "max": 40 }, { "item": "tool_hammer", "weight": 3 }, { "item": "tool_saw", "weight": 3 },
+      { "item": "sandbag_empty", "weight": 3, "min": 2, "max": 5 }, { "item": "fuel_can_empty", "weight": 2 }, { "item": "fuel_can", "weight": 1 },
+      { "item": "jacket_field", "weight": 2 }, { "item": "ammo_12ga", "weight": 4, "min": 4, "max": 10 }, { "item": "wpn_fieldline", "weight": 1 },
+      { "item": "scrap_metal", "weight": 4, "min": 1, "max": 3 }, { "item": "log", "weight": 3 }
+    ]},
+    "hunting": { "rolls": [1, 3], "empty": 0.15, "entries": [
+      { "item": "wpn_homestead", "weight": 2 }, { "item": "wpn_fieldline", "weight": 2 }, { "item": "wpn_m6rev", "weight": 2 },
+      { "item": "ammo_762", "weight": 6, "min": 3, "max": 10 }, { "item": "ammo_12ga", "weight": 5, "min": 4, "max": 8 }, { "item": "ammo_357", "weight": 4, "min": 6, "max": 12 },
+      { "item": "can_meat", "weight": 5 }, { "item": "water_bottle", "weight": 5 }, { "item": "jacket_field", "weight": 3 },
+      { "item": "pack_hiking", "weight": 2 }, { "item": "rope", "weight": 4 }, { "item": "wpn_knife", "weight": 3 },
+      { "item": "rag_bandage", "weight": 4 }, { "item": "flashlight", "weight": 3 }, { "item": "battery", "weight": 3 },
+      { "item": "opt_4x", "weight": 1 }, { "item": "field_journal", "weight": 2 }, { "item": "map_vesper", "weight": 2 }
+    ]},
+    "industrial": { "rolls": [1, 4], "empty": 0.15, "entries": [
+      { "item": "nails", "weight": 8, "min": 20, "max": 60 }, { "item": "bolts", "weight": 7, "min": 10, "max": 30 },
+      { "item": "metal_sheet", "weight": 6, "min": 1, "max": 3 }, { "item": "scrap_metal", "weight": 8, "min": 2, "max": 6 },
+      { "item": "wood_plank", "weight": 7, "min": 3, "max": 8 }, { "item": "rope", "weight": 4 }, { "item": "concrete_mix", "weight": 3 },
+      { "item": "tool_hammer", "weight": 3 }, { "item": "tool_wrench", "weight": 3 }, { "item": "tool_saw", "weight": 2 },
+      { "item": "mech_parts", "weight": 5, "min": 1, "max": 3 }, { "item": "electronics", "weight": 3 },
+      { "item": "battery", "weight": 3, "min": 1, "max": 3 }, { "item": "spark_plug", "weight": 2 }, { "item": "car_battery", "weight": 1 },
+      { "item": "fuel_can_empty", "weight": 2 }, { "item": "wpn_rebar", "weight": 3 }, { "item": "water_bottle", "weight": 2 }
+    ]},
+    "medical": { "rolls": [1, 3], "empty": 0.15, "entries": [
+      { "item": "bandage", "weight": 10, "min": 1, "max": 3 }, { "item": "medkit", "weight": 4 }, { "item": "painkillers", "weight": 6, "min": 1, "max": 2 },
+      { "item": "saline", "weight": 4 }, { "item": "water_bottle", "weight": 3 }, { "item": "cloth", "weight": 3, "min": 2, "max": 4 }
+    ]},
+    "police": { "rolls": [1, 3], "empty": 0.15, "entries": [
+      { "item": "wpn_vk9", "weight": 4 }, { "item": "wpn_harrow45", "weight": 3 }, { "item": "wpn_m6rev", "weight": 2 }, { "item": "wpn_breaker", "weight": 2 }, { "item": "wpn_kestrel", "weight": 1 },
+      { "item": "ammo_9mm", "weight": 8, "min": 10, "max": 30 }, { "item": "ammo_45", "weight": 5, "min": 8, "max": 16 }, { "item": "ammo_12ga", "weight": 5, "min": 4, "max": 10 },
+      { "item": "vest_police", "weight": 3 }, { "item": "flashlight", "weight": 4 }, { "item": "light_pistol", "weight": 2 }, { "item": "light_rail", "weight": 1 },
+      { "item": "bandage", "weight": 4 }, { "item": "battery", "weight": 3 }, { "item": "mag_ext_9mm", "weight": 1 }, { "item": "sup_9mm", "weight": 1 }
+    ]},
+    "military": { "rolls": [1, 3], "empty": 0.15, "entries": [
+      { "item": "wpn_arv7", "weight": 3 }, { "item": "wpn_lk4", "weight": 4 }, { "item": "wpn_kestrel", "weight": 2 }, { "item": "wpn_vk9", "weight": 3 },
+      { "item": "ammo_556", "weight": 10, "min": 15, "max": 45 }, { "item": "ammo_9mm", "weight": 5, "min": 10, "max": 30 }, { "item": "ammo_762", "weight": 4, "min": 6, "max": 20 },
+      { "item": "helmet_mil", "weight": 3 }, { "item": "vest_plate", "weight": 2 }, { "item": "pack_military", "weight": 2 },
+      { "item": "opt_reflex", "weight": 3 }, { "item": "grip_vert", "weight": 3 }, { "item": "light_rail", "weight": 2 }, { "item": "mag_ext_556", "weight": 1 },
+      { "item": "bandage", "weight": 5 }, { "item": "medkit", "weight": 2 }, { "item": "energy_bar", "weight": 4 }, { "item": "water_bottle", "weight": 4 },
+      { "item": "sandbag_empty", "weight": 3, "min": 3, "max": 8 }
+    ]},
+    "military_high": { "rolls": [2, 4], "empty": 0.05, "entries": [
+      { "item": "wpn_vbr30", "weight": 3 }, { "item": "wpn_sentinel", "weight": 2 }, { "item": "wpn_ridgeline", "weight": 1 }, { "item": "wpn_anvil", "weight": 1 }, { "item": "wpn_arv7", "weight": 3 },
+      { "item": "ammo_762", "weight": 8, "min": 10, "max": 30 }, { "item": "ammo_556", "weight": 8, "min": 20, "max": 60 },
+      { "item": "opt_4x", "weight": 3 }, { "item": "opt_8x", "weight": 1 }, { "item": "sup_556", "weight": 2 }, { "item": "sup_762", "weight": 1 },
+      { "item": "vest_plate", "weight": 3 }, { "item": "helmet_mil", "weight": 3 }, { "item": "medkit", "weight": 4 }, { "item": "pack_military", "weight": 2 }
+    ]},
+    "research": { "rolls": [1, 3], "empty": 0.1, "entries": [
+      { "item": "electronics", "weight": 10, "min": 1, "max": 4 }, { "item": "battery", "weight": 6, "min": 2, "max": 4 }, { "item": "medkit", "weight": 3 },
+      { "item": "saline", "weight": 3 }, { "item": "opt_8x", "weight": 1 }, { "item": "field_journal", "weight": 4 }, { "item": "watch", "weight": 2 },
+      { "item": "mech_parts", "weight": 4 }, { "item": "sup_9mm", "weight": 1 }
+    ]},
+    "fuel": { "rolls": [1, 3], "empty": 0.2, "entries": [
+      { "item": "fuel_can", "weight": 4 }, { "item": "fuel_can_empty", "weight": 5 }, { "item": "spark_plug", "weight": 5 }, { "item": "car_battery", "weight": 2 },
+      { "item": "tool_wrench", "weight": 3 }, { "item": "mech_parts", "weight": 5 }, { "item": "soda", "weight": 4 }, { "item": "crackers", "weight": 4 },
+      { "item": "cigarettes", "weight": 4 }, { "item": "map_vesper", "weight": 3 }
+    ]},
+    "office": { "rolls": [0, 2], "empty": 0.3, "entries": [
+      { "item": "field_journal", "weight": 6 }, { "item": "electronics", "weight": 4 }, { "item": "battery", "weight": 4 }, { "item": "map_vesper", "weight": 3 },
+      { "item": "cigarettes", "weight": 3 }, { "item": "watch", "weight": 1 }, { "item": "painkillers", "weight": 2 }, { "item": "soda", "weight": 3 }
+    ]},
+    "camp": { "rolls": [1, 3], "empty": 0.2, "entries": [
+      { "item": "can_beans", "weight": 5 }, { "item": "water_bottle", "weight": 5 }, { "item": "rag_bandage", "weight": 4 }, { "item": "ammo_9mm", "weight": 4, "min": 5, "max": 15 },
+      { "item": "ammo_556", "weight": 2, "min": 5, "max": 15 }, { "item": "ammo_12ga", "weight": 3, "min": 3, "max": 8 }, { "item": "wpn_vk9", "weight": 2 }, { "item": "wpn_rebar", "weight": 3 },
+      { "item": "rope", "weight": 3 }, { "item": "wood_plank", "weight": 4, "min": 2, "max": 5 }, { "item": "cigarettes", "weight": 3 }, { "item": "scrap_metal", "weight": 3, "min": 1, "max": 3 }
+    ]},
+    "lumber": { "rolls": [2, 4], "empty": 0.05, "entries": [
+      { "item": "wood_plank", "weight": 10, "min": 4, "max": 10 }, { "item": "log", "weight": 6, "min": 1, "max": 2 }, { "item": "nails", "weight": 7, "min": 20, "max": 50 },
+      { "item": "rope", "weight": 4 }, { "item": "tool_saw", "weight": 3 }, { "item": "tool_hammer", "weight": 3 }, { "item": "fuel_can", "weight": 1 }, { "item": "wpn_rebar", "weight": 2 }
+    ]},
+    "starter": { "rolls": [1, 2], "empty": 0, "fixed": [
+      { "item": "wpn_vk9" }, { "item": "ammo_9mm", "min": 18, "max": 30 }
+    ], "entries": [
+      { "item": "rag_bandage", "weight": 2 }, { "item": "can_beans", "weight": 2 }, { "item": "water_bottle", "weight": 2 }
+    ]},
+    "codebook": { "rolls": [1, 1], "empty": 0, "once": true, "entries": [ { "item": "codebook", "weight": 1 } ] }
+  }
+}

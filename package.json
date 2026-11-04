@@ -1,0 +1,34 @@
+{
+  "name": "operation-iron-veil",
+  "version": "0.1.0",
+  "description": "Operation Iron Veil \u2014 browser first-person survival shooter (Three.js)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4173",
+    "test": "vitest run",
+    "test:e2e": "node tests/e2e/playtest.mjs",
+    "test:sim": "vite-node tests/sim/run.mjs",
+    "build:server": "vite build --ssr server/index.js --outDir dist-server --emptyOutDir",
+    "build:all": "vite build && vite build --ssr server/index.js --outDir dist-server --emptyOutDir",
+    "server": "node dist-server/index.js",
+    "start": "node dist-server/index.js",
+    "dev:server": "vite-node server/index.js",
+    "test:net": "node tests/net/bots.mjs"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "three": "^0.169.0",
+    "ws": "^8.22.1"
+  },
+  "devDependencies": {
+    "playwright": "1.48",
+    "vite": "^5.4.21",
+    "vitest": "^2.1.9"
+  },
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  }
+}

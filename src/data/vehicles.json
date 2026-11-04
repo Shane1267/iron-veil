@@ -1,0 +1,16 @@
+{
+  "_doc": "Vehicle types and world placements. Speeds m/s, fuel litres, consumption L/km. 'needs' lists parts that must be installed (use the item while looking at the vehicle) before the engine starts.",
+  "types": [
+    { "id": "pickup", "name": "Civilian Pickup", "mass": 1800, "engine": 7600, "maxSpeed": 34, "reverse": 8, "steer": 0.55, "grip": 7.5, "fuelCap": 60, "consumption": 0.16, "health": 900, "storage": 24, "dims": [2.0, 1.75, 5.2], "color": "#6e3b2c", "style": "pickup", "seats": 2 },
+    { "id": "utility", "name": "Utility Van", "mass": 2200, "engine": 7200, "maxSpeed": 29, "reverse": 7, "steer": 0.5, "grip": 7, "fuelCap": 70, "consumption": 0.18, "health": 1000, "storage": 36, "dims": [2.05, 2.2, 5.0], "color": "#c8c4b4", "style": "van", "seats": 2 },
+    { "id": "mil_truck", "name": "Military Transport", "mass": 6500, "engine": 16000, "maxSpeed": 24, "reverse": 6, "steer": 0.42, "grip": 8, "fuelCap": 120, "consumption": 0.35, "health": 2200, "storage": 48, "dims": [2.5, 3.0, 7.6], "color": "#4b5236", "style": "truck", "seats": 2 },
+    { "id": "offroad", "name": "Off-Road 4x4", "mass": 1500, "engine": 7400, "maxSpeed": 31, "reverse": 8, "steer": 0.6, "grip": 9, "fuelCap": 50, "consumption": 0.14, "health": 800, "storage": 16, "dims": [1.85, 1.8, 4.2], "color": "#3d4a3a", "style": "offroad", "seats": 2 }
+  ],
+  "spawns": [
+    { "id": "veh_farm_pickup", "type": "pickup", "pos": [1268, 352], "rot": 1.2, "fuel": 18, "needs": [] },
+    { "id": "veh_millbrook_offroad", "type": "offroad", "pos": [356, 1012], "rot": 0.3, "fuel": 6, "needs": ["spark_plug"] },
+    { "id": "veh_ranger_utility", "type": "utility", "pos": [-1096, 701], "rot": 2.6, "fuel": 12, "needs": ["car_battery"] },
+    { "id": "veh_northwatch_truck", "type": "mil_truck", "pos": [360, -2010], "rot": 0.0, "fuel": 60, "needs": [] },
+    { "id": "veh_road_abandoned", "type": "pickup", "pos": [935, -300], "rot": 3.0, "fuel": 0, "needs": [] }
+  ]
+}
