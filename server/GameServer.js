@@ -197,6 +197,7 @@ export class GameServer {
         break;
       }
       case 'ping': c.send({ t: 'pong', c: m.c }); break;
+      case 'ka': break; // keep-alive (lastSeen already updated)
       default: break;
     }
   }
@@ -248,7 +249,7 @@ export class GameServer {
   _corpseOpen(c, p, m) {
     const k = this._corpse(m.id);
     if (!k) { c.send({ t: 'corpse', id: m.id, gone: true }); return; }
-    if (Math.hypot(k.agent.pos.x - p.pos.x, k.agent.pos.z - p.pos.z) > 5) return;
+    if (Math.hypot(k.agent.pos.x - p.pos.x, k.agent.pos.z - p.pos.z) > 5) { c.send({ t: 'corpse', id: m.id, far: true }); return; }
     k.rev = k.rev || 1;
     c.send({ t: 'corpse', id: m.id, rev: k.rev, inv: k.inv.serialize() });
   }
@@ -349,7 +350,7 @@ export class GameServer {
     // drop silent connections
     this.reaper = setInterval(() => {
       const now = Date.now();
-      for (const c of this.conns) if (now - c.lastSeen > 30000) { try { c.ws.terminate?.(); } catch { /* gone */ } this._drop(c); }
+      for (const c of this.conns) if (now - c.lastSeen > 45000) { try { c.ws.terminate?.(); } catch { /* gone */ } this._drop(c); }
     }, 5000);
   }
 

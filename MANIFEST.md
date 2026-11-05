@@ -69,6 +69,21 @@ Goal: friends play in one shared world, hosted for free (Render), reachable from
 * **Hosting.** `render.yaml` (free web service, `npm ci --include=dev && npm run build:all`, `npm start`,
   health check `/health`). Guide for the user in `docs/ONLINE.md`.
 
+### Online tests (2026-11-05, cloud container, headless Chrome with software WebGL)
+* Unit: **56/56** pass, including 8 new server tests in `tests/unit/online.test.js` (welcome/version reject,
+  location and garrison built around players, snapshots, re-simulated player shots kill AI with kill credit
+  and shot relay, body sharing with stale-edit refusal, door reach check and correction, PvP off, address parsing).
+* Two-browser test `tests/e2e/online.mjs` against the bundled server: join, meeting near a hostile farmstead,
+  each player drawn where the other is (4 m), the same AI on both, Alice's shots replayed for Bob, a door
+  opened by Alice open for Bob, chat, a server-decided kill, Bob taking an item from the body and Alice
+  then seeing it gone, leaving — every check passed, 0 console errors. Because the environment restarted
+  several times during the long runs, the last full run passed 9/10 (the body step timed out; fixed by the
+  server now answering "too far"), and the fight/body stages were then rerun on their own: 4/4.
+* Single-player regression (new-game, weapons, kill-ai, save-load): 4/4, 0 console errors.
+* Not tested: a real deployment on Render, real players over the internet (latency), more than two players.
+* Found and fixed while testing: background tabs stop sending movement (animation frames pause), so the
+  server dropped them after 30 s → a timer keep-alive every 5 s and a 45 s timeout.
+
 ## Visual upgrade (pass 2) — art direction
 Realistic, muted military-survival look: overcast-leaning daylight, desaturated greens and ochres,
 weathered paint and concrete, no saturated "game" colours. Every standard material gets the same
@@ -183,6 +198,7 @@ shooting each other); suppressor-fitted player weapons were as loud to the AI as
 * Eye adaptation is a simple two-state exposure blend (indoors/outdoors), not a luminance histogram.
 
 ## Next tasks (priority order)
+0. Online stage 2: shared containers and bases, world events on servers, persisting the shared world, lag compensation, server-side movement checks.
 1. Persist POI door states and corpses.
 2. Multi-floor navigation for AI (stairs links in NavGrid).
 3. Fractures/infection medical layer.

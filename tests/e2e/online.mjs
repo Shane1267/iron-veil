@@ -23,7 +23,7 @@ srv.stdout.on('data', (d) => { srvLog += d; });
 srv.stderr.on('data', (d) => { srvLog += d; });
 const BASE = `http://localhost:${PORT}/`;
 // plain http (no keep-alive reuse between long gaps)
-const health = () => new Promise((res, rej) => http.get(`${BASE}health`, { agent: false }, (r) => { let b = ''; r.on('data', (d) => { b += d; }); r.on('end', () => { try { res(JSON.parse(b)); } catch (e) { rej(e); } }); }).on('error', rej));
+const health = () => new Promise((res, rej) => http.get(`${BASE}health?detail`, { agent: false }, (r) => { let b = ''; r.on('data', (d) => { b += d; }); r.on('end', () => { try { res(JSON.parse(b)); } catch (e) { rej(e); } }); }).on('error', rej));
 for (let i = 0; i < 60; i++) { try { await health(); break; } catch { /* starting */ } await new Promise((r) => setTimeout(r, 500)); }
 
 const browser = await chromium.launch({ executablePath: CHROME, headless: true, args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--autoplay-policy=no-user-gesture-required'] });
@@ -40,7 +40,9 @@ async function open(name) {
   return page;
 }
 const results = [];
+const ONLY = (process.env.ONLY || '').split(',').filter(Boolean);
 async function check(name, fn) {
+  if (ONLY.length && !ONLY.some((o) => name.startsWith(o))) return;
   const t0 = Date.now();
   try { const info = await fn(); results.push({ name, ok: true, info }); log('PASS', name, info ? JSON.stringify(info) : '', `${((Date.now() - t0) / 1000).toFixed(1)}s`); }
   catch (e) { results.push({ name, ok: false, info: e.message }); log('FAIL', name, e.message); }
@@ -141,6 +143,7 @@ await check('chat', async () => {
 
 await check('fight: AI engage, bodies shared', async () => {
   // back out in the open where the fight is; keep Alice shooting at the nearest agent
+  await ev(A, () => { if (!window.__IV.game.weapons.stack) { window.__IV.equip('wpn_arv7'); window.__IV.give('ammo_556', 120); } });
   await ev(A, ({ x, z }) => { window.__IV.teleport(x, z, Math.PI); window.__IV.game.net.spawned(); }, target);
   await gameSec(A, 1);
   const t0 = Date.now();
@@ -172,7 +175,8 @@ await check('fight: AI engage, bodies shared', async () => {
   const body = await ev(B, () => { const g = window.__IV.game; const a = [...g.net.agents.values()].find((x) => !x.alive); g.player.controller.teleport(a.pos.x + 1, a.pos.y + 0.05, a.pos.z, 0); g.net.spawned(); return a.id; });
   await gameSec(B, 1);
   await ev(B, (id) => window.__IV.game.net.openCorpse(id), body);
-  await B.waitForFunction((id) => window.__IV.game.net.corpses.has(id), body, { timeout: 30000 });
+  await B.waitForFunction((id) => window.__IV.game.net.corpses.has(id) || window.__IV.game.net.lastFar === id, body, { timeout: 30000 }).catch(async (e) => { log('corpse wait', JSON.stringify(await ev(B, (id) => { const g = window.__IV.game; const a = g.net.agents.get(id); return { body: a && [a.pos.x, a.pos.z], me: [g.player.controller.pos.x, g.player.controller.pos.z], counts: g.net.counts }; }, body))); { const hh = await health(); log('server', JSON.stringify({ list: hh.list, corpses: hh.corpses })); } throw e; });
+  if (await ev(B, (id) => window.__IV.game.net.lastFar === id, body)) throw new Error('server says Bob is too far from the body');
   const items = await ev(B, (id) => window.__IV.game.net.corpses.get(id).inv.usedSlots(), body);
   // Bob takes the first stack; Alice then sees it gone
   await ev(B, (id) => { const g = window.__IV.game; const inv = g.net.corpses.get(id).inv; const i = inv.slots.findIndex(Boolean); inv.transfer(i, g.player.equipment.inventory); g.ui.close?.(); }, body);

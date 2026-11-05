@@ -35,6 +35,7 @@ const httpServer = http.createServer((req, res) => {
     const out = { ok: true, players: server.playerCount, tickMs: +server.stats.tickMs.toFixed(2), agents: server.game.ai.agents.length };
     if (url.searchParams.has('detail')) {
       out.list = [...server.game.players.values()].map((p) => ({ name: p.name, alive: p.alive, x: Math.round(p.pos.x), z: Math.round(p.pos.z), shots: p.shots || 0, rejected: p.rejected || 0 }));
+      out.corpses = server.game.ai.corpses.map((k) => ({ id: k.agent.id, x: Math.round(k.agent.pos.x), z: Math.round(k.agent.pos.z) }));
       out.ai = server.game.ai.agents.map((a) => ({ id: a.id, f: a.faction, alive: a.alive, hp: Math.round(a.health), x: Math.round(a.pos.x), z: Math.round(a.pos.z), state: a.state }));
     }
     res.end(JSON.stringify(out));

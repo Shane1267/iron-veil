@@ -132,6 +132,8 @@ export class NetClient {
       this.openChat();
     };
     window.addEventListener('keydown', this._chatKey);
+    // keep-alive from a timer: browsers stop animation frames in background tabs, timers keep running
+    this._ka = setInterval(() => this.send({ t: 'ka' }), 5000);
     this._chatLog();
   }
 
@@ -157,6 +159,7 @@ export class NetClient {
     this._unsub = [];
     if (this._origFire) g.ballistics.fire = this._origFire;
     if (this._chatKey) window.removeEventListener('keydown', this._chatKey);
+    clearInterval(this._ka);
     this.chatEl?.remove();
     this.logEl?.remove();
     for (const a of this.agents.values()) a.dispose();
@@ -324,6 +327,11 @@ export class NetClient {
   _corpse(m) {
     const g = this.game;
     const lootId = `net:${m.id}`;
+    if (m.far) {
+      if (this.pendingCorpse?.id === m.id) { this.pendingCorpse = null; bus.emit('notify', { text: 'Move closer to search the body', kind: 'info' }); }
+      this.lastFar = m.id;
+      return;
+    }
     if (m.gone) {
       this.corpses.delete(m.id);
       if (this.pendingCorpse?.id === m.id) { this.pendingCorpse = null; bus.emit('notify', { text: 'Nothing here', kind: 'info' }); }
