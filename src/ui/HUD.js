@@ -214,7 +214,7 @@ export class HUD {
       this.vehicle.innerHTML = '';
       this.vehicle.append(
         h('div', { class: 'spd' }, String(Math.round(Math.abs(v.speed) * 3.6)), h('small', {}, ' km/h')),
-        h('div', { class: 'row' }, h('span', {}, `FUEL ${Math.round(v.fuel)}/${v.t.fuelCap} L`), h('span', {}, `COND ${Math.round((v.health / v.t.health) * 100)}%`), h('span', {}, v.engineOn ? 'ENGINE ON' : 'ENGINE OFF'), h('span', {}, v.lightsOn ? 'LIGHTS' : '')),
+        h('div', { class: 'row' }, h('span', {}, `FUEL ${Math.round(v.fuel)}/${v.t.fuelCap} L`), h('span', {}, `COND ${Math.round((v.health / v.t.health) * 100)}%`), h('span', {}, v.engineOn ? 'ENGINE ON' : 'ENGINE OFF'), h('span', {}, v.lightsOn ? (v.highBeam ? 'HIGH BEAM' : 'LOW BEAM') : 'LIGHTS OFF (L)')),
         h('div', { class: 'row' }, h('span', {}, 'W/S throttle · A/D steer · Space brake · L lights · E exit')),
       );
     }
@@ -302,6 +302,9 @@ export class HUD {
       this.prompt.append(h('span', { class: 'key' }, 'E'), h('span', {}, label));
       const sec = g.secondaryLabel(it);
       if (sec) this.prompt.append(h('span', { class: 'key' }, 'F'), h('span', {}, sec));
+      else if (g.ladderPrompt) this.prompt.append(h('span', { class: 'key' }, 'F'), h('span', {}, g.ladderPrompt.label));
+    } else if (g.ladderPrompt && !g.vehicles.current && !g.base.active) {
+      this.prompt.append(h('span', { class: 'key' }, 'F'), h('span', {}, g.ladderPrompt.label));
     } else if (g.waterPrompt) {
       this.prompt.append(h('span', { class: 'key' }, 'F'), h('span', {}, g.waterPrompt));
     } else if (g.base.active && g.basePieceTarget && !g.base.selected) {

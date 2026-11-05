@@ -223,7 +223,13 @@ export class RemotePlayer extends Remote {
         }
       }
     }
-    if (!this.alive) { this.model.animate(dt, {}); return; }
+    if (!this.alive) { this.model.animate(dt, {}); if (this.cone) this.cone.visible = false; return; }
     super.apply(dt, T);
+    if (this.lightOn && this.model.root.visible) {
+      if (!this.cone) this.cone = this.game.ai.makeLightCone();
+      this.cone.visible = true;
+      this.cone.position.set(this.pos.x, this.pos.y + (this.stance === 'crouch' ? 1.0 : 1.45), this.pos.z);
+      this.cone.rotation.set(0, this.yaw, 0);
+    } else if (this.cone) this.cone.visible = false;
   }
 }

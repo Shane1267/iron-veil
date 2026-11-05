@@ -1,0 +1,79 @@
+{
+  "_doc": "Barter values (per item) and the traders at Riverside. Traders sell at full value and buy at 'buyRate'. Stock lists: [item, quantity on hand]; stock refills every in-game day.",
+  "values": {
+    "ammo_9mm": 1, "ammo_45": 1.4, "ammo_357": 2, "ammo_12ga": 2, "ammo_556": 2, "ammo_762": 3,
+    "opt_reflex": 60, "opt_4x": 110, "opt_8x": 170, "sup_9mm": 90, "sup_45": 100, "sup_556": 140, "sup_762": 160, "grip_vert": 35, "light_rail": 45, "light_pistol": 35, "mag_ext_556": 70, "mag_ext_9mm": 45, "stock_fold": 40,
+    "bandage": 8, "rag_bandage": 3, "medkit": 60, "painkillers": 10, "saline": 30,
+    "can_beans": 7, "can_meat": 9, "crackers": 4, "energy_bar": 5, "apple": 3, "water_bottle": 6, "soda": 4, "empty_bottle": 1,
+    "flashlight": 25, "battery": 6, "tool_hammer": 30, "tool_saw": 35, "tool_wrench": 40, "map_vesper": 30,
+    "cap": 8, "helmet_mil": 90, "hoodie": 15, "jacket_field": 45, "raincoat": 30, "vest_police": 90, "vest_plate": 200,
+    "pack_small": 30, "pack_hiking": 70, "pack_military": 140,
+    "cloth": 2, "wood_plank": 2, "log": 3, "nails": 0.4, "metal_sheet": 9, "scrap_metal": 3, "bolts": 0.6, "rope": 6, "concrete_mix": 8, "sandbag_empty": 2,
+    "electronics": 12, "mech_parts": 12, "spark_plug": 20, "car_battery": 60, "fuel_can": 45, "fuel_can_empty": 15,
+    "cigarettes": 8, "watch": 25, "field_journal": 2, "codebook": 5,
+    "wpn_vk9": 140, "wpn_harrow45": 180, "wpn_m6rev": 160, "wpn_fieldline": 150, "wpn_breaker": 280, "wpn_kestrel": 320,
+    "wpn_arv7": 450, "wpn_lk4": 400, "wpn_vbr30": 560, "wpn_sentinel": 620, "wpn_ridgeline": 700, "wpn_anvil": 800, "wpn_homestead": 260,
+    "wpn_rebar": 6, "wpn_knife": 25
+  },
+  "buyRate": 0.5,
+  "traders": {
+    "general": {
+      "name": "Hanne Voss", "title": "General goods", "look": { "uniform": "#5a4a3a", "accent": "#3a3028", "skin": "#d8b49a", "cap": "#3a3a30", "pack": false },
+      "greeting": "Food, water, clothes, batteries. Cash is dead — I trade in goods. Cigarettes and watches always welcome.",
+      "stock": [["can_beans", 8], ["can_meat", 6], ["crackers", 8], ["energy_bar", 10], ["water_bottle", 10], ["soda", 6], ["battery", 8], ["flashlight", 2], ["rag_bandage", 10], ["bandage", 4], ["hoodie", 2], ["jacket_field", 1], ["raincoat", 2], ["cap", 3], ["pack_small", 2], ["pack_hiking", 1], ["cloth", 20], ["rope", 4], ["empty_bottle", 6], ["fuel_can_empty", 2]]
+    },
+    "gunsmith": {
+      "name": "Emil Brandt", "title": "Gunsmith", "look": { "uniform": "#3e4436", "accent": "#2a2622", "skin": "#a87c5c", "pack": false, "vest": true },
+      "greeting": "Guns, rounds and parts. Bring me a rifle that's falling apart and I'll make it shoot straight again — for a price.",
+      "stock": [["wpn_vk9", 2], ["wpn_m6rev", 1], ["wpn_fieldline", 2], ["wpn_homestead", 1], ["wpn_lk4", 1], ["wpn_arv7", 1], ["wpn_knife", 2], ["ammo_9mm", 180], ["ammo_45", 80], ["ammo_357", 60], ["ammo_12ga", 90], ["ammo_556", 240], ["ammo_762", 120], ["opt_reflex", 1], ["opt_4x", 1], ["grip_vert", 1], ["light_rail", 2], ["light_pistol", 1], ["stock_fold", 1]],
+      "services": ["repair"]
+    },
+    "medic": {
+      "name": "Dr. Aleksa Moreau", "title": "Medic", "look": { "uniform": "#c8c8c0", "accent": "#7a2a2a", "skin": "#c9a080", "pack": false },
+      "greeting": "Sit down. If you're bleeding, I'll stitch you; if you're not, I'll sell you what you need so you can do it yourself next time.",
+      "stock": [["bandage", 12], ["rag_bandage", 10], ["painkillers", 8], ["medkit", 3], ["saline", 3]],
+      "services": ["treat"]
+    },
+    "builder": {
+      "name": "Jonas Kell", "title": "Builder", "look": { "uniform": "#5a5040", "accent": "#7a5a2a", "skin": "#c9a080", "cap": "#5a4a3a", "pack": true },
+      "greeting": "Planks, nails, sheet metal, tools. Everything you need for a wall that stops bullets. Or most of them.",
+      "stock": [["wood_plank", 120], ["nails", 300], ["metal_sheet", 20], ["scrap_metal", 40], ["bolts", 180], ["rope", 8], ["concrete_mix", 10], ["sandbag_empty", 30], ["tool_hammer", 2], ["tool_saw", 2], ["tool_wrench", 2], ["electronics", 6], ["mech_parts", 8], ["spark_plug", 3], ["car_battery", 1], ["fuel_can", 2]]
+    },
+    "quartermaster": {
+      "name": "Sgt. Radek Hollis", "title": "Quartermaster", "look": { "uniform": "#4a5236", "accent": "#2a2622", "skin": "#8a6040", "helmet": true, "vest": true, "pack": true },
+      "greeting": "The Guard pays for work. Bring what's on the board and you'll be paid in kind. I also have a little surplus kit, if you've got something to trade.",
+      "stock": [["vest_police", 1], ["helmet_mil", 1], ["pack_military", 1], ["mag_ext_556", 1], ["sandbag_empty", 20], ["ammo_556", 90], ["medkit", 1], ["map_vesper", 2]],
+      "services": ["jobs"]
+    },
+    "elder": {
+      "name": "Ida Lindqvist", "title": "Settlement elder", "look": { "uniform": "#4a3f46", "accent": "#2a2622", "skin": "#d8b49a", "pack": false },
+      "greeting": "Welcome to Riverside. Keep your weapon low inside the walls and you'll find us fair. People pass through here all day — I hear a great deal.",
+      "stock": [["map_vesper", 3], ["field_journal", 6], ["water_bottle", 4]],
+      "services": ["rumours"]
+    }
+  },
+  "jobs": [
+    { "item": "scrap_metal", "qty": 10, "reward": [["ammo_556", 30]] },
+    { "item": "wood_plank", "qty": 30, "reward": [["can_meat", 3], ["water_bottle", 2]] },
+    { "item": "cloth", "qty": 12, "reward": [["bandage", 4]] },
+    { "item": "electronics", "qty": 3, "reward": [["battery", 4], ["ammo_9mm", 40]] },
+    { "item": "mech_parts", "qty": 3, "reward": [["ammo_762", 20]] },
+    { "item": "can_beans", "qty": 4, "reward": [["painkillers", 2], ["bandage", 2]] },
+    { "item": "fuel_can", "qty": 1, "reward": [["medkit", 1]] },
+    { "item": "rope", "qty": 3, "reward": [["nails", 60], ["bolts", 30]] },
+    { "item": "battery", "qty": 4, "reward": [["ammo_12ga", 24]] },
+    { "item": "watch", "qty": 1, "reward": [["ammo_556", 15]] }
+  ],
+  "civilianLines": [
+    "Wolves hit the farms east of here last week. Took everything that wasn't nailed down.",
+    "The water plant? Mercenaries hold it now. They charge for every litre.",
+    "If you're heading north, stay off the highway near the checkpoint. The Security Forces shoot first.",
+    "My brother went to Old Vesper for medicine. That was nine days ago.",
+    "Trade with Hanne if you need food. She's fair, mostly.",
+    "Emil can fix anything that fires. Bring him the parts and he'll do it cheaper.",
+    "Night patrols see lights moving up on Redstone Ridge. Nobody goes up there to check.",
+    "The Guard pays for scrap. Sergeant Hollis keeps a list at the quartermaster's stall.",
+    "Build somewhere with a view, and lock your crates. People talk about who has what.",
+    "I used to drive buses on this road. Now I grow potatoes behind the hall."
+  ]
+}

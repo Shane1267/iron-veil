@@ -140,6 +140,53 @@ export function buildPieceMesh(type, materials, opts = {}) {
       for (let i = 0; i < 4; i++) B.box('logs', 0, 0.15, 0, 0.8, 0.12, 0.12, { rotY: i * 0.8, rotZ: 0.3 });
       break;
     }
+    case 'sentry': {
+      // tripod base with an ammo box; the turning head is built separately ('sentryHead')
+      for (const a of [0, 2.1, 4.2]) B.box('metal_dark', Math.sin(a) * 0.35, 0.42, Math.cos(a) * 0.35, 0.07, 0.95, 0.07, { rotX: Math.cos(a) * 0.45, rotZ: -Math.sin(a) * 0.45 });
+      B.box('metal_dark', 0, 0.9, 0, 0.14, 0.22, 0.14);
+      B.box('olive', 0.38, 0.14, 0.1, 0.36, 0.26, 0.2);
+      B.box('metal', 0.38, 0.29, 0.1, 0.1, 0.03, 0.06);
+      B.box('canvas_tan', 0, 0.1, -0.55, 1.2, 0.2, 0.4);
+      break;
+    }
+    case 'sentryHead': {
+      B.box('metal_dark', 0, 0, 0, 0.2, 0.12, 0.3);
+      B.box('olive', 0, 0.05, 0.05, 0.62, 0.4, 0.05); // armour shield, faces the barrel side
+      B.box('metal_dark', 0.12, -0.05, 0.12, 0.12, 0.1, 0.18);
+      B.box('emissive_lamp', -0.22, 0.17, 0.08, 0.04, 0.04, 0.02);
+      break;
+    }
+    case 'lumber_yard': {
+      // sawhorse, chopping block, log pile and a covered rack of planks
+      for (const z of [-0.9, 0.9]) for (const x of [-1.2, 1.2]) B.box(WD, x, 0.9, z, 0.12, 1.8, 0.12);
+      B.box('corrugated_rust', 0, 1.9, 0, 2.8, 0.06, 2.2, { rotX: 0.08 });
+      for (let i = 0; i < 4; i++) B.box(W, 0, 0.25 + i * 0.12, 0.3, 2.3, 0.08, 0.6, { shade: 0.9 + (i % 2) * 0.08 });
+      for (let i = 0; i < 5; i++) B.box('logs', -0.3 + (i % 3) * 0.3, 0.16 + Math.floor(i / 3) * 0.26, -0.6, 0.26, 0.26, 1.9, { rotX: Math.PI / 2 * 0 });
+      B.box('logs', 1.6, 0.3, 0.8, 0.5, 0.6, 0.5);
+      B.box('metal', 1.6, 0.68, 0.8, 0.05, 0.2, 0.3, { rotZ: 0.4 });
+      break;
+    }
+    case 'scrap_yard': {
+      B.box('metal_dark', 0, 0.45, 0, 1.6, 0.9, 0.9); // bench / press
+      B.box('rust', 0, 0.92, 0, 1.7, 0.06, 1.0);
+      B.box('metal_dark', -0.4, 1.3, -0.3, 0.12, 0.8, 0.12);
+      B.box('metal', -0.4, 1.72, -0.1, 0.5, 0.12, 0.5);
+      B.box('rust', 1.3, 0.4, 0.2, 0.8, 0.8, 0.9); // scrap bin
+      B.box('corrugated_rust', 1.3, 0.85, 0.2, 0.84, 0.05, 0.94);
+      for (let i = 0; i < 6; i++) B.box(i % 2 ? 'rust' : 'metal_dark', -1.3 + (i % 3) * 0.25, 0.1 + Math.floor(i / 3) * 0.15, 0.5 - (i % 2) * 0.3, 0.4, 0.08, 0.3, { rotY: i * 0.7 });
+      break;
+    }
+    case 'fuel_pump': {
+      B.box('metal_dark', 0, 0.06, 0, 1.4, 0.12, 1.0);
+      B.box('paint_red', 0, 0.85, 0, 0.6, 1.5, 0.45);
+      B.box('metal_dark', 0, 1.65, 0, 0.66, 0.12, 0.5);
+      B.box('emissive_lamp', 0, 1.25, 0.23, 0.36, 0.2, 0.02);
+      B.box('black', 0.34, 0.95, 0.05, 0.06, 0.5, 0.06);
+      B.box('metal', 0.38, 0.72, 0.1, 0.06, 0.08, 0.18);
+      B.box('rust', -0.9, 0.55, 0, 0.6, 1.0, 0.6); // old tank
+      B.box('metal_dark', -0.9, 1.07, 0, 0.2, 0.06, 0.2);
+      break;
+    }
     default:
       B.box(W, 0, 0.5, 0, 1, 1, 1);
   }
@@ -165,6 +212,10 @@ export function pieceColliders(type) {
     case 'lamp': return [[0, 0.9, 0, 0.3, 1.8, 0.3, { blocksSight: false, blocksShots: false }]];
     case 'campfire': return [];
     case 'bedroll': return [];
+    case 'sentry': return [[0, 0.5, 0, 0.8, 1.0, 0.8]];
+    case 'lumber_yard': return [[0, 0.45, 0.3, 2.4, 0.9, 0.7], [0, 0.3, -0.6, 1.0, 0.6, 1.9], [1.6, 0.3, 0.8, 0.5, 0.6, 0.5]];
+    case 'scrap_yard': return [[0, 0.47, 0, 1.7, 0.95, 1.0], [1.3, 0.43, 0.2, 0.84, 0.86, 0.94]];
+    case 'fuel_pump': return [[0, 0.85, 0, 0.66, 1.7, 0.5], [-0.9, 0.55, 0, 0.6, 1.1, 0.6]];
     case 'ladder': return [];
     case 'watchtower': return [
       [-1.2, 2.2, -1.2, 0.22, 4.4, 0.22], [1.2, 2.2, -1.2, 0.22, 4.4, 0.22], [-1.2, 2.2, 1.2, 0.22, 4.4, 0.22], [1.2, 2.2, 1.2, 0.22, 4.4, 0.22],
@@ -189,6 +240,10 @@ export function pieceBounds(type) {
     case 'bedroll': return [0.8, 2.0, 0.2];
     case 'lamp': return [0.4, 0.4, 1.8];
     case 'campfire': return [1.4, 1.4, 0.3];
+    case 'sentry': return [1.2, 1.2, 1.3];
+    case 'lumber_yard': return [3.4, 2.4, 1.9];
+    case 'scrap_yard': return [2.6, 1.2, 1.8];
+    case 'fuel_pump': return [1.6, 1.0, 1.7];
     default: return [3, 0.2, 3];
   }
 }

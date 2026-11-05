@@ -264,6 +264,7 @@ export class AIAgent {
   /** Is the given character an enemy to this agent? */
   isEnemy(ch) {
     if (!ch || !ch.alive || ch === this) return false;
+    if (ch === this.game.player?.character && this.game.debug?.flags.invisible) return false;
     if (this.attackers.has(ch) && this.time - this.attackers.get(ch) < 120) return true;
     const f = ch.faction;
     if (f === this.faction) return false;

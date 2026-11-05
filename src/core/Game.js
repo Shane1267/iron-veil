@@ -36,6 +36,8 @@ import { audio } from '../audio/AudioManager.js';
 import { UIManager } from '../ui/UIManager.js';
 import { clamp } from './MathUtil.js';
 import { NetClient } from '../net/NetClient.js';
+import { DebugMenu } from '../ui/DebugMenu.js';
+import { NPCSystem } from '../npc/NPCSystem.js';
 
 // Top-level orchestrator: owns every system, runs the frame loop, routes input to
 // gameplay or UI, handles interactions, item drops, death/respawn and save/load.
@@ -79,6 +81,7 @@ export class Game {
       waterMat: this.infra.waterMat,
       vegetation: { geos: this.terrain.vegGeos.full, material: this.terrain.vegMaterial, depth: this.terrain.vegDepth },
     });
+    this.npcs = new NPCSystem(this);
     this.player = new Player(this);
     this.characters.add(this.player.character);
     this.ballistics = new Ballistics(this.physics, this.characters, this.effects, this.world, { onGlass: (pane) => this.pois.breakGlass(pane) });
@@ -90,6 +93,7 @@ export class Game {
     this.objectives = new Objectives(this);
     this.icons = new IconRenderer(this.materials);
     this.ui = new UIManager(this);
+    this.debug = new DebugMenu(this);
 
     this.started = false;
     this.dead = false;
@@ -145,6 +149,7 @@ export class Game {
 
   // ------------------------------------------------------------ helpers used by systems
   carryCapacity() {
+    if (this.debug?.flags.carry) return 1e6;
     return 30;
   }
 
@@ -328,6 +333,7 @@ export class Game {
     this.objectives = new Objectives(this);
     this.clock = new GameClock();
     this.events.deserialize(null);
+    this.npcs.deserialize(null);
     this.discovered.clear();
     this.fog.data.fill(0);
     this.markers = [];
@@ -424,6 +430,7 @@ export class Game {
     this.player.deserialize(d.player);
     this.player.equipment.refreshCapacity();
     this.objectives.deserialize(d.objectives);
+    this.npcs.deserialize(d.npcs);
     for (const id of d.world?.discovered || []) if (this.world.poiById.has(id)) this.discovered.add(id);
     if (typeof d.world?.fog === 'string' && d.world.fog.length === this.fog.data.length) for (let i = 0; i < this.fog.data.length; i++) this.fog.data[i] = d.world.fog.charCodeAt(i) === 49 ? 1 : 0;
     this.markers = Array.isArray(d.world?.markers) ? d.world.markers.filter((m) => Number.isFinite(m?.x) && Number.isFinite(m?.z)) : [];
@@ -541,6 +548,7 @@ export class Game {
       factions: this.factions.serialize(),
       ai: this.ai.serialize(),
       events: this.events.serialize(),
+      npcs: this.npcs.serialize(),
       settings: { ...settings.values },
     };
   }
@@ -596,6 +604,7 @@ export class Game {
     this.player.equipment.refreshCapacity();
     this.ai.deserialize(d.ai);
     this.events.deserialize(d.events);
+    this.npcs.deserialize(d.npcs);
     this.objectives.deserialize(d.objectives);
     for (const id of d.world.discovered || []) if (this.world.poiById.has(id)) this.discovered.add(id);
     if (typeof d.world.fog === 'string' && d.world.fog.length === this.fog.data.length) for (let i = 0; i < this.fog.data.length; i++) this.fog.data[i] = d.world.fog.charCodeAt(i) === 49 ? 1 : 0;
@@ -675,6 +684,8 @@ export class Game {
       case 'workbench': this.ui.open('craft'); break;
       case 'bedroll': bus.emit('notify', { text: 'You will respawn here if you die', kind: 'info' }); break;
       case 'toggleLight': { const pc = it.data.piece; pc.lit = !pc.lit; break; }
+      case 'npc': this.npcs.interact(it.data.npc); break;
+      case 'fuelPump': { const r = this.base.usePump(it.data.piece); bus.emit('notify', { text: r.msg, kind: r.ok ? 'good' : 'info' }); break; }
       default: break;
     }
   }
@@ -706,6 +717,42 @@ export class Game {
     const time = 1.1 * (1 - this.player.skills.level('scavenging') * 0.04);
     this.interactionAction = { t: 0, time, label: `Searching ${d.name || ''}`, complete: open, pos: this.player.controller.pos.clone() };
     bus.emit('sound', { type: 'pickup', ui: true });
+  }
+
+  /** A ladder within reach: at its foot (climb up) or at its top (climb down). */
+  _ladderNear() {
+    const p = this.player.controller.pos;
+    let best = null, bd = Infinity;
+    for (const l of this.physics.ladders) {
+      const d = Math.hypot(l.x - p.x, l.z - p.z);
+      if (d > 1.6) continue;
+      const atBottom = p.y < l.y0 + 1.2 && p.y > l.y0 - 0.6;
+      const atTop = Math.abs(p.y - l.y1) < 0.8;
+      if (!atBottom && !atTop) continue;
+      if (d < bd) { bd = d; best = { ladder: l, up: atBottom && !(atTop && p.y > (l.y0 + l.y1) / 2), label: '' }; }
+    }
+    if (best) best.label = best.up ? 'Climb up the ladder' : 'Climb down the ladder';
+    return best;
+  }
+
+  /** Press F at a ladder: straight to the other end. */
+  _ladderJump() {
+    const lp = this.ladderPrompt;
+    if (!lp) return;
+    const L = lp.ladder, pc = this.player.controller;
+    if (lp.up) {
+      // the platform is on the side away from the ladder's outward normal
+      let x = L.x - L.nx * 0.9, z = L.z - L.nz * 0.9;
+      let y = this.physics.groundHeight(x, z, 0.3, L.y1 + 0.6);
+      if (Math.abs(y - L.y1) > 0.8) { x = L.x - L.nx * 0.5; z = L.z - L.nz * 0.5; y = L.y1 + 0.05; }
+      pc.teleport(x, y + 0.05, z, pc.yaw);
+    } else {
+      const x = L.x + L.nx * 0.7, z = L.z + L.nz * 0.7;
+      const y = this.physics.groundHeight(x, z, 0.3, L.y0 + 0.8);
+      pc.teleport(x, y + 0.05, z, pc.yaw);
+    }
+    pc.onLadder = null;
+    bus.emit('footstep', { x: pc.pos.x, y: pc.pos.y, z: pc.pos.z, surface: 'metal', volume: 0.6, player: true });
   }
 
   _water() {
@@ -799,6 +846,8 @@ export class Game {
     this.vehicles.update(dt, input, gameplay ? mouse : null);
     if (inVeh && gameplay && input.hit('interact')) this.vehicles.exit(this.player);
 
+    this.debug.update(dt);
+
     // survival
     const night = this.lighting.nightFactor || 0;
     const sheltered = this.indoor;
@@ -826,6 +875,7 @@ export class Game {
     // interaction target
     this.lookTarget = null;
     this.waterPrompt = null;
+    this.ladderPrompt = null;
     if (gameplay && !inVeh) {
       this.lookTarget = this.interactables.pick(eye, fwd, 2.6, (o) => {
         // visible if nothing blocks the view before reaching the object's own volume
@@ -835,6 +885,7 @@ export class Game {
         const hit = this.physics.raycast(eye.x, eye.y, eye.z, dx / d, dy / d, dz / d, d, (c) => c.blocksMove && c.tag !== 'character' && c.material !== 'glass', true);
         return !hit || hit.t > d - 0.9;
       });
+      this.ladderPrompt = this._ladderNear();
       if (!this.lookTarget && this._lookingAtWater()) this.waterPrompt = this.player.equipment.inventory.count('empty_bottle') ? 'Fill bottles' : 'Drink water';
       if (!this.base.active) {
         if (input.hit('interact')) {
@@ -842,7 +893,9 @@ export class Game {
           else if (this.lookTarget) this._interact(this.lookTarget);
         }
         if (input.hit('use')) {
-          if (this.lookTarget) this._secondary(this.lookTarget);
+          if (this.lookTarget && this.secondaryLabel(this.lookTarget)) this._secondary(this.lookTarget);
+          else if (this.ladderPrompt) this._ladderJump();
+          else if (this.lookTarget) this._secondary(this.lookTarget);
           else if (this.waterPrompt) this._water();
         }
       }
@@ -886,6 +939,7 @@ export class Game {
     }
     T = this._prof('ai', T);
     this.base.update(dt);
+    this.npcs.update(dt);
     this.objectives.update(dt);
 
     // world streaming
@@ -978,8 +1032,17 @@ export class Game {
       }
       return true;
     };
-    if (this.base.active && input.hit('inventory')) { this.ui.open('build'); return; }
-    if (toggle('inventory', 'inventory')) return;
+    // Tab+3 opens the debug menu; Tab alone opens the inventory when released
+    if (input.pressed.has('Tab')) this._tabFrom = this._tabChord ? 'chord' : mode;
+    // Tab closes an open screen at once, but opens the inventory only on release (so Tab+3 can be told apart)
+    const invKey = input.pressed.has('KeyI') || (input.pressed.has('Tab') && mode !== 'playing') || (input.released.has('Tab') && !this._tabChord && this._tabFrom === 'playing' && mode === 'playing');
+    if (mode === 'trade' && (input.hit('interact') || invKey)) { this.ui.close(); return; }
+    if (this.base.active && invKey) { this.ui.open('build'); return; }
+    if (invKey) {
+      if (mode === 'inventory') this.ui.close();
+      else if (mode === 'playing' || ['map', 'craft', 'build', 'journal'].includes(mode)) this.ui.open('inventory');
+      return;
+    }
     if (toggle('map', 'map')) return;
     if (toggle('craft', 'craft')) return;
     if (toggle('journal', 'journal')) return;

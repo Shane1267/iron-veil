@@ -798,6 +798,26 @@ export class StructureBuilder extends BuildingGenerator {
     this.ctx.containers.push({ x: f.wx(0, 0.6), y: y + 1.0, z: f.wz(0, 0.6), name: 'Market Stall', profile: 'camp', capacity: 8, kind: 'crate' });
   }
 
+  /** A trader's covered stall: counter at the front (+z), the trader stands behind it. */
+  traderStall(x, y, z, rot, role, sign = null) {
+    const f = new Frame(x, y, z, rot);
+    for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) this.box(f, 'wood_dark', sx * 1.6, 1.25, sz * 1.1, 0.12, 2.5, 0.12, { collide: false });
+    const canvas = { general: 'canvas_tan', gunsmith: 'olive', medic: 'paint_white', builder: 'canvas', quartermaster: 'canvas_tan', elder: 'canvas' }[role] || 'canvas_tan';
+    this.box(f, canvas, 0, 2.55, 0, 3.6, 0.05, 2.6, { collide: false, rotX: 0.1 });
+    this.box(f, 'wood', 0, 0.95, 0.85, 3.2, 0.08, 0.7);
+    this.box(f, 'wood_dark', 0, 0.45, 1.15, 3.2, 0.9, 0.06);
+    this.ctx.colliders.push(this._colliderLocal(f, 0, 0.5, 0.95, 3.2, 1.0, 0.7, 'wood', { blocksSight: false }));
+    // goods on the counter and crates behind
+    const goods = { general: ['canvas', 'paint_red', 'corrugated_blue'], gunsmith: ['metal_dark', 'olive', 'metal'], medic: ['paint_white', 'paint_red', 'paint_white'], builder: ['wood', 'metal_dark', 'rust'], quartermaster: ['olive', 'canvas_tan', 'metal_dark'], elder: ['wood_dark', 'canvas', 'wood'] }[role] || ['canvas'];
+    goods.forEach((m, i) => this.box(f, m, -1.1 + i * 1.1, 1.1, 0.85, 0.5, 0.22, 0.35, { collide: false, rotY: i * 0.3 }));
+    this.box(f, 'wood', -1.2, 0.35, -0.8, 0.7, 0.7, 0.6);
+    this.box(f, 'wood', 1.2, 0.3, -0.8, 0.6, 0.6, 0.6);
+    if (sign) this.sign(f.wx(0, 1.3), y + 2.0, f.wz(0, 1.3), rot, sign);
+    // the trader: behind the counter, facing the customer side
+    const yaw = Math.atan2(-f.s, -f.c);
+    this.ctx.npcs.push({ kind: 'trader', role, x: f.wx(0, -0.2), y, z: f.wz(0, -0.2), yaw, front: { x: f.wx(0, 2.2), z: f.wz(0, 2.2) } });
+  }
+
   conveyor(x, y, z, rot, len = 20, h = 6) {
     const f = new Frame(x, y, z, rot);
     const ang = Math.atan2(h, len);

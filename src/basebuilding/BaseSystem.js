@@ -5,6 +5,7 @@ import { Inventory } from '../items/Inventory.js';
 import { ItemDB } from '../items/ItemDatabase.js';
 import { bus } from '../core/EventBus.js';
 import { uid } from '../core/MathUtil.js';
+import { Sentry } from './Sentry.js';
 
 // Player base construction: placement preview with snapping (3 m grid foundations,
 // edge-snapped walls, supported floors), validation (cost, tools, slope, overlap,
@@ -287,6 +288,7 @@ export class BaseSystem {
       if (pp.x > p.x - W / 2 - 0.3 && pp.x < p.x + W / 2 + 0.3 && pp.z > p.z - D / 2 - 0.3 && pp.z < p.z + D / 2 + 0.3 && pp.y < y1 && pp.y + 1.8 > y0 && bh > 0.5) return 'You are in the way';
     }
     // cost and tools
+    if (this.game.debug?.flags.freeBuild) return null;
     const inv = player.equipment.inventory;
     const missing = [];
     for (const [id, n] of Object.entries(def.cost)) if (inv.count(id) < n) missing.push(`${ItemDB.get(id).name} ${inv.count(id)}/${n}`);
@@ -303,13 +305,14 @@ export class BaseSystem {
     const reason = this._validate(p, def);
     if (reason || p.reason) return { ok: false, msg: reason || p.reason };
     const inv = this.game.player.equipment.inventory;
-    if (!inv.consume(def.cost)) return { ok: false, msg: 'Missing materials' };
+    const free = !!this.game.debug?.flags.freeBuild;
+    if (!free && !inv.consume(def.cost)) return { ok: false, msg: 'Missing materials' };
     let piece;
     try {
       piece = this._create({ id: uid('bp'), type: p.type, x: p.x, y: p.y, z: p.z, rot: p.rot, health: def.health, legs: p.legs });
     } catch (e) {
       // refund on unexpected failure
-      for (const [id, n] of Object.entries(def.cost)) inv.add({ id, qty: n });
+      if (!free) for (const [id, n] of Object.entries(def.cost)) inv.add({ id, qty: n });
       console.error('[Base] placement failed', e);
       return { ok: false, msg: 'Placement failed' };
     }
@@ -329,6 +332,8 @@ export class BaseSystem {
       id: rec.id, type: rec.type, def, x: rec.x, y: rec.y, z: rec.z, rot: rec.rot | 0,
       health: Math.min(def.health, rec.health ?? def.health), maxHealth: def.health, alive: true,
       colliders: [], interact: null, open: !!rec.open, locked: !!rec.locked, legs: rec.legs || 0.6, lit: rec.lit ?? true,
+      // producers: game-minute clock of the last update, fractional output carried over, pump stock
+      prodT: Number.isFinite(rec.prodT) ? rec.prodT : this.game.clock.gameMinutes, prodAcc: rec.prodAcc || 0, stock: rec.stock || 0, sentryLoaded: rec.sentryLoaded || 0,
     };
     const owner = `base:${piece.id}`;
     const theta = (piece.rot * Math.PI) / 2;
@@ -372,6 +377,7 @@ export class BaseSystem {
       piece.inventory = this.game.loot.get(id) || this.game.loot.register(id, new Inventory(def.storage, def.name), { meta: { base: true } });
     }
     this._makeInteract(piece);
+    if (def.sentry) piece.sentry = new Sentry(piece, this.game);
     if (def.light) {
       piece.lightSource = { x: piece.x, y: piece.y + (rec.type === 'lamp' ? 1.7 : 0.6), z: piece.z, color: rec.type === 'lamp' ? 0xffe0b0 : 0xff9a40, intensity: rec.type === 'lamp' ? 6 : 9, range: rec.type === 'lamp' ? 16 : 14, active: () => piece.alive && piece.lit, flicker: rec.type === 'campfire' };
       this.game.lights?.add(piece.lightSource);
@@ -428,7 +434,21 @@ export class BaseSystem {
   _makeInteract(piece) {
     const def = piece.def;
     const it = { id: `basei:${piece.id}`, x: piece.x, y: piece.y + 1.0, z: piece.z, radius: 1.6, data: { piece } };
-    if (def.storage) {
+    if (def.sentry) {
+      it.kind = 'container';
+      it.label = () => `${def.name}: ${piece.sentry?.status || ''} — open to load`;
+      it.data = { containerId: `base:${piece.id}`, name: `${def.name} — put a firearm and its ammunition here`, custom: true, piece };
+      it.y = piece.y + 1.0;
+    } else if (def.produce) {
+      it.kind = 'container';
+      it.label = () => { this._produce(piece); return `${def.name}: ${piece.inventory.count(def.produce.item)} ${ItemDB.get(def.produce.item).name.toLowerCase()} ready (${def.produce.perDay}/day)`; };
+      it.data = { containerId: `base:${piece.id}`, name: def.name, custom: true, piece };
+      it.y = piece.y + 0.8;
+    } else if (def.pump) {
+      it.kind = 'fuelPump';
+      it.label = () => { this._produce(piece); return `Fill jerrycan (${Math.floor(piece.stock)}/${def.pump.max} ready)`; };
+      it.y = piece.y + 1.1;
+    } else if (def.storage) {
       it.kind = 'container';
       it.label = () => `${piece.locked ? 'Locked ' : ''}${def.name}${def.lockable ? '  [F] ' + (piece.locked ? 'unlock' : 'lock') : ''}`;
       it.data = { containerId: `base:${piece.id}`, name: def.name, custom: true, piece };
@@ -465,6 +485,7 @@ export class BaseSystem {
     if (piece.interact) this.game.interactables.remove(piece.interact);
     if (piece.lightSource) this.game.lights?.remove(piece.lightSource);
     if (this.game.fires) this.game.fires = this.game.fires.filter((f) => f.piece !== piece);
+    if (piece.sentry) { piece.sentry.dispose(); piece.sentry = null; }
     if (piece.inventory) {
       // spill storage contents on the ground
       const inv = piece.inventory;
@@ -574,8 +595,53 @@ export class BaseSystem {
     return !!hit;
   }
 
+  /** Passive output from game time elapsed since the last check (works while you are away). */
+  _produce(piece, extraMinutes = 0) {
+    const def = piece.def;
+    const now = this.game.clock.gameMinutes;
+    const mins = Math.max(0, now - piece.prodT) + extraMinutes;
+    piece.prodT = now;
+    if (def.produce) {
+      const inv = piece.inventory;
+      piece.prodAcc += (mins / 1440) * def.produce.perDay;
+      const n = Math.floor(piece.prodAcc);
+      if (n > 0) {
+        const left = inv.add({ id: def.produce.item, qty: n });
+        piece.prodAcc = left ? 0 : piece.prodAcc - n; // full storage: production waits
+      }
+    } else if (def.pump) {
+      piece.stock = Math.min(def.pump.max, piece.stock + (mins / 1440) * def.pump.perDay);
+    }
+  }
+
+  /** Debug: run every producer forward by `minutes`. Returns how many there were. */
+  debugProduce(minutes) {
+    let n = 0;
+    for (const p of this.pieces.values()) if (p.def.produce || p.def.pump) { this._produce(p, minutes); n++; }
+    return n;
+  }
+
+  /** Fill one empty jerrycan from a fuel pump. */
+  usePump(piece) {
+    this._produce(piece);
+    const inv = this.game.player.equipment.inventory;
+    if (piece.stock < 1) return { ok: false, msg: `The pump is still drawing fuel (${Math.floor(piece.stock * 100)}% of the next can)` };
+    if (inv.count('fuel_can_empty') < 1) return { ok: false, msg: 'You need an empty jerrycan' };
+    inv.remove('fuel_can_empty', 1);
+    const left = inv.add(ItemDB.create('fuel_can', 1));
+    if (left) this.game.dropItem(ItemDB.create('fuel_can', 1));
+    piece.stock -= 1;
+    bus.emit('sound', { type: 'pickup', ui: true });
+    return { ok: true, msg: 'Filled a jerrycan with fuel' };
+  }
+
   update(dt) {
+    this._prodT = (this._prodT || 0) - dt;
+    const tick = this._prodT <= 0;
+    if (tick) this._prodT = 5;
     for (const p of this.pieces.values()) {
+      if (p.sentry) p.sentry.update(dt);
+      if (tick && (p.def.produce || p.def.pump)) this._produce(p);
       if (!p.leaves) continue;
       for (const pv of p.leaves) {
         const t = pv.userData.target;
@@ -589,7 +655,7 @@ export class BaseSystem {
   // ------------------------------------------------------------ persistence
   serialize() {
     return {
-      pieces: [...this.pieces.values()].map((p) => ({ id: p.id, type: p.type, x: p.x, y: p.y, z: p.z, rot: p.rot, health: Math.round(p.health), open: p.open, locked: p.locked, legs: p.legs, lit: p.lit, doorway: p.doorway?.id || null })),
+      pieces: [...this.pieces.values()].map((p) => ({ id: p.id, type: p.type, x: p.x, y: p.y, z: p.z, rot: p.rot, health: Math.round(p.health), open: p.open, locked: p.locked, legs: p.legs, lit: p.lit, doorway: p.doorway?.id || null, ...(p.def.produce || p.def.pump ? { prodT: p.prodT, prodAcc: +p.prodAcc.toFixed(3), stock: +(p.stock || 0).toFixed(3) } : {}), ...(p.sentry ? { sentryLoaded: p.sentry.loaded } : {}) })),
       discoveredBy: [...this.discoveredBy],
       lastRaid: this.lastRaid,
     };

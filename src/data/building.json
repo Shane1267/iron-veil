@@ -2,40 +2,448 @@
   "_doc": "Base-building pieces and crafting recipes. Grid = 3 m. snap: foundation (ground grid), wall (foundation/floor edge), floor (on top of walls or adjacent), cell (inside a foundation/floor cell), free (anywhere on terrain). 'tool' items must be in inventory but are not consumed.",
   "grid": 3,
   "pieces": [
-    { "id": "foundation", "name": "Wooden Foundation", "snap": "foundation", "cost": { "wood_plank": 6, "nails": 12 }, "tool": "tool_hammer", "health": 600, "material": "wood" },
-    { "id": "floor", "name": "Floor / Roof", "snap": "floor", "cost": { "wood_plank": 4, "nails": 8 }, "tool": "tool_hammer", "health": 350, "material": "wood", "roof": true },
-    { "id": "wall", "name": "Wooden Wall", "snap": "wall", "cost": { "wood_plank": 5, "nails": 10 }, "tool": "tool_hammer", "health": 400, "material": "wood" },
-    { "id": "wall_reinforced", "name": "Reinforced Wall", "snap": "wall", "cost": { "metal_sheet": 3, "bolts": 12, "wood_plank": 2 }, "tool": "tool_wrench", "health": 1100, "material": "metal" },
-    { "id": "doorway", "name": "Door Frame", "snap": "wall", "cost": { "wood_plank": 4, "nails": 8 }, "tool": "tool_hammer", "health": 380, "material": "wood", "opening": "door" },
-    { "id": "door", "name": "Wooden Door", "snap": "door", "cost": { "wood_plank": 3, "nails": 6 }, "tool": "tool_hammer", "health": 260, "material": "wood" },
-    { "id": "gate", "name": "Double Gate", "snap": "wall", "cost": { "wood_plank": 7, "nails": 14, "rope": 1 }, "tool": "tool_hammer", "health": 450, "material": "wood", "opening": "gate" },
-    { "id": "window_wall", "name": "Window Wall", "snap": "wall", "cost": { "wood_plank": 4, "nails": 8 }, "tool": "tool_hammer", "health": 360, "material": "wood", "opening": "window" },
-    { "id": "firing_wall", "name": "Firing Position Wall", "snap": "wall", "cost": { "wood_plank": 3, "metal_sheet": 1, "nails": 8 }, "tool": "tool_hammer", "health": 600, "material": "metal", "opening": "slit" },
-    { "id": "stairs", "name": "Stairs", "snap": "cell", "cost": { "wood_plank": 6, "nails": 12 }, "tool": "tool_hammer", "health": 300, "material": "wood" },
-    { "id": "ladder", "name": "Ladder", "snap": "free", "cost": { "wood_plank": 3, "rope": 1 }, "tool": null, "health": 120, "material": "wood" },
-    { "id": "sandbags", "name": "Sandbag Wall", "snap": "free", "cost": { "sandbag_empty": 4 }, "tool": null, "health": 900, "material": "sand" },
-    { "id": "barrier", "name": "Steel Barrier", "snap": "free", "cost": { "scrap_metal": 4, "bolts": 6 }, "tool": "tool_wrench", "health": 800, "material": "metal" },
-    { "id": "watchtower", "name": "Watchtower", "snap": "free", "cost": { "wood_plank": 14, "nails": 24, "rope": 2 }, "tool": "tool_hammer", "health": 700, "material": "wood" },
-    { "id": "crate", "name": "Storage Crate", "snap": "free", "cost": { "wood_plank": 4, "nails": 8 }, "tool": "tool_hammer", "health": 200, "material": "wood", "storage": 20 },
-    { "id": "locker", "name": "Lockable Locker", "snap": "free", "cost": { "metal_sheet": 2, "bolts": 8 }, "tool": "tool_wrench", "health": 500, "material": "metal", "storage": 24, "lockable": true },
-    { "id": "workbench", "name": "Workbench", "snap": "free", "cost": { "wood_plank": 6, "nails": 12, "scrap_metal": 2 }, "tool": "tool_hammer", "health": 300, "material": "wood", "station": "workbench" },
-    { "id": "bedroll", "name": "Bedroll (Respawn)", "snap": "free", "cost": { "cloth": 6, "rope": 1 }, "tool": null, "health": 100, "material": "fabric", "respawn": true },
-    { "id": "lamp", "name": "Battery Lamp", "snap": "free", "cost": { "scrap_metal": 1, "electronics": 1, "battery": 1 }, "tool": null, "health": 80, "material": "metal", "light": true },
-    { "id": "campfire", "name": "Campfire", "snap": "free", "cost": { "wood_plank": 3 }, "tool": null, "health": 100, "material": "wood", "light": true, "warmth": true }
+    {
+      "id": "foundation",
+      "name": "Wooden Foundation",
+      "snap": "foundation",
+      "cost": {
+        "wood_plank": 6,
+        "nails": 12
+      },
+      "tool": "tool_hammer",
+      "health": 600,
+      "material": "wood"
+    },
+    {
+      "id": "floor",
+      "name": "Floor / Roof",
+      "snap": "floor",
+      "cost": {
+        "wood_plank": 4,
+        "nails": 8
+      },
+      "tool": "tool_hammer",
+      "health": 350,
+      "material": "wood",
+      "roof": true
+    },
+    {
+      "id": "wall",
+      "name": "Wooden Wall",
+      "snap": "wall",
+      "cost": {
+        "wood_plank": 5,
+        "nails": 10
+      },
+      "tool": "tool_hammer",
+      "health": 400,
+      "material": "wood"
+    },
+    {
+      "id": "wall_reinforced",
+      "name": "Reinforced Wall",
+      "snap": "wall",
+      "cost": {
+        "metal_sheet": 3,
+        "bolts": 12,
+        "wood_plank": 2
+      },
+      "tool": "tool_wrench",
+      "health": 1100,
+      "material": "metal"
+    },
+    {
+      "id": "doorway",
+      "name": "Door Frame",
+      "snap": "wall",
+      "cost": {
+        "wood_plank": 4,
+        "nails": 8
+      },
+      "tool": "tool_hammer",
+      "health": 380,
+      "material": "wood",
+      "opening": "door"
+    },
+    {
+      "id": "door",
+      "name": "Wooden Door",
+      "snap": "door",
+      "cost": {
+        "wood_plank": 3,
+        "nails": 6
+      },
+      "tool": "tool_hammer",
+      "health": 260,
+      "material": "wood"
+    },
+    {
+      "id": "gate",
+      "name": "Double Gate",
+      "snap": "wall",
+      "cost": {
+        "wood_plank": 7,
+        "nails": 14,
+        "rope": 1
+      },
+      "tool": "tool_hammer",
+      "health": 450,
+      "material": "wood",
+      "opening": "gate"
+    },
+    {
+      "id": "window_wall",
+      "name": "Window Wall",
+      "snap": "wall",
+      "cost": {
+        "wood_plank": 4,
+        "nails": 8
+      },
+      "tool": "tool_hammer",
+      "health": 360,
+      "material": "wood",
+      "opening": "window"
+    },
+    {
+      "id": "firing_wall",
+      "name": "Firing Position Wall",
+      "snap": "wall",
+      "cost": {
+        "wood_plank": 3,
+        "metal_sheet": 1,
+        "nails": 8
+      },
+      "tool": "tool_hammer",
+      "health": 600,
+      "material": "metal",
+      "opening": "slit"
+    },
+    {
+      "id": "stairs",
+      "name": "Stairs",
+      "snap": "cell",
+      "cost": {
+        "wood_plank": 6,
+        "nails": 12
+      },
+      "tool": "tool_hammer",
+      "health": 300,
+      "material": "wood"
+    },
+    {
+      "id": "ladder",
+      "name": "Ladder",
+      "snap": "free",
+      "cost": {
+        "wood_plank": 3,
+        "rope": 1
+      },
+      "tool": null,
+      "health": 120,
+      "material": "wood"
+    },
+    {
+      "id": "sandbags",
+      "name": "Sandbag Wall",
+      "snap": "free",
+      "cost": {
+        "sandbag_empty": 4
+      },
+      "tool": null,
+      "health": 900,
+      "material": "sand"
+    },
+    {
+      "id": "barrier",
+      "name": "Steel Barrier",
+      "snap": "free",
+      "cost": {
+        "scrap_metal": 4,
+        "bolts": 6
+      },
+      "tool": "tool_wrench",
+      "health": 800,
+      "material": "metal"
+    },
+    {
+      "id": "watchtower",
+      "name": "Watchtower",
+      "snap": "free",
+      "cost": {
+        "wood_plank": 14,
+        "nails": 24,
+        "rope": 2
+      },
+      "tool": "tool_hammer",
+      "health": 700,
+      "material": "wood"
+    },
+    {
+      "id": "crate",
+      "name": "Storage Crate",
+      "snap": "free",
+      "cost": {
+        "wood_plank": 4,
+        "nails": 8
+      },
+      "tool": "tool_hammer",
+      "health": 200,
+      "material": "wood",
+      "storage": 20
+    },
+    {
+      "id": "locker",
+      "name": "Lockable Locker",
+      "snap": "free",
+      "cost": {
+        "metal_sheet": 2,
+        "bolts": 8
+      },
+      "tool": "tool_wrench",
+      "health": 500,
+      "material": "metal",
+      "storage": 24,
+      "lockable": true
+    },
+    {
+      "id": "workbench",
+      "name": "Workbench",
+      "snap": "free",
+      "cost": {
+        "wood_plank": 6,
+        "nails": 12,
+        "scrap_metal": 2
+      },
+      "tool": "tool_hammer",
+      "health": 300,
+      "material": "wood",
+      "station": "workbench"
+    },
+    {
+      "id": "bedroll",
+      "name": "Bedroll (Respawn)",
+      "snap": "free",
+      "cost": {
+        "cloth": 6,
+        "rope": 1
+      },
+      "tool": null,
+      "health": 100,
+      "material": "fabric",
+      "respawn": true
+    },
+    {
+      "id": "lamp",
+      "name": "Battery Lamp",
+      "snap": "free",
+      "cost": {
+        "scrap_metal": 1,
+        "electronics": 1,
+        "battery": 1
+      },
+      "tool": null,
+      "health": 80,
+      "material": "metal",
+      "light": true
+    },
+    {
+      "id": "campfire",
+      "name": "Campfire",
+      "snap": "free",
+      "cost": {
+        "wood_plank": 3
+      },
+      "tool": null,
+      "health": 100,
+      "material": "wood",
+      "light": true,
+      "warmth": true
+    },
+    {
+      "id": "sentry",
+      "name": "Sentry Gun",
+      "cost": {
+        "scrap_metal": 6,
+        "mech_parts": 3,
+        "electronics": 2,
+        "bolts": 12
+      },
+      "snap": "free",
+      "tool": "tool_wrench",
+      "health": 450,
+      "material": "metal",
+      "storage": 6,
+      "sentry": true,
+      "desc": "Automatic gun mount. Put a firearm and its ammunition inside; it fires on anyone hostile it can see."
+    },
+    {
+      "id": "lumber_yard",
+      "name": "Lumber Yard",
+      "cost": {
+        "wood_plank": 12,
+        "nails": 16,
+        "rope": 2
+      },
+      "snap": "free",
+      "tool": "tool_hammer",
+      "health": 400,
+      "material": "wood",
+      "storage": 4,
+      "produce": {
+        "item": "wood_plank",
+        "perDay": 20
+      },
+      "desc": "Cuts 20 planks per in-game day while you are away. Collect them from its rack."
+    },
+    {
+      "id": "scrap_yard",
+      "name": "Scrap Workshop",
+      "cost": {
+        "wood_plank": 6,
+        "metal_sheet": 2,
+        "bolts": 12,
+        "mech_parts": 2
+      },
+      "snap": "free",
+      "tool": "tool_wrench",
+      "health": 500,
+      "material": "metal",
+      "storage": 2,
+      "produce": {
+        "item": "scrap_metal",
+        "perDay": 5
+      },
+      "desc": "Salvages 5 scrap metal per in-game day. Collect it from the bin."
+    },
+    {
+      "id": "fuel_pump",
+      "name": "Fuel Pump",
+      "cost": {
+        "metal_sheet": 3,
+        "mech_parts": 4,
+        "electronics": 2,
+        "bolts": 10
+      },
+      "snap": "free",
+      "tool": "tool_wrench",
+      "health": 420,
+      "material": "metal",
+      "pump": {
+        "perDay": 3,
+        "max": 6
+      },
+      "desc": "Draws fuel from an old tank: refills an empty jerrycan (up to 3 per in-game day, stores 6)."
+    }
   ],
   "recipes": [
-    { "id": "r_rag", "out": "rag_bandage", "qty": 1, "in": { "cloth": 2 }, "time": 1.5 },
-    { "id": "r_rope", "out": "rope", "qty": 1, "in": { "cloth": 4 }, "time": 2 },
-    { "id": "r_sandbag", "out": "sandbag_empty", "qty": 2, "in": { "cloth": 3 }, "time": 2 },
-    { "id": "r_rebar", "out": "wpn_rebar", "qty": 1, "in": { "scrap_metal": 2, "cloth": 1 }, "time": 2.5 },
-    { "id": "r_planks", "out": "wood_plank", "qty": 5, "in": { "log": 1 }, "tools": ["tool_saw"], "station": "workbench", "time": 3 },
-    { "id": "r_sheet", "out": "metal_sheet", "qty": 1, "in": { "scrap_metal": 3 }, "tools": ["tool_hammer"], "station": "workbench", "time": 3 },
-    { "id": "r_nails", "out": "nails", "qty": 25, "in": { "scrap_metal": 1 }, "tools": ["tool_hammer"], "station": "workbench", "time": 2.5 },
-    { "id": "r_bolts", "out": "bolts", "qty": 12, "in": { "scrap_metal": 1 }, "tools": ["tool_wrench"], "station": "workbench", "time": 2.5 },
-    { "id": "r_crate_pack", "out": "pack_small", "qty": 1, "in": { "cloth": 6, "rope": 2 }, "station": "workbench", "time": 4 }
+    {
+      "id": "r_rag",
+      "out": "rag_bandage",
+      "qty": 1,
+      "in": {
+        "cloth": 2
+      },
+      "time": 1.5
+    },
+    {
+      "id": "r_rope",
+      "out": "rope",
+      "qty": 1,
+      "in": {
+        "cloth": 4
+      },
+      "time": 2
+    },
+    {
+      "id": "r_sandbag",
+      "out": "sandbag_empty",
+      "qty": 2,
+      "in": {
+        "cloth": 3
+      },
+      "time": 2
+    },
+    {
+      "id": "r_rebar",
+      "out": "wpn_rebar",
+      "qty": 1,
+      "in": {
+        "scrap_metal": 2,
+        "cloth": 1
+      },
+      "time": 2.5
+    },
+    {
+      "id": "r_planks",
+      "out": "wood_plank",
+      "qty": 5,
+      "in": {
+        "log": 1
+      },
+      "tools": [
+        "tool_saw"
+      ],
+      "station": "workbench",
+      "time": 3
+    },
+    {
+      "id": "r_sheet",
+      "out": "metal_sheet",
+      "qty": 1,
+      "in": {
+        "scrap_metal": 3
+      },
+      "tools": [
+        "tool_hammer"
+      ],
+      "station": "workbench",
+      "time": 3
+    },
+    {
+      "id": "r_nails",
+      "out": "nails",
+      "qty": 25,
+      "in": {
+        "scrap_metal": 1
+      },
+      "tools": [
+        "tool_hammer"
+      ],
+      "station": "workbench",
+      "time": 2.5
+    },
+    {
+      "id": "r_bolts",
+      "out": "bolts",
+      "qty": 12,
+      "in": {
+        "scrap_metal": 1
+      },
+      "tools": [
+        "tool_wrench"
+      ],
+      "station": "workbench",
+      "time": 2.5
+    },
+    {
+      "id": "r_crate_pack",
+      "out": "pack_small",
+      "qty": 1,
+      "in": {
+        "cloth": 6,
+        "rope": 2
+      },
+      "station": "workbench",
+      "time": 4
+    }
   ],
   "repair": {
-    "weaponCost": { "mech_parts": 1, "cloth": 1 }, "weaponAmount": 45, "weaponStation": "workbench",
+    "weaponCost": {
+      "mech_parts": 1,
+      "cloth": 1
+    },
+    "weaponAmount": 45,
+    "weaponStation": "workbench",
     "structureFraction": 0.3
   }
 }

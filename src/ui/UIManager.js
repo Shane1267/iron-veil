@@ -4,6 +4,7 @@ import { InventoryUI } from './InventoryUI.js';
 import { MapUI } from './MapUI.js';
 import { CraftUI, BuildMenuUI } from './CraftBuildUI.js';
 import { SettingsUI } from './SettingsUI.js';
+import { TradeUI } from './TradeUI.js';
 import { STEPS } from '../core/Objectives.js';
 import { SKILLS } from '../player/Player.js';
 import { saves, SLOTS } from '../core/SaveManager.js';
@@ -34,6 +35,7 @@ export class UIManager {
     this.craft = new CraftUI(this);
     this.buildMenu = new BuildMenuUI(this);
     this.settings = new SettingsUI(this);
+    this.trade = new TradeUI(this);
     this.screen = h('div', { class: 'screen hidden' });
     this.root.appendChild(this.screen);
     this.clickToPlay = h('div', { class: 'click-to-play hidden', onclick: () => this.game.input.lock() }, 'Click to continue');
@@ -81,6 +83,7 @@ export class UIManager {
       case 'loading': this._loading(); break;
       case 'dead': this._death(opts); break;
       case 'journal': this._journal(); break;
+      case 'trade': this.trade.open(opts); break;
       case 'settings': this.settings.open(() => this.open(opts?.back || (g.started ? 'pause' : 'menu'))); break;
       default: break;
     }
@@ -97,6 +100,7 @@ export class UIManager {
     this.map.close();
     this.craft.close();
     this.buildMenu.close();
+    if (this.trade.isOpen) this.trade.close();
     if (this.settings.isOpen) { this.settings.onClose = null; this.settings.el.classList.add('hidden'); }
     this.screen.classList.add('hidden');
     this.screen.className = 'screen hidden';

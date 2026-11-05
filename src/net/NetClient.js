@@ -105,6 +105,14 @@ export class NetClient {
     const fire = g.ballistics.fire.bind(g.ballistics);
     this._origFire = fire;
     g.ballistics.fire = (shot) => {
+      if (shot.shooter?.isSentry && !shot.visual) {
+        // your base's sentry: the server re-runs its shots too, so the AI it hits react
+        const k = shot.shooter.id;
+        this.sentryBuf = this.sentryBuf || new Map();
+        let b = this.sentryBuf.get(k);
+        if (!b) { b = { t: 'fire', sentry: 1, o: [r2(shot.ox), r2(shot.oy), r2(shot.oz)], d: [], w: shot.weapon.id, at: shot.attach || null, tr: shot.tracer ? 1 : 0 }; this.sentryBuf.set(k, b); }
+        b.d.push([r3(shot.dx), r3(shot.dy), r3(shot.dz)]);
+      }
       if (shot.shooter === g.player.character && !shot.visual) {
         if (!this.fireBuf) this.fireBuf = { t: 'fire', o: [r2(shot.ox), r2(shot.oy), r2(shot.oz)], d: [], w: shot.weapon.id, at: g.weapons?.stack?.data?.attach || null, tr: shot.tracer ? 1 : 0 };
         this.fireBuf.d.push([r3(shot.dx), r3(shot.dy), r3(shot.dz)]);
@@ -176,6 +184,7 @@ export class NetClient {
     this.frame++;
     if (!this.connected) return;
     if (this.fireBuf) { this.send(this.fireBuf); this.fireBuf = null; }
+    if (this.sentryBuf?.size) { for (const b of this.sentryBuf.values()) this.send(b); this.sentryBuf.clear(); }
     this.stateT -= dt;
     if (this.stateT <= 0) { this.stateT = 1 / CLIENT_STATE_HZ; this.send({ t: 'st', ...this._state() }); }
     this.pingT -= dt;
@@ -283,13 +292,13 @@ export class NetClient {
     const [ox, oy, oz] = m.o;
     const pc = g.player.controller.pos;
     const near = Math.hypot(ox - pc.x, oz - pc.z) < 150;
-    const muzzle = near && who?.model?.weapon && who.model.root.visible ? who.model.muzzleWorld(new THREE.Vector3()) : null;
+    const muzzle = m.sentry ? (near ? new THREE.Vector3(ox, oy, oz) : null) : near && who?.model?.weapon && who.model.root.visible ? who.model.muzzleWorld(new THREE.Vector3()) : null;
     m.d.forEach((d, i) => {
       g.ballistics.fire({ ox, oy, oz, dx: d[0], dy: d[1], dz: d[2], weapon: w, shooter: who, visual: true, muzzle, tracer: !!(muzzle && m.tr && i === 0) });
     });
     if (muzzle && w.flash && g.effects.worldFlash) g.effects.worldFlash(muzzle.x, muzzle.y, muzzle.z, w.class === 'pistol' ? 0.7 : 1, true);
-    if (who?.model) who.model.flinch = Math.max(who.model.flinch, 0.15);
-    bus.emit('weapon:fired', { weapon: w, x: ox, y: oy, z: oz, npc: who, remote: true, noise: (w.noise || 300) * (w.noiseMul || 1), suppressed: !w.flash || (w.noiseMul || 1) < 1 });
+    if (who?.model && !m.sentry) who.model.flinch = Math.max(who.model.flinch, 0.15);
+    bus.emit('weapon:fired', { weapon: w, x: ox, y: oy, z: oz, npc: m.sentry ? null : who, remote: true, noise: (w.noise || 300) * (w.noiseMul || 1), suppressed: !w.flash || (w.noiseMul || 1) < 1 });
   }
 
   /** The server says we were hit: apply it with our own armour and health. */

@@ -313,19 +313,62 @@ export const LAYOUTS = {
     L.s('guardTower', 90, 70, 2, { profile: 'industrial' });
   },
   settlement(L) {
-    L.sign(-70, 70, 0, L.poi.name);
-    L.b('cabin', -30, -20, 0, { profile: 'camp' });
-    L.b('cabin', -10, -26, 0, { profile: 'camp' });
-    L.b('cabin', 14, -24, 0, { profile: 'camp' });
-    L.b('shack', 30, -10, 3);
-    L.b('shack', 30, 6, 3);
-    L.b('house', -30, 16, 1, { profile: 'kitchen' });
-    for (let i = 0; i < 4; i++) L.s('marketStall', -8 + i * 6, 10, 2);
-    L.s('campfire', 2, -4);
-    L.s('campfire', -16, 2);
-    L.s('guardTower', -54, -50, 0, { profile: 'camp', roofMat: 'roof' });
-    L.s('guardTower', 54, 50, 2, { profile: 'camp', roofMat: 'roof' });
-    L.perimeter(-60, -56, 60, 56, 'palisade', [{ side: 'S', at: 0, w: 8 }, { side: 'N', at: 10, w: 6 }]);
+    // Riverside: the largest settlement in Vesper. A market street on the highway with
+    // traders, a hall, a clinic and workshop, homes behind, a palisade and four towers.
+    const R = L.mainRoad();
+    const rx = R && R.d < 60 ? R.x : 0, rz = R && R.d < 60 ? R.z : 0;
+    const dx = R ? R.dx : 1, dz = R ? R.dz : 0, nx = R ? R.nx : 0, nz = R ? R.nz : 1;
+    const at = (t, off) => [rx + dx * t + nx * off, rz + dz * t + nz * off];
+    L.sign(-100, 96, 0, L.poi.name);
+    // market: trader stalls on both sides of the street, facing it
+    const stalls = [
+      [-30, 1, 'general', 'General Goods'], [-14, 1, 'gunsmith', 'Gunsmith'], [2, 1, 'medic', 'Clinic'],
+      [-22, -1, 'builder', 'Builder'], [-6, -1, 'quartermaster', 'Quartermaster'], [10, -1, 'elder', 'Settlement Office'],
+    ];
+    for (const [t, side, role, label] of stalls) {
+      const [x, z] = at(t, side * 11);
+      L.s('traderStall', x, z, L.faceRot(-nx * side, -nz * side), role, label);
+    }
+    for (const [t, side] of [[22, 1], [26, -1], [-42, -1]]) { const [x, z] = at(t, side * 11); L.s('marketStall', x, z, L.faceRot(-nx * side, -nz * side)); }
+    // square: well, fires, benches between the stalls
+    { const [x, z] = at(-8, 0); void x; void z; }
+    for (const [t, off] of [[-38, 18], [16, -18]]) { const [x, z] = at(t, off); L.s('campfire', x, z); }
+    for (const [t, off] of [[-2, 20], [-18, -20]]) { const [x, z] = at(t, off); L.s('well', x, z); }
+    for (const [t, side] of [[-36, 1], [-8, -1], [14, 1]]) { const [x, z] = at(t, side * 15); L.s('bench', x, z, L.faceRot(-nx * side, -nz * side)); }
+    // civic buildings on the first row behind the market
+    const hallRot = L.faceRot(nx, nz), backRot = L.faceRot(-nx, -nz);
+    { const [x, z] = at(-6, -34); L.b('hall', x, z, hallRot, { profile: 'camp' }); }
+    { const [x, z] = at(30, 30); L.b('house', x, z, backRot, { profile: 'medical' }); }
+    { const [x, z] = at(-42, 30); L.b('workshop', x, z, backRot, { profile: 'industrial' }); }
+    { const [x, z] = at(34, -32); L.b('house2', x, z, hallRot, { profile: 'kitchen' }); }
+    // homes: two rows of cabins, houses and shacks further back
+    const homes = ['cabin', 'house', 'cabin', 'shack', 'house2', 'cabin', 'shack', 'house'];
+    let k = 0;
+    for (const off of [52, -60]) {
+      for (let t = -70; t <= 70; t += 20) {
+        const [x, z] = at(t + (k % 2) * 4, off + (k % 3) * 3);
+        if (Math.hypot(x, z) > 104) { k++; continue; }
+        L.b(homes[k % homes.length], x, z, off > 0 ? backRot : hallRot, { profile: k % 3 ? 'camp' : 'kitchen' });
+        k++;
+      }
+    }
+    // allotments and storage
+    for (const [t, off] of [[56, 14], [60, -16], [-64, 16]]) { const [x, z] = at(t, off); L.s('gardenBed', x, z, 0); }
+    for (const [t, off] of [[-58, -22], [48, 22]]) { const [x, z] = at(t, off); L.s('woodPile', x, z, 0); }
+    { const [x, z] = at(66, -2); L.s('container', x, z + 18, 1, 'corrugated_blue', 'camp'); }
+    // people: townsfolk wandering the market and square
+    const names = ['Mara', 'Tomas', 'Ilse', 'Davor', 'Petra', 'Oskar', 'Lena', 'Viktor'];
+    names.forEach((name, i) => {
+      const [x, z] = at(-34 + i * 7, i % 2 ? 5 : -5);
+      L.npc(x, z, { kind: 'civilian', name, seed: i, area: { x: rx, z: rz, dx, dz, nx, nz, len: 46, wid: 16 } });
+    });
+    // defences
+    L.s('guardTower', -100, -92, 0, { profile: 'camp', roofMat: 'roof' });
+    L.s('guardTower', 100, 92, 2, { profile: 'camp', roofMat: 'roof' });
+    L.s('guardTower', 100, -92, 3, { profile: 'camp', roofMat: 'roof' });
+    L.s('guardTower', -100, 92, 1, { profile: 'camp', roofMat: 'roof' });
+    L.perimeter(-108, -100, 108, 100, 'palisade', [{ side: 'S', at: 0, w: 8 }, { side: 'N', at: 10, w: 6 }]);
+    for (const [x, z, t, sc] of [[-80, 60, 'broadleaf', 1.0], [84, -60, 'birch', 0.95], [78, 70, 'broadleaf', 1.1], [-86, -66, 'birch', 0.9]]) L.tree(x, z, t, sc);
   },
   dam(L) {
     L.sign(-60, 70, 0, L.poi.name);

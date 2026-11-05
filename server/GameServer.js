@@ -58,10 +58,12 @@ export class GameServer {
     g.ballistics.fire = (shot) => {
       const sh = shot.shooter;
       if (sh && !shot.visual) {
-        let b = this.shotBuf.get(sh);
+        const key = shot.sentry ? `${sh.id}:sentry:${shot.ox | 0},${shot.oz | 0}` : sh;
+        let b = this.shotBuf.get(key);
         if (!b) {
-          b = { s: sh.id, o: [r2(shot.ox), r2(shot.oy), r2(shot.oz)], d: [], w: shot.weapon.id, at: sh.isAI ? (sh.weapon?.data?.attach || null) : (shot.attach || null), tr: 0 };
-          this.shotBuf.set(sh, b);
+          b = { s: sh.id, o: [r2(shot.ox), r2(shot.oy), r2(shot.oz)], d: [], w: shot.weapon.id, at: sh.isAI ? (sh.weapon?.data?.attach || null) : (shot.attach || null), tr: 0, sh };
+          if (shot.sentry) b.sentry = 1;
+          this.shotBuf.set(key, b);
         }
         if (b.d.length < 12) b.d.push([r3(shot.dx), r3(shot.dy), r3(shot.dz)]);
         if (shot.tracer) b.tr = 1;
@@ -209,19 +211,27 @@ export class GameServer {
     if (!w || w.class === 'melee') return;
     const [ox, oy, oz] = m.o.map(Number);
     if (![ox, oy, oz].every(Number.isFinite)) return;
-    // the muzzle has to be where the player is
-    if (Math.hypot(ox - p.pos.x, oz - p.pos.z) > 3 || Math.abs(oy - (p.pos.y + 1.2)) > 2.5) { p.rejected = (p.rejected || 0) + 1; return; }
-    // fire rate (lenient: network jitter bunches shots together)
-    const minGap = Math.min(fireInterval(w), w.cycleTime || 0) * 0.45;
-    if (g.time - p.lastFireT < minGap) return;
-    p.lastFireT = g.time;
+    if (m.sentry) {
+      // a sentry gun on the player's base: anywhere near the player, at most ~20 shots a second in total
+      if (Math.hypot(ox - p.pos.x, oz - p.pos.z) > 260) { p.rejected = (p.rejected || 0) + 1; return; }
+      p.sentryShots = (p.sentryShots || 0) * Math.exp(-(g.time - (p.sentryT || 0))) + 1;
+      p.sentryT = g.time;
+      if (p.sentryShots > 20) return;
+    } else {
+      // the muzzle has to be where the player is
+      if (Math.hypot(ox - p.pos.x, oz - p.pos.z) > 3 || Math.abs(oy - (p.pos.y + 1.2)) > 2.5) { p.rejected = (p.rejected || 0) + 1; return; }
+      // fire rate (lenient: network jitter bunches shots together)
+      const minGap = Math.min(fireInterval(w), w.cycleTime || 0) * 0.45;
+      if (g.time - p.lastFireT < minGap) return;
+      p.lastFireT = g.time;
+    }
     const pellets = Math.min(m.d.length, w.pellets || 1);
     for (let i = 0; i < pellets; i++) {
       let [dx, dy, dz] = (m.d[i] || []).map(Number);
       const L = Math.hypot(dx, dy, dz);
       if (!(L > 0.5 && L < 1.5)) continue;
       dx /= L; dy /= L; dz /= L;
-      g.ballistics.fire({ ox, oy, oz, dx, dy, dz, weapon: w, shooter: p, damageMul: w.damageMul, tracer: !!m.tr, attach: m.at || null });
+      g.ballistics.fire({ ox, oy, oz, dx, dy, dz, weapon: w, shooter: p, damageMul: w.damageMul, tracer: !!m.tr, attach: m.at || null, sentry: !!m.sentry });
     }
     p.lastShot = g.time;
     p.shots = (p.shots || 0) + 1;
@@ -284,12 +294,13 @@ export class GameServer {
     const g = this.game;
     g.step(dt);
     // gunfire heard and seen by everyone near it
-    for (const [sh, b] of this.shotBuf) {
+    for (const b of this.shotBuf.values()) {
+      const { sh, ...msg } = b;
       for (const c of this.conns) {
         const p = c.player;
         if (!p || !p.joined || p === sh) continue;
         if (Math.hypot(p.pos.x - b.o[0], p.pos.z - b.o[2]) > SHOT_RADIUS) continue;
-        c.send({ t: 'shot', ...b });
+        c.send({ t: 'shot', ...msg });
       }
     }
     this.shotBuf.clear();

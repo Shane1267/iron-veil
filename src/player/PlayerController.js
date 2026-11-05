@@ -132,7 +132,7 @@ export class PlayerController {
     const wantSprint = this.enabled && inp.is('sprint') && fz < 0 && ctx.canSprint && !ctx.ads && this.stance !== 'prone';
     if (wantSprint && this.stance === 'crouch' && this.grounded) this.setStance('stand');
     this.sprinting = wantSprint && len > 0 && this.grounded;
-    let speed = (this.sprinting ? st.sprint : st.speed) * this.speedMul;
+    let speed = (this.sprinting ? st.sprint : st.speed) * this.speedMul * (this.debugSpeed || 1);
     if (ctx.ads) speed *= this.stance === 'stand' ? 0.6 : 0.8;
     if (fz > 0) speed *= 0.82; // backpedal slower
     speed *= 1 - clamp(ctx.encumbrance - 1, 0, 0.6) * 0.6; // overweight

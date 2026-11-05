@@ -73,15 +73,41 @@ linking it from another site (such as Zite) and the limits of this first version
 | Weapon slots · holster | 1 2 3 4 · X |
 | Quick items | 5 6 7 8 |
 | Interact / loot / open door / enter vehicle | E |
-| Secondary action (lock, refuel, fill water) | F |
-| Flashlight · inspect weapon | T · Y |
+| Secondary action (lock, refuel, fill water) · climb a ladder to the other end | F |
+| Flashlight (works unarmed too) · inspect weapon | T · Y |
 | Inventory · map · build · crafting · journal | Tab or I · M · G · H · J |
 | Rotate building piece | Q |
 | Map marker at your position | N |
-| Vehicle: throttle/brake/steer · handbrake · lights · exit | W/S/A/D · Space · L · E |
+| Vehicle: throttle/brake/steer · handbrake · lights (off → low → high) · exit | W/S/A/D · Space · L · E |
+| Chat (online) | Enter |
+| Debug menu (code 3209) | hold Tab, press 3 |
 | Pause | Esc |
 
 Click the game view to capture the mouse. Releasing the pointer (Esc) opens the pause menu.
+
+## Riverside, traders and base production
+
+* **Riverside Settlement** (south-west, on the highway) is the biggest place in Vesper: a market street
+  with six traders behind their stalls, townsfolk you can talk to, a hall, clinic, workshop, homes and a
+  palisade with four towers. Shooting its people turns the Settlement Guard against you.
+* **Trading is barter.** Traders pay half value for what you sell and charge full value; good standing
+  with the Guard lowers prices. Cigarettes and watches are good trade goods. Stock refills daily.
+  The gunsmith repairs weapons, the medic treats wounds, the quartermaster posts three delivery jobs a
+  day, and the elder tells you where places are (marked on your map).
+* **New base pieces** (G): **Sentry Gun** — load a firearm and its ammunition; it fires on hostile
+  people it can see, reloads from storage, and goes quiet when empty. **Lumber Yard** (20 planks per
+  in-game day) and **Scrap Workshop** (5 scrap metal per day) produce while you are away; collect from
+  them with E. **Fuel Pump** — refills an empty jerrycan (up to 3 per day, stores 6).
+
+## Debug menu
+
+Hold **Tab** and press **3**, enter **3209** on the keypad. ↑/↓ move, Enter selects, ←/→ change values,
+Backspace goes back or closes; the number pad works too (8/2/4/6, 5, 0). Pages: Teleport (waypoint,
+any landmark, markers, base, vehicle), Player (heal, god mode, unlimited stamina/ammo/carry, no
+hunger, AI ignore you, max skills), Items (every item by category, kits), World (time, weather, reveal
+map, remove hostiles, spawn squads, restock containers), Base (free building, repairs, produce now,
+refill sentries), Vehicles, Debug (FPS, coordinates, speed). The code is only a lock against opening
+it by accident — anyone reading the source can see it. Online, time, weather and AI options are off.
 
 ## First 20 minutes (vertical slice)
 

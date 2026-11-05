@@ -149,7 +149,7 @@ function buildBodyGeometry(look) {
 const weaponGeoCache = new Map();
 let weaponMat = null;
 /** Merge a weapon model into one vertex-coloured geometry for NPC use. */
-function npcWeapon(weaponId, attach, materials) {
+export function npcWeapon(weaponId, attach, materials) {
   const key = weaponId + JSON.stringify(attach || {});
   if (!weaponGeoCache.has(key)) {
     const parts = buildWeaponModel(weaponId, attach || {}, materials, { detail: 'low' });

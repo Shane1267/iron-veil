@@ -8,7 +8,7 @@ One server runs one shared world. Everyone connected to it plays in the same Ves
 |---|---|
 | Every AI soldier, raider and survivor: where they are, what they see and hear, who they shoot | Your health, injuries, hunger, thirst |
 | Gunfights: your shots are re-run on the server with the real ballistics, so AI react to them exactly as in single player | Your inventory, equipment, skills, map knowledge |
-| Bodies and what is on them (two players cannot take the same item) | Containers in buildings (each player rolls their own loot) |
+| Bodies and what is on them (two players cannot take the same item) | Containers in buildings (each player rolls their own loot) · traders and their stock |
 | Doors in buildings | Your base, base storage and bedroll |
 | Time of day, weather, how each faction feels about players | Vehicles |
 | Chat (press **Enter** in game) | |
@@ -101,4 +101,6 @@ within 1.1 km.
 * Containers, bases, base raids and vehicles are per player. Other players see you walking, not driving.
   Base raids and roaming world events (patrols, convoys, supply drops) are off on servers for now.
 * Bridges are not in the server's world, so AI do not cross rivers on bridges.
+* Sentry guns work online (their shots are re-run on the server and hurt the shared AI), but other players
+  do not see your base or the sentry itself, and AI hit by a sentry blame you, not the gun.
 * The shared world is not saved; it resets when the server restarts (see free plan limits).

@@ -327,3 +327,66 @@ body.photo .click-to-play, body.photo .notify, body.photo .notifications { displ
 .net-chat-log .line.me { color: #d9e8c4; }
 .net-chat-log .line.fade { opacity: 0; }
 .net-chat-input { position: fixed; left: 24px; bottom: 112px; width: min(440px, 60vw); z-index: 31; padding: 8px 10px; background: rgba(8, 10, 8, 0.85); color: #f0ecdf; border: 1px solid rgba(220, 200, 150, 0.4); border-radius: 3px; font: 14px system-ui, -apple-system, "Segoe UI", sans-serif; }
+
+/* ---------------------------------------------------------------- debug menu */
+.dbg { position: fixed; left: 28px; top: 28px; width: 380px; z-index: 60; font: 14px/1.2 system-ui, -apple-system, "Segoe UI", sans-serif; color: #eee; box-shadow: 0 8px 30px rgba(0,0,0,0.55); user-select: none; }
+.dbg-banner { height: 82px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #5c1414 0%, #8f1f1f 45%, #3a0c0c 100%); border-bottom: 2px solid #c9a24a; position: relative; overflow: hidden; }
+.dbg-banner::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(-45deg, rgba(0,0,0,0.12) 0 6px, transparent 6px 14px); }
+.dbg-title { position: relative; font: 700 34px/1 Georgia, "Times New Roman", serif; letter-spacing: 0.12em; color: #f3e2b4; text-shadow: 0 2px 0 #2a0606, 0 0 18px rgba(255, 200, 120, 0.35); }
+.dbg-sub { position: relative; margin-top: 4px; font-size: 11px; letter-spacing: 0.4em; text-transform: uppercase; color: #e8c98a; }
+.dbg-head { display: flex; justify-content: space-between; padding: 7px 12px; background: #111; color: #c9a24a; font-weight: 700; font-size: 12px; letter-spacing: 0.08em; }
+.dbg-list { background: rgba(12, 12, 12, 0.88); }
+.dbg-row { display: flex; justify-content: space-between; align-items: center; height: 34px; padding: 0 12px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.dbg-row.sel { background: #e8e3d4; color: #111; font-weight: 600; }
+.dbg-row.off { opacity: 0.45; }
+.dbg-r { font-weight: 700; }
+.dbg-r.dim { font-weight: 400; opacity: 0.7; font-size: 12px; }
+.dbg-tog { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 2px; background: #5a2020; color: #f0d0d0; }
+.dbg-tog.on { background: #2f6a32; color: #dff5d8; }
+.dbg-row.sel .dbg-tog { box-shadow: 0 0 0 1px #111; }
+.dbg-foot { height: 18px; text-align: center; font-size: 10px; color: #c9a24a; background: #111; line-height: 18px; }
+.dbg-desc { padding: 9px 12px; background: rgba(12, 12, 12, 0.92); border-top: 2px solid #c9a24a; font-size: 13px; color: #ddd; }
+.dbg-coords { position: fixed; left: 50%; top: 64px; transform: translateX(-50%); z-index: 40; font: 600 13px ui-monospace, Menlo, Consolas, monospace; color: #f0f0d8; text-shadow: 0 1px 2px #000; pointer-events: none; }
+.dbg-pad { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 260px; padding: 18px; z-index: 70; background: linear-gradient(#2b2d2a, #1b1c1a); border: 1px solid #555; border-radius: 6px; box-shadow: 0 0 0 4px #111, 0 18px 40px rgba(0,0,0,0.6); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #ddd; }
+.dbg-pad.shake { animation: dbgshake 0.35s; }
+@keyframes dbgshake { 20%, 60% { transform: translate(calc(-50% - 8px), -50%); } 40%, 80% { transform: translate(calc(-50% + 8px), -50%); } }
+.dbg-pad-head { text-align: center; font-size: 11px; letter-spacing: 0.35em; color: #d8a040; margin-bottom: 10px; }
+.dbg-pad-display { height: 46px; margin-bottom: 8px; background: #0d1a0f; border: 1px solid #000; border-radius: 3px; box-shadow: inset 0 2px 6px #000; color: #7dff8c; font: 700 30px/46px ui-monospace, Menlo, Consolas, monospace; text-align: center; letter-spacing: 0.3em; text-shadow: 0 0 8px rgba(125, 255, 140, 0.6); }
+.dbg-pad-msg { height: 18px; text-align: center; font-size: 12px; letter-spacing: 0.1em; color: #aaa; margin-bottom: 10px; }
+.dbg-pad-msg.bad { color: #ff6a5a; font-weight: 700; }
+.dbg-pad-msg.good { color: #7dff8c; font-weight: 700; }
+.dbg-pad-keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.dbg-pad-key { height: 48px; border: 1px solid #000; border-radius: 4px; background: linear-gradient(#4a4c48, #363834); color: #f0f0e8; font: 700 20px system-ui, -apple-system, "Segoe UI", sans-serif; cursor: pointer; box-shadow: 0 3px 0 #111; }
+.dbg-pad-key:active { transform: translateY(2px); box-shadow: 0 1px 0 #111; }
+.dbg-pad-key.ok { background: linear-gradient(#3e6a3c, #2c4e2a); font-size: 15px; }
+.dbg-pad-key.clr { background: linear-gradient(#6a3c3c, #4e2a2a); font-size: 15px; }
+.dbg-pad-foot { margin-top: 12px; text-align: center; font-size: 10.5px; color: #888; }
+
+/* ---------------------------------------------------------------- trade */
+.trade-screen { display: flex; align-items: center; justify-content: center; }
+.panel.trade { width: min(1120px, 96vw); max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
+.trade-greet { padding: 6px 16px 10px; font-style: italic; opacity: 0.8; font-size: 13.5px; }
+.trade-tabs { display: flex; gap: 6px; padding: 0 16px 10px; }
+.trade-body { display: grid; grid-template-columns: 1fr 0.9fr 1fr; gap: 12px; padding: 0 16px 12px; min-height: 0; overflow: hidden; }
+.trade-col { display: flex; flex-direction: column; gap: 3px; overflow-y: auto; max-height: 62vh; padding-right: 4px; }
+.trade-col.table { background: rgba(0, 0, 0, 0.22); border: 1px solid rgba(220, 200, 150, 0.15); border-radius: 4px; padding: 8px; }
+.trade-col .ttl { display: flex; justify-content: space-between; font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.75; padding: 6px 2px 4px; }
+.trade-row { display: grid; grid-template-columns: 36px 1fr auto 46px; align-items: center; gap: 8px; padding: 3px 6px; border-radius: 3px; cursor: pointer; background: rgba(255, 255, 255, 0.03); font-size: 13.5px; }
+.trade-row:hover { background: rgba(217, 164, 65, 0.16); }
+.trade-row.dim { opacity: 0.45; cursor: default; }
+.trade-row .ic { width: 34px; height: 34px; object-fit: contain; }
+.trade-row .svc-ic { display: flex; align-items: center; justify-content: center; font-weight: 700; color: #9fd08a; border: 1px solid rgba(159, 208, 138, 0.4); border-radius: 3px; }
+.trade-row .nm small { opacity: 0.6; font-size: 11.5px; }
+.trade-row .q { opacity: 0.75; font-size: 12px; }
+.trade-row .pr { text-align: right; color: var(--amber, #d9a441); font-weight: 600; }
+.trade-bal { margin: 10px 0 6px; text-align: center; font-weight: 600; }
+.trade-bal.ok { color: #9fd08a; }
+.trade-bal.bad { color: #e08a6a; }
+.trade-empty { opacity: 0.5; font-size: 13px; padding: 8px; }
+.trade-jobs { padding: 0 16px 14px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; max-height: 62vh; }
+.trade-job { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; padding: 8px; background: rgba(255, 255, 255, 0.04); border-radius: 4px; }
+.trade-job.done { opacity: 0.55; }
+.trade-job .ic { width: 42px; height: 42px; object-fit: contain; }
+.trade-job .jt { display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; }
+.trade-job .jt small { opacity: 0.65; }
+.inv-foot .hint { font-size: 12px; opacity: 0.6; }

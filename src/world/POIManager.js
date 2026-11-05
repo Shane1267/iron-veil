@@ -161,7 +161,7 @@ export class POIManager {
     const B = new BoxBuilder(this.materials);
     const ctx = {
       physics: this.physics, owner: `poi:${poi.id}`, colliders: [], doors: [], glass: [], containers: [], spots: [], ladders: [], clearZones: [],
-      lights: [], fires: [], pumps: [], signs: [], waterDiscs: [], radios: [], buildings: [], trees: [],
+      lights: [], fires: [], pumps: [], signs: [], waterDiscs: [], radios: [], buildings: [], trees: [], npcs: [],
     };
     const S = new StructureBuilder(B, ctx, rng);
     const commands = [];
@@ -270,7 +270,7 @@ export class POIManager {
     this.scene.add(group);
     const rt = {
       poi, group, doors, glassMesh, glass: ctx.glass, colliders: ctx.colliders, interactables: inter, spots: ctx.spots, containers: ctx.containers,
-      lights: ctx.lights, fires: ctx.fires, ladders: ctx.ladders, buildings: ctx.buildings,
+      lights: ctx.lights, fires: ctx.fires, ladders: ctx.ladders, buildings: ctx.buildings, npcs: ctx.npcs,
     };
     this.active.set(poi.id, rt);
     bus.emit('poi:built', rt);
@@ -411,6 +411,31 @@ export class POIManager {
           }
         });
       },
+      /** The road running closest to the centre: point, unit direction and normal (world). */
+      mainRoad() {
+        let best = null, bd = Infinity;
+        for (const road of world.roads) {
+          if (road.type === 'rail') continue;
+          for (let i = 0; i < road.points.length - 1; i++) {
+            const [ax, az] = road.points[i], [bx, bz] = road.points[i + 1];
+            const vx = bx - ax, vz = bz - az, l2 = vx * vx + vz * vz;
+            const t = Math.max(0, Math.min(1, ((px - ax) * vx + (pz - az) * vz) / l2));
+            const cx = ax + vx * t, cz = az + vz * t, d = Math.hypot(cx - px, cz - pz);
+            if (d < bd) { const l = Math.sqrt(l2); bd = d; best = { x: cx - px, z: cz - pz, dx: vx / l, dz: vz / l, nx: -vz / l, nz: vx / l, d }; }
+          }
+        }
+        return best;
+      },
+      /** Quarter rotation whose front (+z local) points along (tx, tz). */
+      faceRot(tx, tz) {
+        let rot = 0, bestDot = -2;
+        for (let r = 0; r < 4; r++) {
+          const dot = Math.round(Math.sin((r * Math.PI) / 2)) * tx + Math.round(Math.cos((r * Math.PI) / 2)) * tz;
+          if (dot > bestDot) { bestDot = dot; rot = r; }
+        }
+        return rot;
+      },
+      npc(lx, lz, data) { commands.push(() => { const x = px + lx, z = pz + lz; ctx.npcs.push({ ...data, x, y: gy(x, z), z }); }); },
       sign(lx, lz, rot, text) { const x = px + lx, z = pz + lz; commands.push(() => S.sign(x, gy(x, z), z, rot, text)); },
       radio(lx, lz) { commands.push(() => { const x = px + lx, z = pz + lz; ctx.radios.push({ x, y: gy(x, z) + 1.1, z }); }); },
       perimeter(x0, z0, x1, z1, type, gates = []) {

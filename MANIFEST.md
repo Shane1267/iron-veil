@@ -38,7 +38,37 @@ Persistent record of project state. Update this file whenever a system changes s
 | Saves | Done | core/SaveManager.js | IndexedDB + backup + validation; AI/corpses not saved |
 | Objectives (vertical slice) | Done | core/Objectives.js | arm → loot → materials → build → explore |
 | Progression & journal | Done | player/Player.js | 8 skills, lore pages |
+| Debug menu, traders, sentries, farms | Done | ui/DebugMenu.js, npc/*, basebuilding/Sentry.js | See 'Player suggestions pass' |
 | Online co-op | Partial (stage 1) | server/*, net/*, docs/ONLINE.md, render.yaml | Shared server-run AI, gunfights, bodies, doors, time, weather, factions, chat; client-trusted movement, no lag compensation; containers/bases/vehicles per player; no world events or raids on servers; shared world not persisted |
+
+## Player suggestions pass (2026-11-05)
+* **Debug menu** (`ui/DebugMenu.js`): Tab+3 (detected on key-down so a quick tap works; Tab alone opens
+  the inventory on release), keypad with code 3209 (once per session), list menu with banner, page title,
+  counter, highlighted row, ‹ value › pickers, description line; works while playing. Teleport streams
+  the destination in first. Hooks: `PlayerSurvival.invulnerable`, `PlayerController.debugSpeed`,
+  `Game.carryCapacity`, `BaseSystem` free building, `AIAgent.isEnemy` (AI ignore you).
+* **Sentry gun** (`basebuilding/Sentry.js`): base piece with 6-slot storage; uses the first firearm
+  and its ammunition, real ballistics/fire rate/reload, line-of-fire check, leads moving targets, bursts,
+  idle sweep; AI blame and shoot back at it (damages the piece). Online its shots go to the server.
+* **Production**: Lumber Yard 20 planks/day, Scrap Workshop 5 scrap/day, Fuel Pump 3 jerrycans/day
+  (stores 6). Output is computed from in-game time elapsed, so it accrues while you are away; saved.
+* **Riverside** rebuilt as the largest settlement (radius 165): market street on the highway with six
+  trader stalls (`traderStall` structure), townsfolk, hall, clinic, workshop, homes, 4 towers, palisade,
+  9 militia. `npc/NPCSystem.js` (traders + wandering townsfolk; hittable, cannot die; shooting them angers
+  the Guard) and `ui/TradeUI.js` (barter table, services: treatment, weapon repair; daily job board;
+  rumours reveal two locations a day). Data in `data/traders.json`. Trader state saved.
+* **Lights**: vehicle headlights use one shared pair of real spot lights (the car you drive or the
+  nearest lit one) instead of one light per vehicle; lenses, glow sprites, tail/brake lights and faint
+  beam cones per car; low/high beam on L; convoys light up at night. Flashlight: brighter, soft-edged
+  beam pattern and its own shadow map on medium+ presets (shadow pass only while lit), weapon lights
+  tighter, weak batteries dim and flicker, remote players show a light cone. **Fixed**: the handheld
+  flashlight did nothing while unarmed (light update returned early).
+* **Ladders**: press F at the foot or top of any ladder to go straight to the other end.
+* Tests: `tests/e2e/features.mjs` — keypad (wrong and right code), menu navigation and teleport to
+  Riverside, six traders and eight townsfolk, a barter trade, job board, farms (20 planks, 5 scrap after
+  a day) and pump, ladder up/down, a sentry killing two raiders, low/high beams and flashlight at night,
+  save/load with sentry, farms and trader state: all 9 checks passed across two runs (lights in the
+  second run after the flashlight fix), 0 console errors. Unit 56/56; single-player regression 4/4.
 
 ## Online co-op, stage 1 (2026-11-05)
 Goal: friends play in one shared world, hosted for free (Render), reachable from the user's Zite site.

@@ -54,10 +54,11 @@ function buildVehicleMesh(t, materials) {
   // bumpers & lights
   B.box('metal_dark', 0, cl + 0.2, -L / 2, W * 1.02, 0.18, 0.12);
   B.box('metal_dark', 0, cl + 0.2, L / 2, W * 1.02, 0.18, 0.12);
-  B.box('emissive_lamp', W * 0.35, cl + 0.5, -L / 2 - 0.01, 0.22, 0.14, 0.03);
-  B.box('emissive_lamp', -W * 0.35, cl + 0.5, -L / 2 - 0.01, 0.22, 0.14, 0.03);
-  B.box('paint_red', W * 0.38, cl + 0.5, L / 2 + 0.01, 0.16, 0.12, 0.03);
-  B.box('paint_red', -W * 0.38, cl + 0.5, L / 2 + 0.01, 0.16, 0.12, 0.03);
+  // lamp housings (the lenses are separate meshes so they can light up)
+  for (const sx of [-1, 1]) {
+    B.box('metal_dark', sx * W * 0.35, cl + 0.5, -L / 2 + 0.02, 0.28, 0.2, 0.06);
+    B.box('metal_dark', sx * W * 0.38, cl + 0.5, L / 2 - 0.02, 0.2, 0.16, 0.06);
+  }
   const body = B.build();
   body.castShadow = true;
   body.receiveShadow = true;
@@ -83,7 +84,61 @@ function buildVehicleMesh(t, materials) {
     root.add(w);
     wheels.push(w);
   }
-  return { root, body, wheels, wheelRadius: wr, axle };
+  // lamps: lenses with their own materials, glow sprites and faint beam cones seen from outside
+  const lamps = { head: [], tail: [], glow: [], beams: [] };
+  const headMat = new THREE.MeshStandardMaterial({ color: 0xd8d4c8, emissive: 0xfff0d0, emissiveIntensity: 0, roughness: 0.15, metalness: 0.1 });
+  const tailMat = new THREE.MeshStandardMaterial({ color: 0x5a1010, emissive: 0xff2010, emissiveIntensity: 0, roughness: 0.3 });
+  const lensGeo = new THREE.BoxGeometry(0.22, 0.14, 0.03), tailGeo = new THREE.BoxGeometry(0.16, 0.12, 0.03);
+  for (const sx of [-1, 1]) {
+    const hl = new THREE.Mesh(lensGeo, headMat);
+    hl.position.set(sx * W * 0.35, cl + 0.5, -L / 2 - 0.015);
+    const tl = new THREE.Mesh(tailGeo, tailMat);
+    tl.position.set(sx * W * 0.38, cl + 0.5, L / 2 + 0.015);
+    const glow = new THREE.Sprite(glowMaterial());
+    glow.position.set(sx * W * 0.35, cl + 0.5, -L / 2 - 0.12);
+    glow.scale.set(0.9, 0.9, 1);
+    glow.visible = false;
+    const beam = new THREE.Mesh(beamGeometry(), beamMaterial());
+    beam.position.set(sx * W * 0.35, cl + 0.5, -L / 2 - 0.05);
+    beam.rotation.x = -0.06;
+    beam.visible = false;
+    beam.renderOrder = 6;
+    root.add(hl, tl, glow, beam);
+    lamps.head.push(hl); lamps.tail.push(tl); lamps.glow.push(glow); lamps.beams.push(beam);
+  }
+  lamps.headMat = headMat;
+  lamps.tailMat = tailMat;
+  return { root, body, wheels, wheelRadius: wr, axle, lamps };
+}
+
+let _glowMat = null, _beamGeo = null, _beamMat = null;
+function glowMaterial() {
+  if (_glowMat) return _glowMat;
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const x = c.getContext('2d');
+  const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, 'rgba(255,248,230,1)'); gr.addColorStop(0.2, 'rgba(255,235,200,0.55)'); gr.addColorStop(1, 'rgba(255,220,170,0)');
+  x.fillStyle = gr; x.fillRect(0, 0, 64, 64);
+  const tex = new THREE.CanvasTexture(c);
+  _glowMat = new THREE.SpriteMaterial({ map: tex, color: 0xffffff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+  return _glowMat;
+}
+function beamGeometry() {
+  if (_beamGeo) return _beamGeo;
+  // open cone along -z, brighter near the lamp (vertex alpha in colour)
+  const g = new THREE.CylinderGeometry(0.1, 2.2, 12, 18, 4, true);
+  g.rotateX(-Math.PI / 2);
+  g.translate(0, 0, -6);
+  const pos = g.attributes.position, col = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) { const k = Math.max(0, 1 + pos.getZ(i) / 12); col[i * 3] = col[i * 3 + 1] = col[i * 3 + 2] = k * k; }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  _beamGeo = g;
+  return g;
+}
+function beamMaterial() {
+  if (!_beamMat) _beamMat = new THREE.MeshBasicMaterial({ color: 0xfff0d0, vertexColors: true, transparent: true, opacity: 0.022, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.FrontSide });
+  return _beamMat;
 }
 
 export class Vehicle {
@@ -118,8 +173,7 @@ export class Vehicle {
     this.storage = this.game.loot.get(sid) || this.game.loot.register(sid, new Inventory(this.t.storage, `${this.t.name} storage`), { meta: { vehicle: true }, transient: this.transient });
     this.interact = this.game.interactables.add({ id: `vehi:${this.id}`, kind: 'vehicle', x: this.pos.x, y: this.pos.y + 1, z: this.pos.z, radius: Math.max(this.t.dims[2] * 0.5, 2.2), label: () => this.label(), data: { vehicle: this } });
     this.trunk = this.game.interactables.add({ id: `veht:${this.id}`, kind: 'container', x: this.pos.x, y: this.pos.y + 1, z: this.pos.z, radius: 1.4, label: 'Open storage', priority: 1, data: { containerId: sid, name: `${this.t.name} storage`, custom: true } });
-    this.light = new THREE.SpotLight(0xfff0d0, 0, 60, 0.5, 0.5, 1.5);
-    this.game.renderer.scene.add(this.light, this.light.target);
+    this.braking = false;
     this.wheelSpin = 0;
     this.aiRoute = null;
     this._sync();
@@ -193,6 +247,7 @@ export class Vehicle {
       if (this.driver === 'player') bus.emit('notify', { text: 'Engine flooded', kind: 'warn' });
     }
     let throttle = controls?.throttle || 0;
+    this.braking = !!controls?.brake || (throttle < 0 && this.speed > 0.5);
     const steerIn = controls?.steer || 0;
     if (!this.engineOn) throttle = 0;
     const maxSteer = 0.6 * t.steer / 0.55 * (1 - Math.min(0.65, Math.abs(this.speed) / t.maxSpeed * 0.7));
@@ -296,11 +351,14 @@ export class Vehicle {
     const f = this.forward;
     const L = this.t.dims[2];
     this.game.interactables.move(this.trunk, this.pos.x - f.x * (L / 2 + 0.3), this.pos.y + 1.0, this.pos.z - f.z * (L / 2 + 0.3));
-    // headlights
-    this.light.intensity = this.lightsOn && !this.destroyed ? 30 : 0;
-    this.light.position.set(this.pos.x + f.x * (L / 2), this.pos.y + 1.0, this.pos.z + f.z * (L / 2));
-    this.light.target.position.set(this.pos.x + f.x * (L / 2 + 20), this.pos.y - 1, this.pos.z + f.z * (L / 2 + 20));
-    this.light.target.updateMatrixWorld();
+    // lamps (the light itself comes from the shared headlight pair in VehicleSystem)
+    const on = this.lightsOn && !this.destroyed;
+    const lp = m.lamps;
+    lp.headMat.emissiveIntensity = on ? (this.highBeam ? 6 : 4) : 0;
+    lp.tailMat.emissiveIntensity = on ? (this.braking ? 5 : 1.6) : this.braking && this.engineOn ? 4 : 0;
+    for (const g of lp.glow) { g.visible = on; g.scale.setScalar(this.highBeam ? 1.25 : 0.9); }
+    const inside = this.sys.current === this;
+    for (const b of lp.beams) { b.visible = on && !inside; b.scale.set(1, 1, this.highBeam ? 1.5 : 1); b.rotation.x = this.highBeam ? -0.02 : -0.07; }
   }
 
   seatPosition(out = new THREE.Vector3()) {
@@ -312,7 +370,7 @@ export class Vehicle {
   }
 
   dispose() {
-    this.game.renderer.scene.remove(this.mesh.root, this.light, this.light.target);
+    this.game.renderer.scene.remove(this.mesh.root);
     for (const c of this.colliders) this.game.physics.remove(c);
     this.game.interactables.remove(this.interact);
     this.game.interactables.remove(this.trunk);
@@ -330,6 +388,51 @@ export class VehicleSystem {
     this.current = null;
     this.camYaw = 0;
     this.camPitch = 0;
+    // two real headlights, shared: they follow whichever lit vehicle matters most (the one you
+    // drive, else the nearest lit one), so a dozen parked cars cost no extra lights
+    this.heads = [0, 1].map(() => {
+      const l = new THREE.SpotLight(0xfff0d8, 0, 70, 0.42, 0.55, 1.35);
+      game.renderer.scene.add(l, l.target);
+      return l;
+    });
+  }
+
+  /** Off → low beam → high beam → off. */
+  cycleLights(v) {
+    if (!v.lightsOn) { v.lightsOn = true; v.highBeam = false; }
+    else if (!v.highBeam) v.highBeam = true;
+    else { v.lightsOn = false; v.highBeam = false; }
+    bus.emit('sound', { type: 'click', ui: true });
+  }
+
+  _updateHeadlights() {
+    const cam = this.game.renderer.camera.position;
+    let best = this.current?.lightsOn && !this.current.destroyed ? this.current : null;
+    if (!best) {
+      let bd = 160;
+      for (const v of this.vehicles.values()) {
+        if (!v.lightsOn || v.destroyed) continue;
+        const d = Math.hypot(v.pos.x - cam.x, v.pos.z - cam.z);
+        if (d < bd) { bd = d; best = v; }
+      }
+    }
+    const _p = new THREE.Vector3();
+    this.heads.forEach((l, i) => {
+      if (!best) { l.intensity = 0; return; }
+      const lamp = best.mesh.lamps.head[i];
+      lamp.getWorldPosition(_p);
+      const f = best.forward;
+      const hi = best.highBeam;
+      l.intensity = hi ? 110 : 45;
+      l.distance = hi ? 140 : 75;
+      l.angle = hi ? 0.36 : 0.5;
+      l.penumbra = hi ? 0.45 : 0.6;
+      l.position.copy(_p);
+      const reach = hi ? 60 : 22;
+      const side = (i === 0 ? -1 : 1) * 0.04;
+      l.target.position.set(_p.x + (f.x - f.z * side) * reach, _p.y - (hi ? 0.6 : 2.2), _p.z + (f.z + f.x * side) * reach);
+      l.target.updateMatrixWorld();
+    });
   }
 
   spawnDefaults() {
@@ -426,7 +529,7 @@ export class VehicleSystem {
           steer: (input.is('left') ? 1 : 0) - (input.is('right') ? 1 : 0),
           brake: input.is('jump'),
         };
-        if (!input.uiCapture && input.hit('vehLights')) v.lightsOn = !v.lightsOn;
+        if (!input.uiCapture && input.hit('vehLights')) this.cycleLights(v);
         v.update(dt, controls);
         // camera: driver's seat with free look
         if (mouse) {
@@ -447,6 +550,7 @@ export class VehicleSystem {
         v.update(dt, {});
       }
     }
+    this._updateHeadlights();
   }
 
   _aiDrive(v, dt) {
@@ -462,6 +566,7 @@ export class VehicleSystem {
     const steer = clamp(diff * 2.2, -1, 1);
     const throttle = Math.abs(v.speed) < (route.speed || 11) * (1 - Math.min(0.6, Math.abs(diff))) ? 0.8 : 0;
     v.engineOn = true;
+    v.lightsOn = (this.game.lighting?.nightFactor || 0) > 0.45; // convoys drive with lights at night
     v.update(dt, { throttle, steer });
   }
 

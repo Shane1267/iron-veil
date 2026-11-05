@@ -61,9 +61,21 @@ export class WeaponController {
     this.holdingBreath = false;
 
     // weapon / flashlight spot light in the world scene (always present, intensity toggled)
-    this.spot = new THREE.SpotLight(0xfff2dc, 0, 55, 0.38, 0.45, 1.6);
-    this.spot.castShadow = false;
+    // flashlight / weapon light: a focused beam with a soft rim (light cookie) and, on presets
+    // with shadows, its own small shadow map so walls and doorframes cut the beam
+    this.spot = new THREE.SpotLight(0xfff1dc, 0, 60, 0.42, 0.5, 1.35);
+    const shadows = (game.settings.get('shadows') || 0) >= 2 && !game.settings.get('lite');
+    this.spot.castShadow = shadows;
+    if (shadows) {
+      this.spot.shadow.mapSize.set(512, 512);
+      this.spot.shadow.camera.near = 0.3;
+      this.spot.shadow.camera.far = 45;
+      this.spot.shadow.bias = -0.0006;
+      this.spot.shadow.normalBias = 0.02;
+      this.spot.map = flashlightCookie();
+    }
     game.renderer.scene.add(this.spot, this.spot.target);
+    this.flicker = 0;
   }
 
   get ammoId() { return this.w?.ammo || null; }
@@ -193,7 +205,7 @@ export class WeaponController {
 
     // weapon selection
     if (canControl) {
-      for (let i = 0; i < 4; i++) if (input.hit(`slot${i + 1}`)) this.select(WEAPON_SLOTS[i]);
+      if (!input.down.has('Tab')) for (let i = 0; i < 4; i++) if (input.hit(`slot${i + 1}`)) this.select(WEAPON_SLOTS[i]); // Tab+3 opens the debug menu
       if (input.hit('holster')) this.select(null);
       if (ctx.wheel) {
         const eq = this.equipment();
@@ -221,7 +233,9 @@ export class WeaponController {
     this.adsT = clamp(this.adsT + (this.adsWanted ? adsRate : -adsRate * 1.3) * dt, 0, 1);
     this.sprintT = damp(this.sprintT, sprinting && this.state !== 'reload' ? 1 : 0, 9, dt);
 
-    if (!this.stack) { this._pose(dt, ctx); return; }
+    // the light works with or without a weapon in hand (handheld torch in the utility slot)
+    if (canControl && input.hit('light')) this.toggleLight();
+    if (!this.stack) { this._pose(dt, ctx); this._updateLight(dt, ctx); return; }
 
     // fire mode
     if (canControl && input.hit('firemode') && !this.isMelee && this.w.fireModes.length > 1) {
@@ -234,7 +248,6 @@ export class WeaponController {
       else this.startReload();
     }
     if (canControl && input.hit('inspect') && this.state === 'idle') { this.state = 'inspect'; this.stateT = 0; this.stateDur = 2.4; }
-    if (canControl && input.hit('light')) this.toggleLight();
 
     // reloading progress
     if (this.state === 'reload') this._updateReload(dt, ctx);
@@ -676,9 +689,21 @@ export class WeaponController {
       }
     }
     const on = !!src && this.lightOn;
-    this.spot.intensity = on ? 9 : 0;
+    // weapon lights are brighter and tighter than the handheld torch; a weak battery dims and flickers
+    const weaponLight = !!(this.w?.light && src?.stack === this.stack);
+    const charge = src ? (src.stack.data?.charge ?? 1) : 1;
+    let k = charge < 0.2 ? 0.45 + charge * 2.75 : 1;
+    if (charge < 0.12) {
+      this.flicker -= dt;
+      if (this.flicker <= 0) this.flicker = Math.random() < 0.15 ? -(0.03 + Math.random() * 0.12) : 0.05 + Math.random() * 0.4;
+      if (this.flicker < 0) k *= 0.25;
+    }
+    this.spot.intensity = on ? (weaponLight ? 30 : 22) * k : 0;
+    if (this.spot.castShadow) this.spot.shadow.autoUpdate = on; // no shadow pass while the light is off
+    this.spot.angle = weaponLight ? 0.34 : 0.44;
     this.spot.position.copy(cam.position);
-    const p = new THREE.Vector3(0.2, -0.15, 0);
+    // handheld: low on the left; weapon light: under the barrel on the right
+    const p = weaponLight ? new THREE.Vector3(0.12, -0.12, -0.3) : new THREE.Vector3(-0.22, -0.2, -0.1);
     this.spot.position.add(p.applyQuaternion(cam.quaternion));
     const fwd = new THREE.Vector3(0, 0, -10).applyQuaternion(cam.quaternion);
     this.spot.target.position.copy(cam.position).add(fwd);
@@ -689,6 +714,22 @@ export class WeaponController {
   get lightActive() {
     return this.spot.intensity > 0;
   }
+}
+
+let _cookie = null;
+/** Beam pattern: bright core, a faint ring, dim spill to the edge (like a reflector torch). */
+function flashlightCookie() {
+  if (_cookie || typeof document === 'undefined') return _cookie;
+  const N = 128, c = document.createElement('canvas');
+  c.width = c.height = N;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(N / 2, N / 2, 0, N / 2, N / 2, N / 2);
+  g.addColorStop(0, 'rgb(255,255,255)'); g.addColorStop(0.22, 'rgb(235,235,235)'); g.addColorStop(0.36, 'rgb(120,120,120)');
+  g.addColorStop(0.44, 'rgb(150,150,150)'); g.addColorStop(0.5, 'rgb(70,70,70)'); g.addColorStop(0.85, 'rgb(28,28,28)'); g.addColorStop(1, 'rgb(0,0,0)');
+  x.fillStyle = g; x.fillRect(0, 0, N, N);
+  _cookie = new THREE.CanvasTexture(c);
+  _cookie.colorSpace = THREE.SRGBColorSpace;
+  return _cookie;
 }
 
 function easeInOut(t) {

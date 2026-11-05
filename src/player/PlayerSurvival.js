@@ -133,7 +133,7 @@ export class PlayerSurvival {
   }
 
   damage(amount, opts = {}) {
-    if (this.dead || amount <= 0) return;
+    if (this.dead || amount <= 0 || this.invulnerable) return;
     this.health -= amount;
     if (!opts.silent) {
       this.lastDamage = performance.now();
