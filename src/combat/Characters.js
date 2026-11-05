@@ -62,7 +62,6 @@ export function humanoidHitTest(pos, yaw, stance, ox, oy, oz, dx, dy, dz, maxT) 
 export class Characters {
   constructor() {
     this.list = new Set();
-    this.pvp = true; // online servers can turn off player-vs-player hits
   }
 
   add(c) {
@@ -79,7 +78,6 @@ export class Characters {
     let best = null;
     for (const c of this.list) {
       if (!c.alive || c === ignore) continue;
-      if (!this.pvp && c.isPlayer && ignore?.isPlayer) continue;
       const p = c.pos;
       // quick reject on distance from ray start
       const rx = p.x - ox, rz = p.z - oz;

@@ -39,7 +39,15 @@ Persistent record of project state. Update this file whenever a system changes s
 | Objectives (vertical slice) | Done | core/Objectives.js | arm → loot → materials → build → explore |
 | Progression & journal | Done | player/Player.js | 8 skills, lore pages |
 | Debug menu, traders, sentries, farms | Done | ui/DebugMenu.js, npc/*, basebuilding/Sentry.js | See 'Player suggestions pass' |
-| Online co-op | Partial (stage 1) | server/*, net/*, docs/ONLINE.md, render.yaml | Shared server-run AI, gunfights, bodies, doors, time, weather, factions, chat; client-trusted movement, no lag compensation; containers/bases/vehicles per player; no world events or raids on servers; shared world not persisted |
+| Online co-op | Removed (2026-11-06) | — | Prototype removed at the user's request (hosting cost). Was: | Shared server-run AI, gunfights, bodies, doors, time, weather, factions, chat; client-trusted movement, no lag compensation; containers/bases/vehicles per player; no world events or raids on servers; shared world not persisted |
+
+## Online removed (2026-11-06)
+At the user's request (hosting credits) the online mode was taken out: `server/`, `src/net/`,
+`render.yaml`, `docs/ONLINE.md`, the online tests, the `ws` dependency, the server build scripts, the
+Play Online menu, chat and online branches in Game/UI/HUD/debug menu, the Ballistics `visual` flag,
+door network events and the PvP filter. Kept (useful in single player): AIManager `observers()` and
+`nearestObserver()`, shared `addDoorCollider`, door ids, NetPlayer-free AI changes, SettingsManager
+guard for missing localStorage. The section below records what the prototype did.
 
 ## Player suggestions pass (2026-11-05)
 * **Debug menu** (`ui/DebugMenu.js`): Tab+3 (detected on key-down so a quick tap works; Tab alone opens
@@ -49,7 +57,7 @@ Persistent record of project state. Update this file whenever a system changes s
   `Game.carryCapacity`, `BaseSystem` free building, `AIAgent.isEnemy` (AI ignore you).
 * **Sentry gun** (`basebuilding/Sentry.js`): base piece with 6-slot storage; uses the first firearm
   and its ammunition, real ballistics/fire rate/reload, line-of-fire check, leads moving targets, bursts,
-  idle sweep; AI blame and shoot back at it (damages the piece). Online its shots go to the server.
+  idle sweep; AI blame and shoot back at it (damages the piece).
 * **Production**: Lumber Yard 20 planks/day, Scrap Workshop 5 scrap/day, Fuel Pump 3 jerrycans/day
   (stores 6). Output is computed from in-game time elapsed, so it accrues while you are away; saved.
 * **Riverside** rebuilt as the largest settlement (radius 165): market street on the highway with six
@@ -228,7 +236,6 @@ shooting each other); suppressor-fitted player weapons were as loud to the AI as
 * Eye adaptation is a simple two-state exposure blend (indoors/outdoors), not a luminance histogram.
 
 ## Next tasks (priority order)
-0. Online stage 2: shared containers and bases, world events on servers, persisting the shared world, lag compensation, server-side movement checks.
 1. Persist POI door states and corpses.
 2. Multi-floor navigation for AI (stairs links in NavGrid).
 3. Fractures/infection medical layer.

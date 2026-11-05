@@ -35,7 +35,6 @@ import { CharacterModel } from '../ai/CharacterModel.js';
 import { audio } from '../audio/AudioManager.js';
 import { UIManager } from '../ui/UIManager.js';
 import { clamp } from './MathUtil.js';
-import { NetClient } from '../net/NetClient.js';
 import { DebugMenu } from '../ui/DebugMenu.js';
 import { NPCSystem } from '../npc/NPCSystem.js';
 
@@ -366,88 +365,6 @@ export class Game {
     return { x, z, y: this.world.heightAt(x, z) + 0.05 };
   }
 
-  // ------------------------------------------------------------ online co-op
-  /**
-   * Join an online server. Your character (gear, skills, map knowledge, base) is kept in
-   * this browser under its own save; the world — AI, bodies, doors, time, weather — is the
-   * server's and shared by everyone on it.
-   */
-  async joinOnline(address, name) {
-    audio.init();
-    this.ui.open('loading');
-    this.ui.setLoading(0.02, 'Connecting to the server');
-    const net = new NetClient(this);
-    try {
-      await net.connect(address, name, (msg) => this.ui.setLoading(0.04, msg));
-    } catch (e) {
-      net.dispose();
-      this.ui.open('menu');
-      setTimeout(() => alert(`Could not join: ${e.message}`), 50);
-      return false;
-    }
-    this._resetWorld();
-    this.net = net;
-    this.online = true;
-    net._env(net.welcome, true); // the reset above cleared time, weather and factions
-    net.onClose = (reason) => {
-      if (!this.online) return;
-      this.saveGame('online', true);
-      this._leaveOnline();
-      this.started = false;
-      this.ui.open('menu');
-      setTimeout(() => alert(`${reason}. Your character was saved.`), 50);
-    };
-    const res = await saves.load('online').catch(() => null);
-    let restored = false;
-    if (res?.ok) {
-      try { this._applyOnlineSave(res.rec.data); restored = true; } catch (e) { console.warn('[online] could not restore character', e); }
-    }
-    if (!restored) {
-      this.vehicles.spawnDefaults();
-      this.player.skills.deserialize({});
-      this._starterKit();
-      const sp = this._spawnPoint();
-      this.player.controller.teleport(sp.x, sp.y, sp.z, Math.random() * Math.PI * 2);
-    }
-    await this._streamIn();
-    this._settleSpawn(restored);
-    if (!this.online) return false; // dropped while loading
-    net.spawned();
-    this.started = true;
-    this.ui.open('playing');
-    const others = net.welcome.players?.length || 0;
-    bus.emit('notify', { text: `Online as ${net.welcome.name} — ${others ? `${others} other player${others > 1 ? 's' : ''} here` : 'nobody else is on yet'}. Press Enter to chat.`, kind: 'objective' });
-    if (net.welcome.motd) bus.emit('notify', { text: net.welcome.motd, kind: 'info' });
-    return true;
-  }
-
-  /** Restore only what belongs to you from the online save; the world comes from the server. */
-  _applyOnlineSave(d) {
-    this.loot.deserialize(d.loot);
-    this.base.deserialize(d.base);
-    this.vehicles.deserialize(d.vehicles);
-    if (!this.vehicles.vehicles.size) this.vehicles.spawnDefaults();
-    this.player.deserialize(d.player);
-    this.player.equipment.refreshCapacity();
-    this.objectives.deserialize(d.objectives);
-    this.npcs.deserialize(d.npcs);
-    for (const id of d.world?.discovered || []) if (this.world.poiById.has(id)) this.discovered.add(id);
-    if (typeof d.world?.fog === 'string' && d.world.fog.length === this.fog.data.length) for (let i = 0; i < this.fog.data.length; i++) this.fog.data[i] = d.world.fog.charCodeAt(i) === 49 ? 1 : 0;
-    this.markers = Array.isArray(d.world?.markers) ? d.world.markers.filter((m) => Number.isFinite(m?.x) && Number.isFinite(m?.z)) : [];
-    this.journalPages = Array.isArray(d.world?.journal) ? d.world.journal.filter((x) => typeof x === 'string') : [];
-    this._restorePiles();
-    if (this.player.survival.dead) { this.player.survival.reset(); this._starterKit(); const sp = this._spawnPoint(); this.player.controller.teleport(sp.x, sp.y, sp.z, 0); }
-    const slot = d.player?.weaponSlot;
-    this.weapons.select(slot && this.player.equipment.slots[slot] ? slot : null);
-  }
-
-  _leaveOnline() {
-    this.online = false;
-    const net = this.net;
-    this.net = null;
-    net?.dispose();
-  }
-
   async newGame() {
     audio.init();
     this.ui.open('loading');
@@ -561,7 +478,6 @@ export class Game {
 
   async saveGame(slot, quiet = false) {
     if (!this.started) return;
-    if (this.online) slot = 'online'; // your online character is kept apart from single-player saves
     if (this.dead) { if (!quiet) bus.emit('notify', { text: 'Cannot save while dead', kind: 'warn' }); return; }
     const data = this.serialize();
     // defer the write so the frame is not blocked
@@ -617,7 +533,6 @@ export class Game {
   }
 
   quitToMenu() {
-    if (this.online) { this.saveGame('online', true); this._leaveOnline(); }
     this.started = false;
     this.vehicles.current = null;
     this.base.exit();
@@ -661,7 +576,6 @@ export class Game {
     this.ui.open('loading');
     await this._streamIn();
     this._settleSpawn(!!this.base.respawnPoint());
-    if (this.online) this.net.spawned();
     this.ui.open('playing');
     bus.emit('notify', { text: 'Your body is marked on the map. Your gear is still on it.', kind: 'info' });
   }
@@ -704,7 +618,6 @@ export class Game {
 
   _openContainer(it) {
     const d = it.data;
-    if (d.net && this.net) { this.net.openCorpse(d.net, d.name); bus.emit('sound', { type: 'pickup', ui: true }); return; }
     const custom = d.custom || !d.profile;
     const open = () => {
       const inv = custom ? this.loot.get(d.containerId) : this.loot.open(d.containerId, d.profile, d.capacity || 10, this.clock.gameMinutes);
@@ -806,7 +719,7 @@ export class Game {
       return;
     }
     // pause the simulation while the pause menu or settings are open
-    const paused = !this.online && (this.ui.mode === 'pause' || this.ui.mode === 'settings');
+    const paused = this.ui.mode === 'pause' || this.ui.mode === 'settings';
     if (paused) {
       this.renderer.render(dt, !this.vehicles.current);
       this.ui.update(dt);
@@ -929,14 +842,9 @@ export class Game {
     this.ballistics.update(dt);
     this.factions.update(dt);
     T = this._prof('ballistics', T);
-    if (this.online) {
-      // the server runs the AI and world events; mirror what it sends
-      this.net.update(dt);
-    } else {
-      this.ai.update(dt);
-      this.events.update(dt);
-      this.events.tick(dt);
-    }
+    this.ai.update(dt);
+    this.events.update(dt);
+    this.events.tick(dt);
     T = this._prof('ai', T);
     this.base.update(dt);
     this.npcs.update(dt);

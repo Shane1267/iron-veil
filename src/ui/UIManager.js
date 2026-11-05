@@ -44,7 +44,7 @@ export class UIManager {
       if (this.mode === 'playing' && !game.input.locked) game.input.lock();
     });
     game.input.onLockChange = (locked, isError, wasLocked) => {
-      if (!locked && !isError && wasLocked && this.mode === 'playing' && !this.game.dead && !this.game.net?.chatting) {
+      if (!locked && !isError && wasLocked && this.mode === 'playing' && !this.game.dead) {
         // pointer released by the player (Esc): open the pause menu
         this.open('pause');
       }
@@ -132,7 +132,6 @@ export class UIManager {
       h('div', { class: 'menu-list' },
         h('button', { class: 'btn primary', disabled: !latest, onclick: () => latest && this.game.loadGame(latest.slot) }, latest ? `Continue — ${latest.summary?.label || latest.slot}` : 'Continue'),
         h('button', { class: 'btn', onclick: () => this.game.newGame() }, 'New Game'),
-        h('button', { class: 'btn', onclick: () => this._onlinePanel(s) }, 'Play Online'),
         h('button', { class: 'btn', onclick: () => this._slotsPanel(s, 'load') }, 'Load Game'),
         h('button', { class: 'btn', onclick: () => this.open('settings', { back: 'menu' }) }, 'Settings'),
         h('button', { class: 'btn', onclick: () => this._aboutPanel(s) }, 'About & Controls'),
@@ -207,37 +206,6 @@ export class UIManager {
     screen.appendChild(side);
   }
 
-  _onlinePanel(screen) {
-    screen.querySelector('.menu-side')?.remove();
-    const store = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch { /* storage blocked */ } return null; };
-    const params = new URLSearchParams(location.search);
-    // ?server=… in the page address pre-fills (and with ?join=1 starts) the connection
-    const sameOrigin = /^https?:$/.test(location.protocol) && !/claudeusercontent|localhost:5173/.test(location.host);
-    const addr = h('input', { class: 'text-input', type: 'text', placeholder: sameOrigin ? 'Leave empty for this website' : 'e.g. iron-veil.onrender.com', value: params.get('server') || store('ironveil.server') || '' });
-    const name = h('input', { class: 'text-input', type: 'text', maxlength: '20', placeholder: 'Survivor', value: store('ironveil.name') || '' });
-    const status = h('div', { class: 'online-status' });
-    const go = async () => {
-      store('ironveil.server', addr.value.trim());
-      store('ironveil.name', name.value.trim());
-      status.textContent = 'Connecting…';
-      await this.game.joinOnline(addr.value.trim(), name.value.trim() || 'Survivor');
-    };
-    const side = h('div', { class: 'panel menu-side interactive' });
-    side.appendChild(h('div', { class: 'panel-head' }, h('h2', {}, 'Play Online'), h('span', { class: 'sub' }, 'co-op')));
-    side.appendChild(h('div', { class: 'journal' }, h('div', { class: 'body' },
-      h('p', {}, 'Everyone on a server shares one world: the same soldiers, raiders and survivors, the same gunfights, bodies, doors, time of day and weather.'),
-      h('label', { class: 'field' }, h('span', {}, 'Server address'), addr),
-      h('label', { class: 'field' }, h('span', {}, 'Your name'), name),
-      h('p', { class: 'small' }, 'Your online character — gear, skills, map and base — is saved in this browser, separately from single-player saves. Containers and bases are your own; the people in the world are shared. Press Enter in game to chat.'),
-      status,
-    )));
-    side.appendChild(h('div', { class: 'inv-foot' }, h('button', { class: 'btn small', onclick: () => side.remove() }, 'Close'), h('button', { class: 'btn primary', onclick: go }, 'Join')));
-    screen.appendChild(side);
-    name.addEventListener('keydown', (e) => { if (e.code === 'Enter') go(); });
-    addr.addEventListener('keydown', (e) => { if (e.code === 'Enter') go(); });
-    if (params.get('join') === '1' && !this._autoJoined) { this._autoJoined = true; go(); }
-  }
-
   _aboutPanel(screen) {
     screen.querySelector('.menu-side')?.remove();
     const side = h('div', { class: 'panel menu-side interactive' });
@@ -269,14 +237,14 @@ export class UIManager {
     const s = this._show('dim');
     const g = this.game;
     const box = h('div', { class: 'panel pause-box interactive' },
-      h('div', { class: 'panel-head' }, h('h2', {}, g.online ? 'Menu' : 'Paused'), h('span', { class: 'sub' }, g.online ? 'Online — the world keeps going' : `Day ${g.clock.day} · ${g.clock.label}`)),
+      h('div', { class: 'panel-head' }, h('h2', {}, 'Paused'), h('span', { class: 'sub' }, `Day ${g.clock.day} · ${g.clock.label}`)),
       h('div', { class: 'menu-list' },
         h('button', { class: 'btn primary', onclick: () => this.open('playing') }, 'Resume'),
-        g.online ? h('button', { class: 'btn', onclick: () => g.saveGame('online') }, 'Save Character') : h('button', { class: 'btn', onclick: () => this._slotsPanel(s, 'save') }, 'Save Game'),
-        g.online ? null : h('button', { class: 'btn', onclick: () => this._slotsPanel(s, 'load') }, 'Load Game'),
+        h('button', { class: 'btn', onclick: () => this._slotsPanel(s, 'save') }, 'Save Game'),
+        h('button', { class: 'btn', onclick: () => this._slotsPanel(s, 'load') }, 'Load Game'),
         h('button', { class: 'btn', onclick: () => this.open('journal') }, 'Journal & Skills'),
         h('button', { class: 'btn', onclick: () => this.open('settings', { back: 'pause' }) }, 'Settings'),
-        h('button', { class: 'btn danger', onclick: () => g.quitToMenu() }, g.online ? 'Leave Server' : 'Quit to Main Menu'),
+        h('button', { class: 'btn danger', onclick: () => g.quitToMenu() }, 'Quit to Main Menu'),
       ));
     s.appendChild(box);
   }

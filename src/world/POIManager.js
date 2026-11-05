@@ -14,7 +14,7 @@ import { Frame } from './BuildingGenerator.js';
 
 const BUILD_BUDGET_MS = 6;
 
-/** Collider for a door's closed leaf (axis aligned because yaw is a multiple of 90°). Shared with the online server. */
+/** Collider for a door's closed leaf (axis aligned because yaw is a multiple of 90°). */
 export function addDoorCollider(def, physics, owner) {
   const dx = Math.round(Math.cos(def.yaw)), dz = -Math.round(Math.sin(def.yaw));
   const x1 = def.x + dx * def.width, z1 = def.z + dz * def.width;
@@ -84,13 +84,10 @@ class DoorRuntime {
     this.collider.enabled = !this.open;
     this.center = dc.center;
   }
-  /** remote: the change came from the online server (do not report it back). */
-  toggle(force, remote = false) {
-    const was = this.open;
+  toggle(force) {
     this.open = force !== undefined ? force : !this.open;
     this.collider.enabled = !this.open;
-    if (was !== this.open || !remote) bus.emit('sound', { type: 'door', x: this.center.x, y: this.center.y, z: this.center.z, open: this.open, metal: this.def.metal, remote });
-    if (!remote && this.id) bus.emit('door:toggled', { id: this.id, open: this.open });
+    bus.emit('sound', { type: 'door', x: this.center.x, y: this.center.y, z: this.center.z, open: this.open, metal: this.def.metal });
     return this.open;
   }
   update(dt) {

@@ -156,7 +156,6 @@ export class AIAgent {
       cap: !this.armorItems.includes('helmet_mil') && this.rng.next() < 0.5 ? this.rng.pick(['#3a3a30', '#2a2a2a', '#5a4a3a']) : null,
       mask: this.faction === 'wolves' && this.rng.next() < 0.6, gloves: '#2a2622',
     };
-    this.look = look; // sent to online clients so they draw the same person
     this.model = this.game.headless ? new HeadlessModel() : new CharacterModel(look, this.game.materials);
     this.model.setWeapon(this.weapon.id, this.weapon.data.attach);
     this.model.root.position.copy(this.pos);

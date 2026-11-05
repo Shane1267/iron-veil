@@ -293,7 +293,7 @@ export class HUD {
     this.clock.innerHTML = '';
     const region = g.world.regionAt(g.player.controller.pos.x, g.player.controller.pos.z);
     this.clock.append(h('b', {}, g.clock.label), h('div', {}, `Day ${g.clock.day} · ${region?.name || ''}`));
-    this.fps.textContent = settings.get('showFPS') ? `${g.renderer.fps} FPS · ${g.renderer.stats.calls} calls · ${(g.renderer.stats.triangles / 1000).toFixed(0)}k tris · AI ${g.net ? [...g.net.agents.values()].filter((a) => a.alive).length : g.ai.alive().length}${g.net ? ` · online ${g.net.online || 1} · ${Math.round(g.net.ping)} ms` : ''}` : '';
+    this.fps.textContent = settings.get('showFPS') ? `${g.renderer.fps} FPS · ${g.renderer.stats.calls} calls · ${(g.renderer.stats.triangles / 1000).toFixed(0)}k tris · AI ${g.ai.alive().length}` : '';
     // interaction prompt
     const it = g.lookTarget;
     this.prompt.innerHTML = '';

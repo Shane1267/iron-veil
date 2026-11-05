@@ -213,7 +213,7 @@ export class DebugMenu {
     if (f.hunger) { s.hunger = 100; s.thirst = 100; }
     if (f.ammo && g.weapons.stack?.data && g.weapons.w?.magSize && g.weapons.state !== 'reload') g.weapons.stack.data.ammo = g.weapons.w.magSize;
     g.player.controller.debugSpeed = f.speed;
-    if (!g.online) g.clock.paused = f.freezeTime;
+    g.clock.paused = f.freezeTime;
     if (f.coords) {
       const p = g.player.controller.pos;
       this.coordsEl.textContent = `X ${p.x.toFixed(1)}  Y ${p.y.toFixed(1)}  Z ${p.z.toFixed(1)}  · heading ${Math.round((((-g.player.controller.yaw * 180) / Math.PI) % 360 + 360) % 360)}°`;
@@ -243,7 +243,6 @@ export class DebugMenu {
       const gy = y ?? g.physics.groundHeight(x, z, 0.35, g.world.heightAt(x, z) + 60);
       pc.teleport(x, gy + 0.05, z, pc.yaw);
       g._settleSpawn(true);
-      g.net?.spawned();
       if (label) this._notify(`Teleported to ${label}`);
     } finally { this._busy = false; }
   }
@@ -262,9 +261,7 @@ export class DebugMenu {
     }
   }
 
-  _offline(reason = 'The server controls this when playing online') {
-    return this.game.online ? reason : null;
-  }
+  _offline() { return null; }
 
   _main() {
     return { title: 'Main menu', items: [
@@ -304,7 +301,7 @@ export class DebugMenu {
       tog('hunger', 'No hunger or thirst'),
       tog('ammo', 'Unlimited ammunition', 'Magazine stays full'),
       tog('carry', 'Unlimited carry weight'),
-      tog('invisible', 'AI ignore you', g.online ? 'Online the server decides what AI see; this has no effect' : 'Nobody treats you as an enemy'),
+      tog('invisible', 'AI ignore you', 'Nobody treats you as an enemy'),
       { label: 'Fill ammo for current weapon', action: () => { const w = g.weapons.w; if (!w?.ammo) { this._flash('Hold a firearm'); return; } this._give(w.ammo, ItemDB.stackMax(w.ammo) * 2); this._notify(`Added ${ItemDB.get(w.ammo).name}`); } },
       { label: 'Repair current weapon', action: () => { const st = g.weapons.stack; if (!st?.data) { this._flash('Hold a weapon'); return; } st.data.cond = 1; st.data.jammed = false; this._notify('Weapon repaired'); } },
       { label: 'Max all skills', action: () => { for (const k of Object.keys(SKILLS)) g.player.skills.xp[k] = 1200; this._notify('All skills at level 10'); } },
@@ -361,7 +358,7 @@ export class DebugMenu {
       { label: 'Show FPS and stats', toggle: true, get: () => !!settings.get('showFPS'), set: (v) => settings.apply({ showFPS: v }) },
       { label: 'Show coordinates', toggle: true, get: () => f.coords, set: (v) => { f.coords = v; } },
       { label: 'Movement speed', values: () => [1, 1.5, 2, 3, 5], get: () => f.speed, set: (v) => { f.speed = v; }, fmt: (v) => `${v}×` },
-      { label: 'Save now', action: () => g.saveGame(g.online ? 'online' : 'auto') },
+      { label: 'Save now', action: () => g.saveGame('auto') },
       { label: 'Frame time', info: () => `${g.renderer.fps} fps`, action: () => {} },
     ] };
   }

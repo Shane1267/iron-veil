@@ -27,9 +27,7 @@ npm run preview      # serve the production build → http://localhost:4173
 npm test             # unit tests (Vitest), including simulated AI firefights
 npm run test:sim     # AI firefight scenario report (headless, ~1-3 s per fight)
 npm run test:e2e     # automated browser playtest (Playwright, needs `npm run build` and a Chrome/Chromium)
-npm run build:all    # game (dist/) + online server (dist-server/)
-npm start            # online server: serves the game and the shared world → http://localhost:8080
-node tests/e2e/online.mjs   # two-browser online test (needs `npm run build:all`)
+node tests/e2e/features.mjs # debug menu, traders, sentries, farms, lights, ladders (needs `npm run build`)
 ```
 
 `npm run test:e2e` starts its own preview server. Environment variables: `PREVIEW_URL` (reuse a running
@@ -42,13 +40,6 @@ server), `QUALITY` (low/medium/high/ultra), `VW`/`VH` (viewport), `CHROME_PATH` 
 contents of `dist/` to any static host (GitHub Pages, Netlify, Cloudflare Pages, S3, nginx, itch.io HTML
 upload). No server code or special headers are required. Opening `dist/index.html` directly from disk
 (`file://`) does **not** work because browsers block module workers on `file://`; use a web server.
-
-## Online co-op
-
-**Play Online** in the main menu joins a server where everyone shares one world: the same AI, gunfights,
-bodies, doors, time and weather. Your gear, health and base stay your own. Hosting it for free on Render,
-linking it from another site (such as Zite) and the limits of this first version are explained in
-[`docs/ONLINE.md`](docs/ONLINE.md).
 
 ## Saving — please read
 
@@ -79,7 +70,6 @@ linking it from another site (such as Zite) and the limits of this first version
 | Rotate building piece | Q |
 | Map marker at your position | N |
 | Vehicle: throttle/brake/steer · handbrake · lights (off → low → high) · exit | W/S/A/D · Space · L · E |
-| Chat (online) | Enter |
 | Debug menu (code 3209) | hold Tab, press 3 |
 | Pause | Esc |
 
@@ -107,7 +97,7 @@ any landmark, markers, base, vehicle), Player (heal, god mode, unlimited stamina
 hunger, AI ignore you, max skills), Items (every item by category, kits), World (time, weather, reveal
 map, remove hostiles, spawn squads, restock containers), Base (free building, repairs, produce now,
 refill sentries), Vehicles, Debug (FPS, coordinates, speed). The code is only a lock against opening
-it by accident — anyone reading the source can see it. Online, time, weather and AI options are off.
+it by accident — anyone reading the source can see it.
 
 ## First 20 minutes (vertical slice)
 
@@ -235,7 +225,7 @@ AI difficulty, hunger/thirst rate, world-event frequency, loot restock interval)
 * There is no music score.
 * Medical model has no fractures or infections; no tourniquets/splints/antibiotics.
 * Vehicles use simplified arcade-style physics; there is no vehicle damage model per part.
-* Online co-op is a first version: see the limits in `docs/ONLINE.md` (movement is trusted from the browser, no lag compensation, containers/bases/vehicles are per player).
+* Single player only (an online co-op prototype was built and then removed to save hosting costs; see MANIFEST).
 * Gamepad is not supported.
 
 ## Performance notes
@@ -275,10 +265,9 @@ src/
   audio/       Synthesised audio engine
   ui/          UI manager, HUD, inventory, map, crafting/building, settings
   data/        JSON: weapons, items, loot tables, factions, locations, building, vehicles
-  net/         Online client: connection, remote AI and players, shared protocol
-server/        Online server: shared headless world, connections, snapshots
+  npc/         Settlement traders and townsfolk
 tests/unit     Vitest unit tests
-tests/e2e      Playwright playtest scripts (single player, two-browser online)
+tests/e2e      Playwright playtest scripts
 ```
 
 See `MANIFEST.md` for the development manifest (status of every system, remaining work, known bugs).

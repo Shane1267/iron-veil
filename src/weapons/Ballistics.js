@@ -39,9 +39,7 @@ export class Ballistics {
 
   /**
    * Fire one projectile/pellet.
-   * shot: {ox,oy,oz, dx,dy,dz, weapon, shooter (character), damageMul, tracer, muzzle {x,y,z}, visual}
-   * visual: replay of a shot simulated elsewhere (online: the server) — impacts, blood and
-   * tracers only; no damage, suppression or hit events.
+   * shot: {ox,oy,oz, dx,dy,dz, weapon, shooter (character), damageMul, tracer, muzzle {x,y,z}}
    */
   fire(shot) {
     this.stats.shots++;
@@ -62,7 +60,7 @@ export class Ballistics {
       const end = res?.point || { x: shot.ox + shot.dx * range, y: shot.oy + shot.dy * range, z: shot.oz + shot.dz * range };
       this.effects.tracer(shot.muzzle, end, 600);
     }
-    if (!shot.visual) this._whizCheck(shot, shot.ox, shot.oy, shot.oz, shot.dx, shot.dy, shot.dz, res ? res.dist : range);
+    this._whizCheck(shot, shot.ox, shot.oy, shot.oz, shot.dx, shot.dy, shot.dz, res ? res.dist : range);
     return res;
   }
 
@@ -86,7 +84,7 @@ export class Ballistics {
         const segLen = Math.hypot(sx, sy, sz);
         const dx = sx / segLen, dy = sy / segLen, dz = sz / segLen;
         const res = this._trace(p.x, p.y, p.z, dx, dy, dz, segLen, p.power, p.loss, p.shot, p.travelled, p);
-        if (!p.shot.visual) this._whizCheck(p.shot, p.x, p.y, p.z, dx, dy, dz, res && res.stopped ? res.dist : segLen, p);
+        this._whizCheck(p.shot, p.x, p.y, p.z, dx, dy, dz, res && res.stopped ? res.dist : segLen, p);
         if (res && res.stopped) { done = true; break; }
         p.x += sx; p.y += sy; p.z += sz;
         p.vx = nvx; p.vy = nvy; p.vz = nvz;
@@ -132,7 +130,7 @@ export class Ballistics {
       if (h.collider.glass && !h.collider.glass.broken) this.onGlass?.(h.collider.glass);
       this.effects.impact(point, n || { x: -dx, y: -dy, z: -dz }, mat, { x: dx, y: dy, z: dz });
       bus.emit('impact', { x: point.x, y: point.y, z: point.z, material: mat, shooter: shot.shooter, collider: h.collider });
-      if (h.collider.onBulletHit && !shot.visual) h.collider.onBulletHit(shot.weapon.damage * (shot.damageMul || 1) * (1 - loss), shot);
+      if (h.collider.onBulletHit) h.collider.onBulletHit(shot.weapon.damage * (shot.damageMul || 1) * (1 - loss), shot);
       if (power > cost && mat !== 'rock') {
         power -= cost;
         loss = Math.min(0.95, loss + cost / Math.max(0.1, shot.weapon.penetration) * 0.6);
@@ -148,12 +146,12 @@ export class Ballistics {
       const point = { x: ox + dx * ch.t, y: oy + dy * ch.t, z: oz + dz * ch.t };
       this.stats.hits++;
       const dist = travelled + ch.t;
-      if (!shot.visual) ch.character.onHit({
+      ch.character.onHit({
         zone: ch.zone, base: shot.weapon.damage, weapon: shot.weapon, distance: dist, penetrationLoss: loss,
         mul: shot.damageMul || 1, shooter: shot.shooter, dir: { x: dx, y: dy, z: dz }, point, cause: 'gunshot',
       });
       this.effects.blood(point, { x: dx, y: dy, z: dz });
-      if (!shot.visual) bus.emit('hit', { target: ch.character, shooter: shot.shooter, zone: ch.zone, point });
+      bus.emit('hit', { target: ch.character, shooter: shot.shooter, zone: ch.zone, point });
       return { stopped: true, dist: ch.t, point, hit: ch };
     }
     void lastPoint;
