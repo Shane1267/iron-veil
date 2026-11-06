@@ -4,7 +4,7 @@ import weaponsData from '../data/weapons.json';
 // Single source of truth for item definitions. Weapons from weapons.json are mirrored
 // as items (category "weapon", stack 1) so inventories treat everything uniformly.
 
-const CATEGORY_ORDER = ['weapon', 'ammo', 'attachment', 'medical', 'food', 'drink', 'clothing', 'backpack', 'tool', 'construction', 'technical', 'misc'];
+const CATEGORY_ORDER = ['weapon', 'ammo', 'explosive', 'attachment', 'medical', 'food', 'drink', 'clothing', 'backpack', 'tool', 'construction', 'technical', 'misc'];
 
 class ItemDatabaseImpl {
   constructor() {

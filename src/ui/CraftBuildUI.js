@@ -104,17 +104,20 @@ export class BuildMenuUI {
     const inv = g.player.equipment.inventory;
     const wrap = h('div', { class: 'panel craft-wrap interactive', style: { height: 'auto', maxHeight: '86vh' } });
     wrap.appendChild(h('div', { class: 'panel-head' }, h('h2', {}, 'Construction'), h('span', { class: 'sub' }, 'Select a piece, then place it in the world')));
+    const CATS = [['all', 'All'], ['structure', 'Structure'], ['defence', 'Defence'], ['storage', 'Storage'], ['production', 'Production'], ['utility', 'Utility'], ['furniture', 'Furniture']];
+    this.cat = this.cat || 'all';
+    wrap.appendChild(h('div', { class: 'trade-tabs' }, ...CATS.map(([k, l]) => h('button', { class: `btn small${this.cat === k ? ' primary' : ''}`, onclick: () => { this.cat = k; this.render(); } }, l))));
     const grid = h('div', { class: 'build-grid' });
     grid.appendChild(h('div', { class: 'bpiece', onclick: () => { g.base.enter(); g.base.selected = null; g.base._clearGhost(); this.ui.close(); } },
-      h('div', { class: 'n' }, 'Repair / Dismantle'), h('div', { class: 'c' }, 'Aim at a placed piece: E repairs (30% cost), F dismantles (50% refund).')));
-    for (const p of PIECES) {
+      h('div', { class: 'n' }, 'Repair / Move / Dismantle'), h('div', { class: 'c' }, 'Aim at a piece: E repairs (30% cost), R picks it up to move it (full refund, undamaged and empty), F dismantles (50% refund).')));
+    for (const p of PIECES.filter((x) => this.cat === 'all' || x.cat === this.cat)) {
       const ok = inv.has(p.cost) && (!p.tool || inv.count(p.tool));
       const cost = Object.entries(p.cost).map(([id, n]) => h('span', { class: inv.count(id) < n ? 'miss' : '' }, `${ItemDB.get(id).name} ${inv.count(id)}/${n}`, h('br')));
       grid.appendChild(h('div', { class: `bpiece ${ok ? '' : 'cant'}`, onclick: () => { g.base.enter(p.id); this.ui.close(); } },
-        h('div', { class: 'n' }, p.name), h('div', { class: 'c' }, ...cost, p.tool ? h('span', { class: inv.count(p.tool) ? '' : 'miss' }, `Tool: ${ItemDB.get(p.tool).name}`) : '')));
+        h('div', { class: 'n' }, p.name), h('div', { class: 'c' }, ...(p.desc ? [h('span', { class: 'd' }, p.desc), h('br')] : []), ...cost, p.tool ? h('span', { class: inv.count(p.tool) ? '' : 'miss' }, `Tool: ${ItemDB.get(p.tool).name}`) : '')));
     }
     wrap.appendChild(grid);
-    wrap.appendChild(h('div', { class: 'inv-foot' }, h('span', {}, 'Foundations snap to a 3 m grid · walls snap to foundation edges · floors need a wall below'), h('button', { class: 'btn small', onclick: () => this.ui.close() }, 'Close')));
+    wrap.appendChild(h('div', { class: 'inv-foot' }, h('span', {}, 'Mouse wheel: next piece in the same group · Q rotates · right click leaves build mode · foundations snap to a 3 m grid'), h('button', { class: 'btn small', onclick: () => this.ui.close() }, 'Close')));
     this.el.appendChild(wrap);
   }
 }

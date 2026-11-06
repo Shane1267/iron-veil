@@ -12,7 +12,8 @@
       },
       "tool": "tool_hammer",
       "health": 600,
-      "material": "wood"
+      "material": "wood",
+      "cat": "structure"
     },
     {
       "id": "floor",
@@ -25,7 +26,8 @@
       "tool": "tool_hammer",
       "health": 350,
       "material": "wood",
-      "roof": true
+      "roof": true,
+      "cat": "structure"
     },
     {
       "id": "wall",
@@ -37,7 +39,8 @@
       },
       "tool": "tool_hammer",
       "health": 400,
-      "material": "wood"
+      "material": "wood",
+      "cat": "structure"
     },
     {
       "id": "wall_reinforced",
@@ -50,7 +53,8 @@
       },
       "tool": "tool_wrench",
       "health": 1100,
-      "material": "metal"
+      "material": "metal",
+      "cat": "structure"
     },
     {
       "id": "doorway",
@@ -63,7 +67,8 @@
       "tool": "tool_hammer",
       "health": 380,
       "material": "wood",
-      "opening": "door"
+      "opening": "door",
+      "cat": "structure"
     },
     {
       "id": "door",
@@ -75,7 +80,8 @@
       },
       "tool": "tool_hammer",
       "health": 260,
-      "material": "wood"
+      "material": "wood",
+      "cat": "structure"
     },
     {
       "id": "gate",
@@ -89,7 +95,8 @@
       "tool": "tool_hammer",
       "health": 450,
       "material": "wood",
-      "opening": "gate"
+      "opening": "gate",
+      "cat": "structure"
     },
     {
       "id": "window_wall",
@@ -102,7 +109,8 @@
       "tool": "tool_hammer",
       "health": 360,
       "material": "wood",
-      "opening": "window"
+      "opening": "window",
+      "cat": "structure"
     },
     {
       "id": "firing_wall",
@@ -116,7 +124,8 @@
       "tool": "tool_hammer",
       "health": 600,
       "material": "metal",
-      "opening": "slit"
+      "opening": "slit",
+      "cat": "defence"
     },
     {
       "id": "stairs",
@@ -128,7 +137,8 @@
       },
       "tool": "tool_hammer",
       "health": 300,
-      "material": "wood"
+      "material": "wood",
+      "cat": "structure"
     },
     {
       "id": "ladder",
@@ -140,7 +150,8 @@
       },
       "tool": null,
       "health": 120,
-      "material": "wood"
+      "material": "wood",
+      "cat": "structure"
     },
     {
       "id": "sandbags",
@@ -151,7 +162,8 @@
       },
       "tool": null,
       "health": 900,
-      "material": "sand"
+      "material": "sand",
+      "cat": "defence"
     },
     {
       "id": "barrier",
@@ -163,7 +175,8 @@
       },
       "tool": "tool_wrench",
       "health": 800,
-      "material": "metal"
+      "material": "metal",
+      "cat": "defence"
     },
     {
       "id": "watchtower",
@@ -176,7 +189,8 @@
       },
       "tool": "tool_hammer",
       "health": 700,
-      "material": "wood"
+      "material": "wood",
+      "cat": "defence"
     },
     {
       "id": "crate",
@@ -189,7 +203,8 @@
       "tool": "tool_hammer",
       "health": 200,
       "material": "wood",
-      "storage": 20
+      "storage": 20,
+      "cat": "storage"
     },
     {
       "id": "locker",
@@ -203,7 +218,8 @@
       "health": 500,
       "material": "metal",
       "storage": 24,
-      "lockable": true
+      "lockable": true,
+      "cat": "storage"
     },
     {
       "id": "workbench",
@@ -217,7 +233,8 @@
       "tool": "tool_hammer",
       "health": 300,
       "material": "wood",
-      "station": "workbench"
+      "station": "workbench",
+      "cat": "utility"
     },
     {
       "id": "bedroll",
@@ -230,7 +247,8 @@
       "tool": null,
       "health": 100,
       "material": "fabric",
-      "respawn": true
+      "respawn": true,
+      "cat": "utility"
     },
     {
       "id": "lamp",
@@ -244,7 +262,8 @@
       "tool": null,
       "health": 80,
       "material": "metal",
-      "light": true
+      "light": true,
+      "cat": "utility"
     },
     {
       "id": "campfire",
@@ -257,7 +276,8 @@
       "health": 100,
       "material": "wood",
       "light": true,
-      "warmth": true
+      "warmth": true,
+      "cat": "utility"
     },
     {
       "id": "sentry",
@@ -274,7 +294,8 @@
       "material": "metal",
       "storage": 6,
       "sentry": true,
-      "desc": "Automatic gun mount. Put a firearm and its ammunition inside; it fires on anyone hostile it can see."
+      "desc": "Automatic gun mount. Put a firearm and its ammunition inside; it fires on anyone hostile it can see.",
+      "cat": "defence"
     },
     {
       "id": "lumber_yard",
@@ -293,7 +314,8 @@
         "item": "wood_plank",
         "perDay": 20
       },
-      "desc": "Cuts 20 planks per in-game day while you are away. Collect them from its rack."
+      "desc": "Cuts 20 planks per in-game day while you are away. Collect them from its rack.",
+      "cat": "production"
     },
     {
       "id": "scrap_yard",
@@ -313,7 +335,8 @@
         "item": "scrap_metal",
         "perDay": 5
       },
-      "desc": "Salvages 5 scrap metal per in-game day. Collect it from the bin."
+      "desc": "Salvages 5 scrap metal per in-game day. Collect it from the bin.",
+      "cat": "production"
     },
     {
       "id": "fuel_pump",
@@ -332,7 +355,215 @@
         "perDay": 3,
         "max": 6
       },
-      "desc": "Draws fuel from an old tank: refills an empty jerrycan (up to 3 per in-game day, stores 6)."
+      "desc": "Draws fuel from an old tank: refills an empty jerrycan (up to 3 per in-game day, stores 6).",
+      "cat": "production"
+    },
+    {
+      "id": "chair",
+      "name": "Chair",
+      "cat": "furniture",
+      "cost": {
+        "wood_plank": 2,
+        "nails": 4
+      },
+      "snap": "free",
+      "tool": "tool_hammer",
+      "health": 120,
+      "material": "wood",
+      "seat": 0.45,
+      "desc": "Somewhere to sit (E)."
+    },
+    {
+      "id": "bench_seat",
+      "name": "Bench",
+      "cat": "furniture",
+      "cost": {
+        "wood_plank": 3,
+        "nails": 6
+      },
+      "snap": "free",
+      "tool": "tool_hammer",
+      "health": 150,
+      "material": "wood",
+      "seat": 0.45,
+      "desc": "Seats two (E to sit)."
+    },
+    {
+      "id": "table",
+      "name": "Table",
+      "cat": "furniture",
+      "cost": {
+        "wood_plank": 4,
+        "nails": 8
+      },
+      "snap": "free",
+      "tool": "tool_hammer",
+      "health": 180,
+      "material": "wood",
+      "desc": "A table for maps and meals."
+    },
+    {
+      "id": "bed",
+      "name": "Bed",
+      "cat": "furniture",
+      "cost": {
+        "wood_plank": 6,
+        "nails": 10,
+        "cloth": 6
+      },
+      "snap": "free",
+      "tool": "tool_hammer",
+      "health": 200,
+      "material": "wood",
+      "respawn": true,
+      "sleep": true,
+      "desc": "Respawn point. Sleep until morning (E) when no enemies are near."
+    },
+    {
+      "id": "bookshelf",
+      "name": "Shelf Unit",
+      "cat": "storage",
+      "cost": {
+        "wood_plank": 5,
+        "nails": 10
+      },
+      "snap": "free",
+      "tool": "tool_hammer",
+      "health": 220,
+      "material": "wood",
+      "storage": 14,
+      "desc": "Open shelves (14 slots)."
+    },
+    {
+      "id": "weapon_rack",
+      "name": "Weapon Rack",
+      "cat": "storage",
+      "cost": {
+        "wood_plank": 4,
+        "nails": 8,
+        "scrap_metal": 1
+      },
+      "snap": "free",
+      "tool": "tool_hammer",
+      "health": 220,
+      "material": "wood",
+      "storage": 8,
+      "lockable": true,
+      "desc": "Lockable rack for your guns (8 slots)."
+    },
+    {
+      "id": "rug",
+      "name": "Rug",
+      "cat": "furniture",
+      "cost": {
+        "cloth": 5
+      },
+      "snap": "free",
+      "tool": null,
+      "health": 60,
+      "material": "fabric",
+      "desc": "Makes a bunker feel like home."
+    },
+    {
+      "id": "plant_pot",
+      "name": "Potted Plant",
+      "cat": "furniture",
+      "cost": {
+        "scrap_metal": 1,
+        "cloth": 1
+      },
+      "snap": "free",
+      "tool": null,
+      "health": 40,
+      "material": "fabric",
+      "desc": "Decoration."
+    },
+    {
+      "id": "flag",
+      "name": "Flag",
+      "cat": "furniture",
+      "cost": {
+        "cloth": 4,
+        "wood_plank": 2,
+        "rope": 1
+      },
+      "snap": "free",
+      "tool": null,
+      "health": 100,
+      "material": "wood",
+      "desc": "Fly your colours. Rotate (Q) to change the colour."
+    },
+    {
+      "id": "sign_post",
+      "name": "Sign",
+      "cat": "furniture",
+      "cost": {
+        "wood_plank": 2,
+        "nails": 2
+      },
+      "snap": "free",
+      "tool": null,
+      "health": 80,
+      "material": "wood",
+      "sign": true,
+      "desc": "Write your own text on it (E)."
+    },
+    {
+      "id": "planter",
+      "name": "Vegetable Planter",
+      "cat": "production",
+      "cost": {
+        "wood_plank": 6,
+        "nails": 8,
+        "cloth": 2
+      },
+      "snap": "free",
+      "tool": "tool_hammer",
+      "health": 200,
+      "material": "wood",
+      "storage": 2,
+      "produce": {
+        "item": "apple",
+        "perDay": 3
+      },
+      "desc": "Grows 3 apples per in-game day."
+    },
+    {
+      "id": "rain_collector",
+      "name": "Rain Collector",
+      "cat": "production",
+      "cost": {
+        "metal_sheet": 2,
+        "scrap_metal": 2,
+        "cloth": 2
+      },
+      "snap": "free",
+      "tool": "tool_wrench",
+      "health": 220,
+      "material": "metal",
+      "storage": 2,
+      "produce": {
+        "item": "water_bottle",
+        "perDay": 2
+      },
+      "desc": "Collects and filters 2 bottles of water per in-game day."
+    },
+    {
+      "id": "stove",
+      "name": "Wood Stove",
+      "cat": "utility",
+      "cost": {
+        "metal_sheet": 2,
+        "scrap_metal": 3,
+        "bolts": 8
+      },
+      "snap": "free",
+      "tool": "tool_wrench",
+      "health": 300,
+      "material": "metal",
+      "light": true,
+      "heat": true,
+      "desc": "Warms the room and lights it with firelight."
     }
   ],
   "recipes": [

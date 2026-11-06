@@ -7,7 +7,7 @@ export const BINDINGS = {
   inventory: ['Tab', 'KeyI'], map: ['KeyM'], build: ['KeyG'], craft: ['KeyH'], pause: ['Escape', 'KeyP'], inspect: ['KeyY'],
   slot1: ['Digit1'], slot2: ['Digit2'], slot3: ['Digit3'], slot4: ['Digit4'],
   quick1: ['Digit5'], quick2: ['Digit6'], quick3: ['Digit7'], quick4: ['Digit8'],
-  rotate: ['KeyQ'], vehLights: ['KeyL'], journal: ['KeyJ'], marker: ['KeyN'],
+  rotate: ['KeyQ'], vehLights: ['KeyL'], journal: ['KeyJ'], marker: ['KeyN'], nvg: ['KeyV'], throw: ['KeyQ'],
 };
 
 export class Input {

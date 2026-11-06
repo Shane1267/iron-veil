@@ -38,7 +38,9 @@
     { "id": "D3", "type": "dirt", "points": [[-300, 820], [-620, 360], [-850, 130]] },
     { "id": "D4", "type": "dirt", "points": [[920, -520], [300, -720], [-400, -900]] },
     { "id": "D5", "type": "dirt", "points": [[-1450, -380], [-900, -700], [-400, -900]] },
-    { "id": "D6", "type": "dirt", "points": [[1800, 1200], [1900, 1450]] }
+    { "id": "D6", "type": "dirt", "points": [[1800, 1200], [1900, 1450]] },
+    { "id": "D7", "type": "dirt", "points": [[-200, 5200], [600, 5480], [1400, 5760], [2200, 5800]] },
+    { "id": "D8", "type": "dirt", "points": [[-2300, 2900], [-2360, 3700], [-2400, 4440]] }
   ],
   "spawnPoints": [[180, 760], [560, 620], [-120, 1050], [700, 1150], [420, 420]],
   "pois": [
@@ -69,6 +71,8 @@
     { "id": "radar", "name": "Mountain Radar Station", "region": "redstone", "type": "radar", "pos": [4420, -5640], "radius": 100, "hill": 40, "loot": "military", "garrison": [{ "profile": "free_merc", "count": 3, "role": "guard" }, { "profile": "free_merc", "count": 1, "role": "sniper" }] },
     { "id": "research", "name": "Abandoned Research Facility", "region": "redstone", "type": "research", "pos": [5240, -3360], "radius": 130, "loot": "research", "garrison": [{ "profile": "free_merc", "count": 4, "role": "guard" }] },
     { "id": "prison", "name": "Abandoned Prison Complex", "region": "barrens", "type": "prison", "pos": [6080, 1500], "radius": 160, "loot": "police", "garrison": [{ "profile": "wolf_shooter", "count": 4, "role": "guard" }] },
-    { "id": "compound", "name": "Fortified Survivor Compound", "region": "barrens", "type": "compound", "pos": [6200, 5000], "radius": 110, "loot": "camp", "garrison": [{ "profile": "wolf_raider", "count": 4, "role": "guard" }, { "profile": "wolf_shooter", "count": 2, "role": "guard" }] }
+    { "id": "compound", "name": "Fortified Survivor Compound", "region": "barrens", "type": "compound", "pos": [6200, 5000], "radius": 110, "loot": "camp", "garrison": [{ "profile": "wolf_raider", "count": 4, "role": "guard" }, { "profile": "wolf_shooter", "count": 2, "role": "guard" }] },
+    { "id": "airfield", "name": "Kessler Airfield", "region": "farms", "type": "airfield", "pos": [-2400, 4700], "radius": 280, "loot": "airfield", "garrison": [{ "profile": "vsf_rifleman", "count": 4, "role": "guard" }, { "profile": "vsf_marksman", "count": 1, "role": "guard" }, { "profile": "vsf_rifleman", "count": 2, "role": "patrol" }] },
+    { "id": "launch_site", "name": "Launch Site", "region": "greywater", "type": "launch_site", "pos": [2200, 5600], "radius": 230, "loot": "launch_surface", "garrison": [{ "profile": "free_merc", "count": 5, "role": "guard" }, { "profile": "vsf_marksman", "count": 2, "role": "guard" }, { "profile": "vsf_gunner", "count": 1, "role": "guard" }, { "profile": "free_merc", "count": 3, "role": "patrol" }] }
   ]
 }

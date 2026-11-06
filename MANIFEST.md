@@ -78,6 +78,35 @@ guard for missing localStorage. The section below records what the prototype did
   save/load with sentry, farms and trader state: all 9 checks passed across two runs (lights in the
   second run after the flashlight fix), 0 console errors. Unit 56/56; single-player regression 4/4.
 
+## Gear, explosives and Launch Site update (2026-11-06)
+Second batch of player suggestions.
+
+* **Loot:** battery weight ×2.5 with larger stacks (12); batteries added to more containers.
+* **Flashlight:** intensity 38 (handheld) / 48 (weapon light), range 75 m.
+* **Night vision** (`player/NightVision.js`): goggles mount on `nvgMount` helmets (stored in the helmet's
+  stack data), V toggles them, they drain batteries and swap them automatically. Exposure gain is capped
+  in `Lighting` and an ambient lift shows shadow detail. The tint, grain and tube are separate top-level
+  layers: in a shared fixed container the multiply blend was isolated and painted flat green (fixed).
+* **Weapons:** 11 new guns, 12 attachments (optic by item shape, brake, angled grip, bipod, laser beam
+  tied to the light, drum magazine, `hipMul`), ammo_50; AI loadouts use the new guns.
+* **Gear:** 3 backpacks, 4 vests/plate carriers, 2 helmets plus a beanie.
+* **Explosives** (`weapons/Explosives.js`): frag, smoke (`physics.smokes` blocks `lineOfSight`), flashbang
+  (AI `blindT`, player white-out), fire bottle (area burn, wooden pieces), C4 + detonator (structures,
+  vehicles, glass, turrets). Q throws, Shift+Q cycles.
+* **Kessler Airfield** POI (lockbox profile `keycard` always has `keycard_launch`) and the **Launch Site**:
+  security wall, key-card gates (`ctx.gates`, saved open state), lift houses (`ctx.lifts`), and an
+  underground facility at Y −400 (`UNDERGROUND_Y = −250`: no terrain, water or sky light below it)
+  with 6 `FacilityTurrets` (destroyed ids saved) and launch loot profiles. Roads D7 and D8.
+* **Base building QoL/RP:** piece categories and tabs, wheel cycling, R pick-up with full refund,
+  13 new pieces (seats, bed with sleep and respawn, storage furniture, flag, editable sign, planter,
+  rain collector, stove).
+* **Tests:** `tests/e2e/update2.mjs` (8 stages). The AI-sim garrison test now averages 3 seeds.
+* **Results (software WebGL, chromebook preset 960×540):** unit 48/48; update2 all 8 stages passed across
+  runs (guns-and-attachments, night-vision, grenades, demolition, airfield-keycard, launch-site with
+  6 turrets firing and the vault opened, base-roleplay, save-load restoring gates, destroyed turrets and
+  sign text); playtest new-game/weapons/kill-ai/save-load 4/4; 0 console errors. Not measured on real GPUs.
+* **Gaps:** AI do not throw grenades; turrets only target the player.
+
 ## Online co-op, stage 1 (2026-11-05)
 Goal: friends play in one shared world, hosted for free (Render), reachable from the user's Zite site.
 

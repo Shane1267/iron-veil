@@ -21,6 +21,7 @@ export function effectiveWeapon(stack) {
   e.reloadMul = 1;
   e.damageMul = 1;
   e.adsTimeMul = 1;
+  e.hipMul = 1;
   const attach = stack.data?.attach || {};
   for (const [slot, id] of Object.entries(attach)) {
     if (!id) continue;
@@ -40,6 +41,7 @@ export function effectiveWeapon(stack) {
     if (a.damageMul) e.damageMul *= a.damageMul;
     if (a.adsTimeMul) e.adsTimeMul *= a.adsTimeMul;
     if (a.light) e.light = true;
+    if (a.hipMul) e.hipMul *= a.hipMul;
   }
   // without an optic, weapons whose default sight is a scope fall back to iron sights
   if (!attach.optic && base.sight === 'scope') {
@@ -52,6 +54,7 @@ export function effectiveWeapon(stack) {
   e.adsTime = (base.adsTime || 0.25) * e.adsTimeMul;
   e.reloadTime = (base.reloadTime || 2) * e.reloadMul;
   e.noise = (base.noise || 300) * e.noiseMul;
+  e.spreadHip = (base.spreadHip || 2) * e.hipMul;
   // condition affects accuracy
   const cond = stack.data?.cond ?? 1;
   e.condSpread = 1 + Math.max(0, 0.6 - cond) * 1.5;

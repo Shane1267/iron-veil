@@ -67,7 +67,9 @@ upload). No server code or special headers are required. Opening `dist/index.htm
 | Secondary action (lock, refuel, fill water) · climb a ladder to the other end | F |
 | Flashlight (works unarmed too) · inspect weapon | T · Y |
 | Inventory · map · build · crafting · journal | Tab or I · M · G · H · J |
-| Rotate building piece | Q |
+| Night vision (helmet-mounted goggles) | V |
+| Throw grenade / smoke / flashbang / fire bottle · choose which | Q · Shift+Q |
+| Build mode: rotate · next/previous piece · pick up a piece you placed | Q · mouse wheel · R |
 | Map marker at your position | N |
 | Vehicle: throttle/brake/steer · handbrake · lights (off → low → high) · exit | W/S/A/D · Space · L · E |
 | Debug menu (code 3209) | hold Tab, press 3 |
@@ -88,6 +90,35 @@ Click the game view to capture the mouse. Releasing the pointer (Esc) opens the 
   people it can see, reloads from storage, and goes quiet when empty. **Lumber Yard** (20 planks per
   in-game day) and **Scrap Workshop** (5 scrap metal per day) produce while you are away; collect from
   them with E. **Fuel Pump** — refills an empty jerrycan (up to 3 per day, stores 6).
+
+## Airfield, Launch Site and new gear
+
+* **Kessler Airfield** (far south-west): a runway, hangars, parked and wrecked aircraft and a control
+  tower, held by the military. The **Flight Ops Lockbox** in the operations tent always holds the
+  **Launch Site key card**.
+* **Launch Site** (far south, east of the airfield): a walled compound with a rocket on its pad, an HQ,
+  hangar, barracks, warehouse and radar, heavily guarded. The main gate, the lift house and the vault
+  need the key card. The lift goes down to an **underground facility** about 400 m below ground:
+  a long main tunnel, armory and lab wings, a silo chamber with a second rocket, a control room and a
+  vault. Six ceiling turrets guard the tunnels; they can be shot or blown up, and smoke blinds them.
+  The loot down there is the best in the game (high-end rifles, the .50 rifle, NV-3 goggles, heavy plates).
+* **Night vision.** NV-1 and NV-3 goggles mount on helmets with a mount (combat, bump and heavy
+  helmets): inspect the helmet in your inventory, mount, wear, press V. They use batteries.
+* **Guns:** 11 new (PX-17 and Hornet pistols, Wasp SMG, Kresta rifle, Talon carbine, Halberd DMR,
+  Frontier lever rifle, Goliath .50 anti-materiel rifle, riot shotgun, machete, crowbar).
+  **Attachments:** holo and 2× sights, muzzle brake, flash hider, angled grip, bipod, laser/light
+  combos (better hip-fire, laser shows when the light is on), drum and extended magazines, precision stock.
+* **Gear:** sling, tactical and frame backpacks; chest rig, light/heavy plate carriers and assault vest;
+  bump and heavy helmets. Batteries are now much more common; the flashlight is brighter and reaches further.
+* **Explosives:** frag grenades, smoke (blocks everyone's sight, AI included), flashbangs, fire bottles
+  (burning area, sets wooden building pieces alight), and demolition charges — place with the charge,
+  set them off with the detonator. Charges break walls, doors, turrets and vehicles.
+* **Base building:** pieces are sorted into tabs (structure, defence, storage, production, utility,
+  furniture), the mouse wheel cycles pieces, R picks up an undamaged empty piece for a full refund.
+  New pieces: chair and bench (sit), table, bed (sleep, respawn point), bookshelf, weapon rack, rug,
+  plant pot, flag (colour by rotation), sign post (write your own text), planter (apples daily),
+  rain collector (water daily) and stove (light and warmth). Sleeping is refused with enemies nearby
+  or while bleeding.
 
 ## Debug menu
 
@@ -227,6 +258,7 @@ AI difficulty, hunger/thirst rate, world-event frequency, loot restock interval)
 * Vehicles use simplified arcade-style physics; there is no vehicle damage model per part.
 * Single player only (an online co-op prototype was built and then removed to save hosting costs; see MANIFEST).
 * Gamepad is not supported.
+* AI do not throw grenades or use smoke; facility turrets only target the player.
 
 ## Performance notes
 

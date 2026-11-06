@@ -837,6 +837,206 @@ export class StructureBuilder extends BuildingGenerator {
     this.box(f, 'black', 0, 1.4, -0.05, 2.9, 2.8, 0.1, { collide: false });
   }
 
+  // ---------------------------------------------------------------- airfield and launch site
+  /** Light aircraft parked (or wrecked) on an apron. */
+  aircraft(x, y, z, rot, opts = {}) {
+    const f = new Frame(x, y, z, rot);
+    const wreck = !!opts.wreck;
+    const body = opts.color || 'paint_white';
+    this.box(f, body, 0, 1.3, 0, 1.4, 1.5, 8.5, { rotX: wreck ? 0.08 : 0 });
+    this.box(f, 'black', 0, 1.85, -2.2, 1.2, 0.5, 1.4, { collide: false });
+    this.box(f, body, 0, 1.75, -0.6, wreck ? 6 : 11, 0.14, 1.8, { collide: false, rotZ: wreck ? 0.12 : 0 });
+    this.box(f, body, 0, 1.6, 3.9, 3.6, 0.1, 1.0, { collide: false });
+    this.box(f, body, 0, 2.5, 4.0, 0.12, 1.8, 1.2, { collide: false });
+    this.box(f, 'paint_red', 0, 1.3, -4.4, 0.6, 0.6, 0.3, { collide: false });
+    if (!wreck) {
+      this.box(f, 'black', 0, 1.3, -4.6, 2.2, 0.12, 0.06, { collide: false });
+      for (const lx of [-1.4, 1.4]) { this.cyl(f, 'black', lx, 0.35, -0.4, 0.35, 0.25, 12, { rotZ: Math.PI / 2, collide: false }); this.box(f, 'metal_dark', lx, 0.8, -0.4, 0.08, 0.9, 0.08, { collide: false }); }
+    } else {
+      this.box(f, 'black', 3.6, 0.4, -0.2, 2.4, 0.5, 1.6, { collide: false, rotY: 0.6, shade: 0.5 });
+    }
+  }
+
+  /** Concrete security wall around a rectangle, with one gap per gate. gates: [{side, at, w}] */
+  securityWall(x, y, z, x0, z0, x1, z1, h = 4.5, gates = [], gy = null) {
+    const sides = { N: [x0, z0, x1, z0], S: [x0, z1, x1, z1], W: [x0, z0, x0, z1], E: [x1, z0, x1, z1] };
+    for (const [side, [ax, az, bx, bz]] of Object.entries(sides)) {
+      const len = Math.hypot(bx - ax, bz - az);
+      const along = side === 'N' || side === 'S';
+      const gaps = gates.filter((g) => g.side === side).map((g) => [len / 2 + g.at - g.w / 2, len / 2 + g.at + g.w / 2]);
+      const n = Math.ceil(len / 6);
+      for (let i = 0; i < n; i++) {
+        const t0 = (i / n) * len, t1 = ((i + 1) / n) * len;
+        if (gaps.some(([g0, g1]) => t1 > g0 && t0 < g1)) continue;
+        const tm = (t0 + t1) / 2;
+        const lx = along ? ax + tm : ax, lz = along ? az : az + tm;
+        const wx = x + lx, wz = z + lz;
+        const base = gy ? gy(wx, wz) : y;
+        const f = new Frame(wx, base - 0.6, wz, along ? 0 : 1);
+        this.box(f, 'concrete', 0, (h + 0.6) / 2, 0, t1 - t0 + 0.05, h + 0.6, 0.45);
+        this.box(f, 'metal_dark', 0, h + 0.75, 0, t1 - t0, 0.3, 0.12, { collide: false });
+        if (i % 3 === 0) this.box(f, 'paint_yellow', 0, 1.2, 0.24, Math.min(2.5, t1 - t0), 0.25, 0.02, { collide: false });
+      }
+    }
+  }
+
+  /** Sliding gate (or vault door) that opens with a key card. */
+  keyGate(x, y, z, rot, opts = {}) {
+    const f = new Frame(x, y, z, rot);
+    const w = opts.w || 8, h = opts.h || 4.5;
+    this.box(f, 'concrete_dark', -w / 2 - 0.5, h / 2 + 0.2, 0, 1.0, h + 0.4, 0.9);
+    this.box(f, 'concrete_dark', w / 2 + 0.5, h / 2 + 0.2, 0, 1.0, h + 0.4, 0.9);
+    if (!opts.sink) this.box(f, 'metal_dark', 0, h + 0.4, 0, w + 2, 0.4, 0.9, { collide: false });
+    // card reader with a red lamp, on the approach side
+    const rx = w / 2 + 1.2;
+    this.box(f, 'metal_dark', rx, 1.25, 0.6, 0.25, 0.35, 0.12, { collide: false });
+    this.box(f, 'emissive_lamp', rx, 1.32, 0.67, 0.12, 0.06, 0.02, { collide: false });
+    this.ctx.gates.push({ x, y, z, yaw: f.theta, w, h, d: opts.d || 0.35, mat: opts.mat || 'metal_dark', name: opts.name || 'Security gate', sink: !!opts.sink, ix: f.wx(rx, 0.9), iz: f.wz(rx, 0.9) });
+  }
+
+  /** Rocket on its pad with a service gantry and flame trench. */
+  launchPad(x, y, z, rot) {
+    const f = new Frame(x, y, z, rot);
+    this.box(f, 'concrete_dark', 0, 0.3, 0, 26, 0.6, 26);
+    this.box(f, 'black', 0, 0.62, 9, 6, 0.05, 8, { collide: false });
+    // rocket: stages, interstage bands, nose cone and fins
+    this.cyl(f, 'paint_white', 0, 0.6 + 12, 0, 1.7, 24, 20);
+    this.cyl(f, 'black', 0, 0.6 + 8, 0, 1.72, 0.6, 20, { collide: false });
+    this.cyl(f, 'black', 0, 0.6 + 18, 0, 1.72, 0.6, 20, { collide: false });
+    this.cyl(f, 'paint_white', 0, 0.6 + 27, 0, 1.4, 6, 20, { rBot: 1.7, collide: false });
+    this.cyl(f, 'paint_white', 0, 0.6 + 32, 0, 0.05, 4, 16, { rBot: 1.4, collide: false });
+    for (const a of [0, 1, 2, 3]) {
+      const lx = Math.cos((a * Math.PI) / 2 + 0.785) * 2.1, lz = Math.sin((a * Math.PI) / 2 + 0.785) * 2.1;
+      this.box(f, 'paint_red', lx, 2.6, lz, 0.15, 3.5, 1.6, { collide: false, rotY: (a * Math.PI) / 2 + 0.785 });
+    }
+    // gantry tower with arms
+    for (const [lx, lz] of [[-6, -1.5], [-3, -1.5], [-6, 1.5], [-3, 1.5]]) this.box(f, 'paint_red', lx, 18.6, lz, 0.4, 36, 0.4);
+    for (let i = 0; i < 12; i++) {
+      this.box(f, 'metal_dark', -4.5, 3 + i * 3, 0, 3.4, 0.25, 3.4, { collide: i % 4 === 0 });
+      this.box(f, 'paint_red', -4.5, 1.5 + i * 3, -1.5, 3.2, 0.12, 0.12, { collide: false, rotZ: i % 2 ? 0.7 : -0.7 });
+    }
+    for (const yy of [10, 20, 28]) this.box(f, 'metal_dark', -2.4, yy, 0, 2.6, 0.5, 1.2, { collide: false });
+    this.box(f, 'emissive_lamp', -4.5, 37, 0, 0.4, 0.4, 0.4, { collide: false });
+  }
+
+  /** Small concrete lift house over the shaft into the facility. */
+  liftHouse(x, y, z, rot, opts = {}) {
+    const f = new Frame(x, y, z, rot);
+    const w = 8, d = 8, h = 4.2;
+    this.box(f, 'concrete', 0, 0.1, 0, w, 0.2, d);
+    this.box(f, 'concrete', -w / 2, h / 2, 0, 0.4, h, d);
+    this.box(f, 'concrete', w / 2, h / 2, 0, 0.4, h, d);
+    this.box(f, 'concrete', 0, h / 2, -d / 2, w, h, 0.4);
+    this.box(f, 'concrete', -w / 2 + 1.5, h / 2, d / 2, 3, h, 0.4);
+    this.box(f, 'concrete', w / 2 - 1.5, h / 2, d / 2, 3, h, 0.4);
+    this.box(f, 'concrete_dark', 0, h + 0.2, 0, w + 0.6, 0.4, d + 0.6);
+    this.box(f, 'metal_dark', 0, 1.6, -d / 2 + 0.35, 2.6, 3.0, 0.2, { collide: false });
+    this.box(f, 'paint_yellow', 0, 3.25, -d / 2 + 0.36, 2.8, 0.2, 0.05, { collide: false });
+    this.box(f, 'emissive_lamp', 0, h - 0.15, 0, 1.2, 0.08, 0.5, { collide: false });
+    this.ctx.lights.push({ x, y: y + h - 0.5, z, color: 0xd8e4ff, intensity: 5, range: 10 });
+    this.ctx.lifts.push({ x: f.wx(0, -d / 2 + 1.4), y, z: f.wz(0, -d / 2 + 1.4), label: 'Take the lift down (key card)', needsCard: true, to: opts.to });
+  }
+
+  /**
+   * Underground facility under the launch site, built at depth Y (absolute). A lift room,
+   * the main tunnel, a cross tunnel to the armoury and the lab, the silo chamber with a
+   * second rocket, the control room and the vault behind a key-card door. Hostile
+   * defence turrets still guard it.
+   */
+  facility(x, z, Y, liftTop) {
+    const T = 0.45;
+    const self = this;
+    const F = new Frame(x, Y, z, 0);
+    const lamp = (lx, lz, h) => {
+      self.box(F, 'emissive_lamp', lx, h - 0.06, lz, 1.6, 0.08, 0.35, { collide: false });
+      self.ctx.lights.push({ x: x + lx, y: Y + h - 0.5, z: z + lz, color: 0xdce6ff, intensity: 7, range: 15 });
+    };
+    // room: floor, ceiling, walls with gaps. gaps: {N:[[centre, width]], ...} in local coordinates
+    const room = (x0, z0, x1, z1, h, gaps = {}, opts = {}) => {
+      const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, w = x1 - x0, d = z1 - z0;
+      self.box(F, opts.floor || 'concrete_dark', cx, -0.25, cz, w + 2 * T, 0.5, d + 2 * T);
+      self.box(F, 'concrete', cx, h + 0.25, cz, w + 2 * T, 0.5, d + 2 * T);
+      const sides = { N: [x0, z0, x1, z0], S: [x0, z1, x1, z1], W: [x0, z0, x0, z1], E: [x1, z0, x1, z1] };
+      for (const [side, [ax, az, bx, bz]] of Object.entries(sides)) {
+        const along = side === 'N' || side === 'S';
+        const a = along ? ax - T : az - T, b = along ? bx + T : bz + T;
+        const gs = (gaps[side] || []).map(([c, gw]) => [c - gw / 2, c + gw / 2]).sort((p, q) => p[0] - q[0]);
+        let t = a;
+        const seg = (s0, s1) => {
+          if (s1 - s0 < 0.05) return;
+          const m = (s0 + s1) / 2;
+          if (along) self.box(F, opts.wall || 'concrete', m, h / 2, az + (side === 'N' ? -T / 2 : T / 2), s1 - s0, h, T);
+          else self.box(F, opts.wall || 'concrete', ax + (side === 'W' ? -T / 2 : T / 2), h / 2, m, T, h, s1 - s0);
+        };
+        for (const [g0, g1] of gs) {
+          seg(t, g0);
+          // lintel over the opening
+          const m = (g0 + g1) / 2;
+          if (along) self.box(F, 'concrete', m, (h + 3) / 2, az + (side === 'N' ? -T / 2 : T / 2), g1 - g0, h - 3, T, { collide: h - 3 > 0.1 });
+          else self.box(F, 'concrete', ax + (side === 'W' ? -T / 2 : T / 2), (h + 3) / 2, m, T, h - 3, g1 - g0, { collide: h - 3 > 0.1 });
+          t = g1;
+        }
+        seg(t, b);
+      }
+      // hazard stripes along the floor edges
+      if (w > d) { self.box(F, 'paint_yellow', cx, 0.01, z0 + 0.15, w, 0.02, 0.15, { collide: false }); self.box(F, 'paint_yellow', cx, 0.01, z1 - 0.15, w, 0.02, 0.15, { collide: false }); }
+      else { self.box(F, 'paint_yellow', x0 + 0.15, 0.01, cz, 0.15, 0.02, d, { collide: false }); self.box(F, 'paint_yellow', x1 - 0.15, 0.01, cz, 0.15, 0.02, d, { collide: false }); }
+      // ceiling lights every ~10 m along the long axis
+      const n = Math.max(1, Math.round(Math.max(w, d) / 10));
+      for (let i = 0; i < n; i++) {
+        const k = (i + 0.5) / n;
+        if (w > d) lamp(x0 + w * k, cz, h); else lamp(cx, z0 + d * k, h);
+      }
+    };
+    const crate = (lx, lz, profile, name = 'Supply Crate', kind = 'crate') => {
+      if (kind === 'gunrack') { self.box(F, 'metal_dark', lx, 0.95, lz, 1.4, 1.9, 0.5); }
+      else if (kind === 'ammobox') { self.box(F, 'olive', lx, 0.22, lz, 0.8, 0.45, 0.5); }
+      else if (kind === 'serverrack') { self.box(F, 'metal_dark', lx, 1.0, lz, 0.7, 2.0, 1.0); self.box(F, 'emissive_lamp', lx, 1.5, lz + 0.51, 0.4, 0.05, 0.01, { collide: false }); }
+      else { self.box(F, 'olive', lx, 0.4, lz, 1.0, 0.8, 0.8); self.box(F, 'wood_dark', lx, 0.81, lz, 1.02, 0.03, 0.82, { collide: false }); }
+      self.ctx.containers.push({ x: x + lx, y: Y + 0.9, z: z + lz, name, profile, capacity: 12, kind });
+    };
+    const turret = (lx, lz, h, weapon = 'wpn_arv7') => {
+      self.box(F, 'metal_dark', lx, h - 0.2, lz, 0.5, 0.4, 0.5, { collide: false });
+      self.ctx.turrets.push({ x: x + lx, y: Y + h - 0.75, z: z + lz, weapon, hanging: true });
+    };
+    // lift room and lift back up
+    room(-5, 58, 5, 68, 4.2, { N: [[0, 4]] });
+    this.box(F, 'metal_dark', 0, 1.6, 67.6, 2.6, 3.0, 0.2, { collide: false });
+    this.box(F, 'paint_yellow', 0, 3.25, 67.5, 2.8, 0.2, 0.05, { collide: false });
+    this.ctx.lifts.push({ x: x, y: Y, z: z + 66.4, label: 'Take the lift up', to: liftTop });
+    // main tunnel north-south
+    room(-3, -60, 3, 58, 4.6, { S: [[0, 4]], N: [[0, 4]], E: [[0, 5], [40, 4]], W: [[0, 5]] });
+    // cross tunnel and its rooms
+    room(-44, -2.5, -3, 2.5, 4.2, { E: [[0, 5]], W: [[0, 4]] });
+    room(3, -2.5, 44, 2.5, 4.2, { W: [[0, 5]], E: [[0, 4]] });
+    room(-62, -9, -44, 9, 4.0, { E: [[0, 4]] });
+    room(44, -10, 64, 10, 4.0, { W: [[0, 4]] });
+    // armoury
+    for (let i = 0; i < 4; i++) crate(-61, -6 + i * 4, 'launch_armory', 'Weapon Locker', 'gunrack');
+    for (let i = 0; i < 3; i++) crate(-50, -6 + i * 5, 'launch_armory', 'Ammo Crate', 'ammobox');
+    // lab
+    for (let i = 0; i < 3; i++) crate(63, -7 + i * 6, 'launch_lab', 'Server Rack', 'serverrack');
+    for (let i = 0; i < 2; i++) { this.box(F, 'metal', 52, 0.46, -5 + i * 9, 2.4, 0.92, 0.8); crate(52, -3.5 + i * 9, 'launch_lab', 'Lab Bench'); }
+    // silo chamber with a second rocket
+    room(3, 38, 30, 42, 4.2, { W: [[40, 4]], E: [[40, 4]] });
+    room(30, 24, 58, 56, 30, { W: [[40, 4]] }, { wall: 'concrete_dark' });
+    this.cyl(F, 'paint_white', 44, 14, 40, 2.2, 26, 20);
+    this.cyl(F, 'paint_white', 44, 29.5, 40, 0.1, 5, 16, { rBot: 2.2, collide: false });
+    this.box(F, 'metal_dark', 44, 8, 33.5, 12, 0.3, 2.5);
+    for (let i = 0; i < 3; i++) crate(33 + i * 2.5, 54, 'launch_surface', 'Supply Crate');
+    // control room and vault
+    room(-12, -82, 12, -60, 4.4, { S: [[0, 4]], N: [[0, 3.2]] });
+    for (let i = 0; i < 5; i++) { this.box(F, 'metal_dark', -9 + i * 4.5, 0.5, -79, 3.2, 1.0, 1.0); this.box(F, 'emissive_lamp', -9 + i * 4.5, 1.05, -78.6, 2.6, 0.03, 0.5, { collide: false }); }
+    crate(-10, -64, 'launch_surface', 'Supply Crate');
+    crate(10, -64, 'launch_lab', 'Server Rack', 'serverrack');
+    room(-7, -98, 7, -82, 3.6, { S: [[0, 3.2]] }, { floor: 'metal_dark', wall: 'metal_dark' });
+    this.keyGate(x, Y, z - 82, 0, { w: 3.2, h: 3.0, d: 0.5, name: 'Vault door', sink: true, mat: 'metal' });
+    for (let i = 0; i < 4; i++) crate(-5 + (i % 2) * 10, -96 + Math.floor(i / 2) * 5, 'launch_vault', 'Vault Crate');
+    crate(0, -96, 'launch_vault', 'Vault Crate');
+    // defence turrets
+    turret(0, 30, 4.6); turret(0, -30, 4.6); turret(-24, 0, 4.2); turret(24, 0, 4.2); turret(44, 40, 4.2, 'wpn_anvil'); turret(0, -70, 4.4, 'wpn_anvil');
+  }
+
   sign(x, y, z, rot, text) {
     const f = new Frame(x, y, z, rot);
     this.box(f, 'wood_dark', -1.3, 1.1, 0, 0.12, 2.2, 0.12);

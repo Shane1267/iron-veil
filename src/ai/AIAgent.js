@@ -393,6 +393,7 @@ export class AIAgent {
   }
 
   _perceive(dt) {
+    if (this.blindT > 0) { this.blindT -= dt; return; } // stunned by a flash
     const range = this._visionRange();
     const eye = this.eye.clone();
     const fx = -Math.sin(this.yaw), fz = -Math.cos(this.yaw);

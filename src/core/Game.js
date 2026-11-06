@@ -9,7 +9,7 @@ import { saves } from './SaveManager.js';
 import { Renderer } from '../engine/Renderer.js';
 import { Lighting } from '../engine/Lighting.js';
 import { Materials } from '../engine/Materials.js';
-import { PhysicsWorld } from '../engine/PhysicsWorld.js';
+import { PhysicsWorld, UNDERGROUND_Y } from '../engine/PhysicsWorld.js';
 import { LightPool } from '../engine/LightPool.js';
 import { getWorldData } from '../world/WorldData.js';
 import { TerrainManager } from '../world/TerrainManager.js';
@@ -37,6 +37,9 @@ import { UIManager } from '../ui/UIManager.js';
 import { clamp } from './MathUtil.js';
 import { DebugMenu } from '../ui/DebugMenu.js';
 import { NPCSystem } from '../npc/NPCSystem.js';
+import { Explosives } from '../weapons/Explosives.js';
+import { NightVision } from '../player/NightVision.js';
+import { FacilityTurrets } from '../world/FacilityTurrets.js';
 
 // Top-level orchestrator: owns every system, runs the frame loop, routes input to
 // gameplay or UI, handles interactions, item drops, death/respawn and save/load.
@@ -93,6 +96,10 @@ export class Game {
     this.icons = new IconRenderer(this.materials);
     this.ui = new UIManager(this);
     this.debug = new DebugMenu(this);
+    this.explosives = new Explosives(this);
+    this.nightVision = new NightVision(this);
+    this.turrets = new FacilityTurrets(this);
+    this.openGates = new Set();
 
     this.started = false;
     this.dead = false;
@@ -128,7 +135,8 @@ export class Game {
     bus.on('glass:break', (p) => this.effects.emit(p.x, p.y, p.z, { color: [0.8, 0.9, 0.95], count: 26, speed: 2.5, size: 0.05, life: 1.0, gravity: 9, alpha: 0.9 }));
     bus.on('player:died', (e) => this._onDeath(e));
     bus.on('poi:built', (rt) => {
-      for (const l of rt.lights) l.source = this.lights.add({ x: l.x, y: l.y, z: l.z, street: l.street, color: 0xffd090, intensity: 8, range: 22 });
+      for (const gt of rt.gates || []) if (this.openGates.has(gt.id)) { gt.open = true; gt.slide = 1; gt.collider.enabled = false; if (gt.def.sink) gt.mesh.position.y = gt.home.y - (gt.def.h - 0.05); else gt.mesh.position.set(gt.home.x + Math.cos(gt.def.yaw) * gt.def.w * 0.95, gt.home.y, gt.home.z - Math.sin(gt.def.yaw) * gt.def.w * 0.95); }
+      for (const l of rt.lights) l.source = this.lights.add({ x: l.x, y: l.y, z: l.z, street: l.street, color: l.color || 0xffd090, intensity: l.intensity || 8, range: l.range || 22 });
       for (const f of rt.fires) {
         f.source = this.lights.add({ x: f.x, y: f.y + 0.5, z: f.z, color: 0xff9040, intensity: 8, range: 14, flicker: true, active: () => (this.lighting.nightFactor || 0) > 0.3 });
         f.active = () => (this.lighting.nightFactor || 0) > 0.3;
@@ -267,6 +275,17 @@ export class Game {
   useSpecialItem(id, slotIndex) {
     const inv = this.player.equipment.inventory;
     const def = ItemDB.get(id);
+    if (def.use.placeCharge) {
+      const r = this.explosives.plant();
+      if (r.ok) inv.remove(id, 1);
+      bus.emit('notify', { text: r.msg, kind: r.ok ? 'good' : 'info' });
+      return;
+    }
+    if (def.use.detonate) {
+      const r = this.explosives.detonate();
+      bus.emit('notify', { text: r.msg, kind: r.ok ? 'warn' : 'info' });
+      return;
+    }
     if (def.use.revealRegion) {
       const p = this.player.controller.pos;
       const region = this.world.regionAt(p.x, p.z);
@@ -333,6 +352,10 @@ export class Game {
     this.clock = new GameClock();
     this.events.deserialize(null);
     this.npcs.deserialize(null);
+    this.explosives.clear();
+    this.openGates.clear();
+    this.turrets.deserialize(null);
+    this.nightVision.on = false;
     this.discovered.clear();
     this.fog.data.fill(0);
     this.markers = [];
@@ -457,6 +480,7 @@ export class Game {
       world: {
         clock: this.clock.serialize(), weather: this.weather.serialize(), discovered: [...this.discovered],
         fog: Array.from(this.fog.data).join(''), markers: this.markers, waypoint: this.waypoint, journal: this.journalPages,
+        gates: [...this.openGates], turretsDown: this.turrets.serialize(),
       },
       objectives: this.objectives.serialize(),
       loot: this.loot.serialize(),
@@ -527,6 +551,8 @@ export class Game {
     this.markers = Array.isArray(d.world.markers) ? d.world.markers.filter((m) => Number.isFinite(m?.x) && Number.isFinite(m?.z)) : [];
     this.waypoint = d.world.waypoint && Number.isFinite(d.world.waypoint.x) ? d.world.waypoint : null;
     this.journalPages = Array.isArray(d.world.journal) ? d.world.journal.filter((x) => typeof x === 'string') : [];
+    this.openGates = new Set(Array.isArray(d.world.gates) ? d.world.gates.filter((x) => typeof x === 'string') : []);
+    this.turrets.deserialize(d.world.turretsDown);
     this._restorePiles();
     const slot = d.player?.weaponSlot;
     this.weapons.select(slot && this.player.equipment.slots[slot] ? slot : null);
@@ -599,6 +625,41 @@ export class Game {
       case 'bedroll': bus.emit('notify', { text: 'You will respawn here if you die', kind: 'info' }); break;
       case 'toggleLight': { const pc = it.data.piece; pc.lit = !pc.lit; break; }
       case 'npc': this.npcs.interact(it.data.npc); break;
+      case 'sit': {
+        const pc = it.data.piece;
+        const th = (pc.rot * Math.PI) / 2;
+        this.player.controller.seat = { x: pc.x + Math.sin(th) * 0.05, y: pc.y + 0.05, z: pc.z + Math.cos(th) * 0.05 };
+        this.player.controller.yaw = th;
+        bus.emit('notify', { text: 'Sitting — move to stand up', kind: 'info', key: 'sit' });
+        break;
+      }
+      case 'sleep': this._sleep(it.data.piece); break;
+      case 'editSign': this._editSign(it.data.piece); break;
+      case 'keygate': {
+        const gt = it.data.gate;
+        if (gt.open) { bus.emit('notify', { text: `${gt.def.name} is open`, kind: 'info' }); break; }
+        if (this.player.equipment.inventory.count('keycard_launch') < 1) {
+          bus.emit('sound', { type: 'uiError', ui: true });
+          bus.emit('notify', { text: 'ACCESS DENIED — you need the Launch Site key card. Word is it is kept at Kessler Airfield.', kind: 'warn' });
+          break;
+        }
+        gt.open = true;
+        gt.collider.enabled = false;
+        this.openGates.add(gt.id);
+        bus.emit('sound', { type: 'door', x: gt.def.x, y: gt.def.y, z: gt.def.z, open: true, metal: true });
+        bus.emit('notify', { text: `Key card accepted — ${gt.def.name} opening`, kind: 'good' });
+        break;
+      }
+      case 'lift': {
+        const L = it.data.lift;
+        if (L.needsCard && this.player.equipment.inventory.count('keycard_launch') < 1) {
+          bus.emit('sound', { type: 'uiError', ui: true });
+          bus.emit('notify', { text: 'The lift panel wants a key card', kind: 'warn' });
+          break;
+        }
+        this._ride(L.to);
+        break;
+      }
       case 'fuelPump': { const r = this.base.usePump(it.data.piece); bus.emit('notify', { text: r.msg, kind: r.ok ? 'good' : 'info' }); break; }
       default: break;
     }
@@ -630,6 +691,75 @@ export class Game {
     const time = 1.1 * (1 - this.player.skills.level('scavenging') * 0.04);
     this.interactionAction = { t: 0, time, label: `Searching ${d.name || ''}`, complete: open, pos: this.player.controller.pos.clone() };
     bus.emit('sound', { type: 'pickup', ui: true });
+  }
+
+  /** Sleep in a bed until morning when nobody hostile is close. */
+  _sleep(piece) {
+    const p = this.player.controller.pos;
+    const threat = this.ai.agents.some((a) => a.alive && a.isEnemy(this.player.character) && Math.hypot(a.pos.x - p.x, a.pos.z - p.z) < 90);
+    if (threat) { bus.emit('notify', { text: 'You cannot sleep with enemies nearby', kind: 'warn' }); return; }
+    const s = this.player.survival;
+    if (s.bleeding > 0) { bus.emit('notify', { text: 'Stop the bleeding before you sleep', kind: 'warn' }); return; }
+    const h = this.clock.hours;
+    const hours = h >= 7 && h < 19 ? 4 : ((31 - h) % 24) || 8; // a nap by day, until 07:00 at night
+    const fade = document.createElement('div');
+    fade.className = 'lift-fade';
+    document.body.appendChild(fade);
+    setTimeout(() => {
+      this.clock.gameMinutes += hours * 60;
+      s.stamina = 100;
+      s.health = Math.min(100, s.health + hours * 4);
+      s.hunger = Math.max(5, s.hunger - hours * 2.2);
+      s.thirst = Math.max(5, s.thirst - hours * 3);
+      this.base._produceAll?.();
+      setTimeout(() => { fade.classList.add('out'); setTimeout(() => fade.remove(), 600); }, 900);
+      bus.emit('notify', { text: `You slept ${hours} hours. It is ${this.clock.label}.`, kind: 'good' });
+      this.saveGame('auto', true);
+    }, 650);
+    void piece;
+  }
+
+  /** Write on a sign: a small text box. */
+  _editSign(piece) {
+    this.input.unlock();
+    const box = document.createElement('div');
+    box.className = 'sign-edit';
+    const input = document.createElement('input');
+    input.maxLength = 40;
+    input.value = piece.text || '';
+    input.placeholder = 'What should the sign say?';
+    const hint = document.createElement('div');
+    hint.textContent = 'Enter to save · Esc to cancel';
+    box.append(input, hint);
+    document.body.appendChild(box);
+    this.input.uiCapture = true;
+    input.focus();
+    const done = (save) => {
+      if (save) { this.base.setSignText(piece, input.value.trim()); bus.emit('sound', { type: 'build', x: piece.x, y: piece.y, z: piece.z }); }
+      box.remove();
+      this.input.uiCapture = this.ui.mode !== 'playing';
+      if (this.ui.mode === 'playing') this.input.lock();
+    };
+    input.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.code === 'Enter') done(true); if (e.code === 'Escape') done(false); });
+  }
+
+  /** Lift ride: a short fade to black, then you step out at the other end. */
+  _ride(to) {
+    if (!to || this._riding) return;
+    this._riding = true;
+    const fade = document.createElement('div');
+    fade.className = 'lift-fade';
+    document.body.appendChild(fade);
+    bus.emit('sound', { type: 'engineStart', x: this.player.controller.pos.x, y: this.player.controller.pos.y, z: this.player.controller.pos.z });
+    setTimeout(() => {
+      const pc = this.player.controller;
+      // destinations on the surface give no height: stand on whatever is there
+      const y = Number.isFinite(to.y) ? to.y : this.physics.groundHeight(to.x, to.z, 0.35, this.world.heightAt(to.x, to.z) + 3);
+      pc.teleport(to.x, y + 0.05, to.z, to.yaw ?? pc.yaw);
+      pc.vel?.set?.(0, 0, 0);
+      this.envT = 0;
+      setTimeout(() => { fade.classList.add('out'); setTimeout(() => { fade.remove(); this._riding = false; }, 600); }, 700);
+    }, 650);
   }
 
   /** A ladder within reach: at its foot (climb up) or at its top (climb down). */
@@ -735,6 +865,7 @@ export class Game {
 
     // mouse look
     const mouse = input.consumeMouse();
+    this._wheel = mouse.wheel;
     const inVeh = this.vehicles.current;
     if (gameplay && input.locked && !inVeh) {
       const ads = this.weapons.adsT > 0.5;
@@ -760,6 +891,9 @@ export class Game {
     if (inVeh && gameplay && input.hit('interact')) this.vehicles.exit(this.player);
 
     this.debug.update(dt);
+    this.explosives.update(dt);
+    this.turrets.update(dt);
+    this.nightVision.update(dt);
 
     // survival
     const night = this.lighting.nightFactor || 0;
@@ -799,6 +933,8 @@ export class Game {
         return !hit || hit.t > d - 0.9;
       });
       this.ladderPrompt = this._ladderNear();
+      // safety net: fell out of the world (e.g. through a gap underground)
+      if (pc.pos.y < -700) { pc.teleport(pc.pos.x, this.world.heightAt(pc.pos.x, pc.pos.z) + 1, pc.pos.z, pc.yaw); this._settleSpawn(); }
       if (!this.lookTarget && this._lookingAtWater()) this.waterPrompt = this.player.equipment.inventory.count('empty_bottle') ? 'Fill bottles' : 'Drink water';
       if (!this.base.active) {
         if (input.hit('interact')) {
@@ -865,7 +1001,9 @@ export class Game {
     this.envT -= dt;
     if (this.envT <= 0) {
       this.envT = 0.25;
-      this.indoor = this.base.isSheltered(pc.freeCam ? { x: eye.x, y: eye.y - 1.7, z: eye.z } : pc.pos);
+      const under = eye.y < UNDERGROUND_Y;
+      this.lighting.underground = under;
+      this.indoor = under || this.base.isSheltered(pc.freeCam ? { x: eye.x, y: eye.y - 1.7, z: eye.z } : pc.pos);
       const L = this.lighting.lightDir;
       const shadowed = !!this.physics.raycast(eye.x, eye.y, eye.z, L.x, L.y, L.z, 60, (c) => c.blocksSight && c.tag !== 'character', true);
       this.lighting.setViewShading(this.indoor, shadowed);
@@ -925,6 +1063,10 @@ export class Game {
       this.ui.close();
       return;
     }
+    if (mode === 'playing' && input.hit('nvg')) this.nightVision.toggle();
+    if (mode === 'playing' && !this.base.active && input.hit('throw')) {
+      if (input.down.has('ShiftLeft') || input.down.has('ShiftRight')) this.explosives.cycle(); else this.explosives.throwSelected();
+    }
     if (mode === 'playing' && input.hit('marker')) {
       const p = this.player.controller.pos;
       if (this.markers.length >= 30) this.markers.shift();
@@ -972,6 +1114,7 @@ export class Game {
     const input = this.input;
     if (input.hit('rotate')) b.rotate();
     if (b.selected) {
+      if (this._wheel) b.cycle(this._wheel > 0 ? 1 : -1);
       this.buildInfo = b.updatePreview(eye, fwd);
       if (input.buttonHit(0)) {
         const r = b.place();
@@ -983,6 +1126,7 @@ export class Game {
       const pc = this.basePieceTarget;
       if (pc && input.hit('interact')) { const r = b.repair(pc); bus.emit('notify', { text: r.msg, kind: r.ok ? 'good' : 'info' }); }
       if (pc && input.hit('use')) { const r = b.dismantle(pc); bus.emit('notify', { text: r.msg, kind: r.ok ? 'good' : 'warn' }); }
+      if (pc && input.hit('reload')) { const r = b.pickUp(pc); bus.emit('notify', { text: r.msg, kind: r.ok ? 'good' : 'warn' }); }
     }
     if (input.buttonHit(2)) b.exit();
   }

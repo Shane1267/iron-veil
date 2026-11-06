@@ -48,6 +48,23 @@ export function buildItemModel(id, materials) {
     case 'light': case 'flashlight': add(g, new THREE.CylinderGeometry(0.015, 0.02, 0.14, 12), c, 0, 0.02, 0, Math.PI / 2); add(g, new THREE.CylinderGeometry(0.019, 0.019, 0.003, 12), std('#fff6d0', 0.1), 0, 0.02, -0.071, Math.PI / 2); break;
     case 'mag': add(g, new THREE.BoxGeometry(0.03, 0.16, 0.07), c, 0, 0.08, 0, 0.2); break;
     case 'stock': add(g, new THREE.BoxGeometry(0.04, 0.08, 0.22), c, 0, 0.04, 0); break;
+    case 'holo': add(g, new THREE.BoxGeometry(0.04, 0.014, 0.08), c, 0, 0.007, 0); add(g, new THREE.BoxGeometry(0.05, 0.045, 0.004), c, 0, 0.035, -0.02); add(g, new THREE.BoxGeometry(0.04, 0.034, 0.002), std('#8ab', 0.05), 0, 0.035, -0.017); add(g, new THREE.BoxGeometry(0.05, 0.004, 0.06), c, 0, 0.058, 0); break;
+    case 'brake': add(g, new THREE.CylinderGeometry(0.016, 0.016, 0.07, 12), c, 0, 0.016, 0, Math.PI / 2); for (let i = 0; i < 3; i++) add(g, new THREE.BoxGeometry(0.034, 0.005, 0.008), std('#111'), 0, 0.03, -0.02 + i * 0.018); break;
+    case 'bipod': add(g, new THREE.BoxGeometry(0.04, 0.025, 0.05), c, 0, 0.012, 0); add(g, new THREE.CylinderGeometry(0.005, 0.005, 0.2, 6), c, -0.03, 0.01, 0.1, Math.PI / 2, 0, 0.15); add(g, new THREE.CylinderGeometry(0.005, 0.005, 0.2, 6), c, 0.03, 0.01, 0.1, Math.PI / 2, 0, -0.15); break;
+    case 'drum': add(g, new THREE.CylinderGeometry(0.07, 0.07, 0.06, 20), c, 0, 0.07, 0, 0, 0, Math.PI / 2); add(g, new THREE.BoxGeometry(0.025, 0.05, 0.045), c, 0, 0.14, 0); break;
+    case 'nvg': {
+      const k = std(col, 0.6);
+      add(g, new THREE.BoxGeometry(0.1, 0.04, 0.05), k, 0, 0.05, 0);
+      for (const x of [-0.03, 0.03]) { add(g, new THREE.CylinderGeometry(0.018, 0.02, 0.08, 14), k, x, 0.05, -0.05, Math.PI / 2); add(g, new THREE.CylinderGeometry(0.016, 0.016, 0.002, 14), std('#2a5a3a', 0.05, 0.3), x, 0.05, -0.091, Math.PI / 2); }
+      add(g, new THREE.BoxGeometry(0.03, 0.05, 0.02), k, 0, 0.09, 0.02);
+      break;
+    }
+    case 'grenade': add(g, new THREE.SphereGeometry(0.035, 12, 10), std(col, 0.7), 0, 0.04, 0); add(g, new THREE.CylinderGeometry(0.012, 0.012, 0.025, 10), std('#777', 0.4, 0.8), 0, 0.08, 0); add(g, new THREE.BoxGeometry(0.008, 0.06, 0.014), std('#777', 0.4, 0.8), 0.018, 0.06, 0, 0, 0, -0.3); add(g, new THREE.TorusGeometry(0.01, 0.002, 6, 12), std('#bbb', 0.3, 0.9), -0.015, 0.095, 0); break;
+    case 'smokegren': case 'flashbang': add(g, new THREE.CylinderGeometry(0.03, 0.03, 0.11, 14), std(col, 0.6), 0, 0.055, 0); add(g, new THREE.CylinderGeometry(0.031, 0.031, 0.02, 14), std(def.shape === 'smokegren' ? '#c8c8c0' : '#3a6a3a', 0.6), 0, 0.09, 0); add(g, new THREE.CylinderGeometry(0.01, 0.01, 0.025, 10), std('#777', 0.4, 0.8), 0, 0.12, 0); break;
+    case 'molotov': add(g, new THREE.CylinderGeometry(0.035, 0.035, 0.16, 14), new THREE.MeshStandardMaterial({ color: '#7a5a2a', roughness: 0.1, transparent: true, opacity: 0.8 }), 0, 0.08, 0); add(g, new THREE.CylinderGeometry(0.012, 0.02, 0.05, 10), std('#4a3a2a'), 0, 0.18, 0); add(g, new THREE.BoxGeometry(0.03, 0.06, 0.01), std('#d8d0b8', 0.9), 0.01, 0.22, 0, 0, 0, 0.4); break;
+    case 'c4': add(g, new THREE.BoxGeometry(0.14, 0.04, 0.08), std(col, 0.9), 0, 0.02, 0); add(g, new THREE.BoxGeometry(0.05, 0.025, 0.04), std('#2a2a2a', 0.5), 0, 0.05, 0); add(g, new THREE.CylinderGeometry(0.003, 0.003, 0.1, 6), std('#c83a2a', 0.5), 0.03, 0.05, 0.02, 0, 0, Math.PI / 2); add(g, new THREE.CylinderGeometry(0.003, 0.003, 0.1, 6), std('#2a5ac8', 0.5), 0.03, 0.055, -0.01, 0, 0, Math.PI / 2); break;
+    case 'detonator': add(g, new THREE.BoxGeometry(0.06, 0.1, 0.03), std(col, 0.6), 0, 0.05, 0); add(g, new THREE.CylinderGeometry(0.003, 0.003, 0.08), std('#888', 0.3, 0.9), 0.02, 0.14, 0); add(g, new THREE.CylinderGeometry(0.012, 0.012, 0.01, 12), std('#c83a2a', 0.4), 0, 0.075, 0.016, Math.PI / 2); break;
+    case 'keycard': add(g, new THREE.BoxGeometry(0.086, 0.002, 0.054), std(col, 0.4), 0, 0.001, 0); add(g, new THREE.BoxGeometry(0.02, 0.0025, 0.016), std('#d8c060', 0.3, 0.9), -0.025, 0.002, 0); add(g, new THREE.BoxGeometry(0.086, 0.0025, 0.008), std('#1a1a1a', 0.5), 0, 0.002, 0.018); break;
     case 'roll': add(g, new THREE.CylinderGeometry(0.03, 0.03, 0.07, 16), c, 0, 0.035, 0); break;
     case 'kit': add(g, new THREE.BoxGeometry(0.16, 0.08, 0.1), c, 0, 0.04, 0); add(g, new THREE.BoxGeometry(0.06, 0.004, 0.018), std('#c0392b'), 0, 0.081, 0); add(g, new THREE.BoxGeometry(0.018, 0.004, 0.06), std('#c0392b'), 0, 0.081, 0); break;
     case 'pills': add(g, new THREE.CylinderGeometry(0.02, 0.02, 0.06, 14), std('#d8a040', 0.4), 0, 0.03, 0); add(g, new THREE.CylinderGeometry(0.022, 0.022, 0.015, 14), std('#eee'), 0, 0.067, 0); break;

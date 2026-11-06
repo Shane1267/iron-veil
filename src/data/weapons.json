@@ -1,193 +1,1674 @@
 {
-  "_doc": "Weapon catalogue. Angles in degrees, distances in metres, times in seconds. recoil.v/h = per-shot camera kick; spread = cone half-angle. projectile=true uses simulated bullets with drop/travel time, otherwise hitscan.",
-  "weapons": [
-    {
-      "id": "wpn_vk9", "name": "VK-9 Compact", "class": "pistol", "slot": "sidearm",
-      "ammo": "ammo_9mm", "magSize": 15, "fireModes": ["semi"], "rpm": 480,
-      "damage": 28, "falloffStart": 20, "falloffEnd": 60, "minDamage": 0.55,
-      "velocity": 360, "projectile": false, "pellets": 1, "penetration": 0.6,
-      "spreadHip": 2.2, "spreadAds": 0.35, "moveSpread": 1.5,
-      "recoil": { "v": 1.4, "h": 0.5, "recover": 9, "kick": 0.05, "rot": 0.22 },
-      "adsTime": 0.16, "reloadTime": 1.6, "reloadType": "mag", "equipTime": 0.35,
-      "sway": 0.7, "weight": 0.7, "sight": "iron", "adsFov": 0.86, "noise": 230,
-      "attach": { "muzzle": ["sup_9mm"], "light": ["light_pistol"], "mag": ["mag_ext_9mm"] },
-      "model": { "kind": "pistol", "tone": "black" },
-      "sound": { "body": 0.75, "crack": 0.55, "pitch": 1.25, "tail": 0.5 }
-    },
-    {
-      "id": "wpn_harrow45", "name": "Harrow .45", "class": "pistol", "slot": "sidearm",
-      "ammo": "ammo_45", "magSize": 8, "fireModes": ["semi"], "rpm": 380,
-      "damage": 40, "falloffStart": 18, "falloffEnd": 55, "minDamage": 0.5,
-      "velocity": 260, "projectile": false, "pellets": 1, "penetration": 0.55,
-      "spreadHip": 2.4, "spreadAds": 0.4, "moveSpread": 1.6,
-      "recoil": { "v": 2.4, "h": 0.7, "recover": 8, "kick": 0.07, "rot": 0.32 },
-      "adsTime": 0.17, "reloadTime": 1.75, "reloadType": "mag", "equipTime": 0.4,
-      "sway": 0.75, "weight": 1.1, "sight": "iron", "adsFov": 0.86, "noise": 250,
-      "attach": { "muzzle": ["sup_45"], "light": ["light_pistol"] },
-      "model": { "kind": "pistol", "tone": "steel", "heavy": true },
-      "sound": { "body": 1.0, "crack": 0.45, "pitch": 0.95, "tail": 0.6 }
-    },
-    {
-      "id": "wpn_m6rev", "name": "M-6 Service Revolver", "class": "pistol", "slot": "sidearm",
-      "ammo": "ammo_357", "magSize": 6, "fireModes": ["semi"], "rpm": 260,
-      "damage": 54, "falloffStart": 22, "falloffEnd": 70, "minDamage": 0.55,
-      "velocity": 410, "projectile": false, "pellets": 1, "penetration": 0.8,
-      "spreadHip": 2.1, "spreadAds": 0.3, "moveSpread": 1.6,
-      "recoil": { "v": 3.6, "h": 0.8, "recover": 7, "kick": 0.09, "rot": 0.45 },
-      "adsTime": 0.18, "reloadTime": 0.55, "reloadType": "single", "reloadStart": 0.45, "reloadEnd": 0.35, "equipTime": 0.4,
-      "sway": 0.8, "weight": 1.2, "sight": "iron", "adsFov": 0.85, "noise": 280,
-      "attach": {},
-      "model": { "kind": "revolver", "tone": "steel" },
-      "sound": { "body": 1.1, "crack": 0.8, "pitch": 0.9, "tail": 0.8 }
-    },
-    {
-      "id": "wpn_fieldline", "name": "Fieldline 12P", "class": "shotgun", "slot": "primary",
-      "ammo": "ammo_12ga", "magSize": 6, "fireModes": ["semi"], "rpm": 75,
-      "action": "pump", "cycleTime": 0.55,
-      "damage": 15, "falloffStart": 8, "falloffEnd": 35, "minDamage": 0.2,
-      "velocity": 400, "projectile": false, "pellets": 9, "pelletSpread": 3.2, "penetration": 0.3,
-      "spreadHip": 1.4, "spreadAds": 0.8, "moveSpread": 1.0,
-      "recoil": { "v": 5.2, "h": 1.2, "recover": 6, "kick": 0.14, "rot": 0.55 },
-      "adsTime": 0.26, "reloadTime": 0.55, "reloadType": "single", "reloadStart": 0.4, "reloadEnd": 0.45, "equipTime": 0.6,
-      "sway": 1.0, "weight": 3.4, "sight": "iron", "adsFov": 0.88, "noise": 330,
-      "attach": { "light": ["light_rail"] },
-      "model": { "kind": "shotgun", "tone": "black", "stock": "fixed", "mag": "tube", "length": 1.0 },
-      "sound": { "body": 1.4, "crack": 0.4, "pitch": 0.7, "tail": 1.0 }
-    },
-    {
-      "id": "wpn_breaker", "name": "Breaker S12", "class": "shotgun", "slot": "primary",
-      "ammo": "ammo_12ga", "magSize": 8, "fireModes": ["semi"], "rpm": 240,
-      "damage": 13, "falloffStart": 8, "falloffEnd": 32, "minDamage": 0.2,
-      "velocity": 390, "projectile": false, "pellets": 8, "pelletSpread": 3.6, "penetration": 0.3,
-      "spreadHip": 1.6, "spreadAds": 0.9, "moveSpread": 1.0,
-      "recoil": { "v": 4.4, "h": 1.4, "recover": 6.5, "kick": 0.12, "rot": 0.5 },
-      "adsTime": 0.27, "reloadTime": 0.5, "reloadType": "single", "reloadStart": 0.35, "reloadEnd": 0.4, "equipTime": 0.65,
-      "sway": 1.0, "weight": 3.8, "sight": "iron", "adsFov": 0.88, "noise": 330,
-      "attach": { "optic": ["opt_reflex"], "light": ["light_rail"] },
-      "model": { "kind": "shotgun", "tone": "tan", "stock": "fixed", "mag": "tube", "length": 1.02, "semi": true },
-      "sound": { "body": 1.35, "crack": 0.45, "pitch": 0.75, "tail": 0.95 }
-    },
-    {
-      "id": "wpn_kestrel", "name": "Kestrel SMG", "class": "smg", "slot": "primary",
-      "ammo": "ammo_9mm", "magSize": 30, "fireModes": ["auto", "semi"], "rpm": 860,
-      "damage": 23, "falloffStart": 20, "falloffEnd": 65, "minDamage": 0.5,
-      "velocity": 380, "projectile": false, "pellets": 1, "penetration": 0.55,
-      "spreadHip": 2.0, "spreadAds": 0.45, "moveSpread": 1.2,
-      "recoil": { "v": 0.75, "h": 0.55, "recover": 10, "kick": 0.03, "rot": 0.12 },
-      "adsTime": 0.19, "reloadTime": 2.1, "reloadType": "mag", "equipTime": 0.45,
-      "sway": 0.7, "weight": 2.6, "sight": "iron", "adsFov": 0.84, "noise": 240,
-      "attach": { "optic": ["opt_reflex"], "muzzle": ["sup_9mm"], "under": ["grip_vert"], "light": ["light_rail"], "mag": ["mag_ext_9mm"], "stock": ["stock_fold"] },
-      "model": { "kind": "smg", "tone": "black", "stock": "folding", "mag": "box", "length": 0.62 },
-      "sound": { "body": 0.8, "crack": 0.55, "pitch": 1.2, "tail": 0.45 }
-    },
-    {
-      "id": "wpn_arv7", "name": "AR-V7 Rifle", "class": "rifle", "slot": "primary",
-      "ammo": "ammo_556", "magSize": 30, "fireModes": ["auto", "semi"], "rpm": 720,
-      "damage": 34, "falloffStart": 60, "falloffEnd": 260, "minDamage": 0.6,
-      "velocity": 900, "projectile": true, "pellets": 1, "penetration": 1.1,
-      "spreadHip": 2.4, "spreadAds": 0.12, "moveSpread": 1.6,
-      "recoil": { "v": 0.95, "h": 0.42, "recover": 9, "kick": 0.035, "rot": 0.14 },
-      "adsTime": 0.24, "reloadTime": 2.4, "reloadType": "mag", "equipTime": 0.55,
-      "sway": 0.85, "weight": 3.4, "sight": "iron", "adsFov": 0.8, "noise": 420,
-      "attach": { "optic": ["opt_reflex", "opt_4x"], "muzzle": ["sup_556"], "under": ["grip_vert"], "light": ["light_rail"], "mag": ["mag_ext_556"] },
-      "model": { "kind": "rifle", "tone": "black", "stock": "fixed", "mag": "curved", "length": 0.9 },
-      "sound": { "body": 1.0, "crack": 1.0, "pitch": 1.0, "tail": 0.9 }
-    },
-    {
-      "id": "wpn_lk4", "name": "LK-4 Carbine", "class": "rifle", "slot": "primary",
-      "ammo": "ammo_556", "magSize": 30, "fireModes": ["auto", "semi"], "rpm": 780,
-      "damage": 31, "falloffStart": 45, "falloffEnd": 200, "minDamage": 0.58,
-      "velocity": 820, "projectile": true, "pellets": 1, "penetration": 1.0,
-      "spreadHip": 2.0, "spreadAds": 0.16, "moveSpread": 1.35,
-      "recoil": { "v": 0.85, "h": 0.5, "recover": 10, "kick": 0.03, "rot": 0.13 },
-      "adsTime": 0.2, "reloadTime": 2.2, "reloadType": "mag", "equipTime": 0.5,
-      "sway": 0.75, "weight": 2.9, "sight": "iron", "adsFov": 0.82, "noise": 400,
-      "attach": { "optic": ["opt_reflex", "opt_4x"], "muzzle": ["sup_556"], "under": ["grip_vert"], "light": ["light_rail"], "mag": ["mag_ext_556"] },
-      "model": { "kind": "rifle", "tone": "olive", "stock": "folding", "mag": "curved", "length": 0.78, "short": true },
-      "sound": { "body": 0.95, "crack": 0.95, "pitch": 1.06, "tail": 0.85 }
-    },
-    {
-      "id": "wpn_vbr30", "name": "VBR-30 Battle Rifle", "class": "rifle", "slot": "primary",
-      "ammo": "ammo_762", "magSize": 20, "fireModes": ["semi", "auto"], "rpm": 580,
-      "damage": 52, "falloffStart": 90, "falloffEnd": 380, "minDamage": 0.65,
-      "velocity": 840, "projectile": true, "pellets": 1, "penetration": 1.6,
-      "spreadHip": 2.8, "spreadAds": 0.1, "moveSpread": 1.8,
-      "recoil": { "v": 2.1, "h": 0.8, "recover": 7, "kick": 0.06, "rot": 0.26 },
-      "adsTime": 0.3, "reloadTime": 2.7, "reloadType": "mag", "equipTime": 0.65,
-      "sway": 1.05, "weight": 4.5, "sight": "iron", "adsFov": 0.8, "noise": 520,
-      "attach": { "optic": ["opt_reflex", "opt_4x", "opt_8x"], "muzzle": ["sup_762"], "under": ["grip_vert"], "light": ["light_rail"] },
-      "model": { "kind": "rifle", "tone": "wood", "stock": "wood", "mag": "box", "length": 1.05 },
-      "sound": { "body": 1.25, "crack": 1.2, "pitch": 0.85, "tail": 1.15 }
-    },
-    {
-      "id": "wpn_sentinel", "name": "Sentinel DMR", "class": "dmr", "slot": "primary",
-      "ammo": "ammo_762", "magSize": 10, "fireModes": ["semi"], "rpm": 300,
-      "damage": 60, "falloffStart": 140, "falloffEnd": 500, "minDamage": 0.7,
-      "velocity": 880, "projectile": true, "pellets": 1, "penetration": 1.7,
-      "spreadHip": 3.2, "spreadAds": 0.05, "moveSpread": 2.2,
-      "recoil": { "v": 2.6, "h": 0.6, "recover": 6.5, "kick": 0.07, "rot": 0.3 },
-      "adsTime": 0.32, "reloadTime": 2.6, "reloadType": "mag", "equipTime": 0.65,
-      "sway": 1.1, "weight": 4.8, "sight": "scope", "scopeZoom": 4, "adsFov": 0.25, "noise": 540,
-      "attach": { "optic": ["opt_reflex", "opt_4x", "opt_8x"], "muzzle": ["sup_762"], "under": ["grip_vert"] },
-      "defaultAttach": { "optic": "opt_4x" },
-      "model": { "kind": "rifle", "tone": "tan", "stock": "fixed", "mag": "box", "length": 1.1, "long": true },
-      "sound": { "body": 1.3, "crack": 1.25, "pitch": 0.82, "tail": 1.2 }
-    },
-    {
-      "id": "wpn_ridgeline", "name": "Ridgeline M90", "class": "sniper", "slot": "primary",
-      "ammo": "ammo_762", "magSize": 5, "fireModes": ["semi"], "rpm": 60,
-      "action": "bolt", "cycleTime": 1.05,
-      "damage": 96, "falloffStart": 220, "falloffEnd": 800, "minDamage": 0.75,
-      "velocity": 900, "projectile": true, "pellets": 1, "penetration": 2.2,
-      "spreadHip": 4.0, "spreadAds": 0.02, "moveSpread": 2.5,
-      "recoil": { "v": 4.8, "h": 0.9, "recover": 5, "kick": 0.12, "rot": 0.4 },
-      "adsTime": 0.36, "reloadTime": 3.1, "reloadType": "mag", "equipTime": 0.75,
-      "sway": 1.2, "weight": 5.2, "sight": "scope", "scopeZoom": 8, "adsFov": 0.125, "noise": 600,
-      "attach": { "optic": ["opt_4x", "opt_8x"], "muzzle": ["sup_762"] },
-      "defaultAttach": { "optic": "opt_8x" },
-      "model": { "kind": "bolt", "tone": "olive", "stock": "fixed", "mag": "box", "length": 1.15 },
-      "sound": { "body": 1.5, "crack": 1.45, "pitch": 0.75, "tail": 1.4 }
-    },
-    {
-      "id": "wpn_anvil", "name": "Anvil LMG", "class": "lmg", "slot": "primary",
-      "ammo": "ammo_556", "magSize": 100, "fireModes": ["auto"], "rpm": 680,
-      "damage": 33, "falloffStart": 70, "falloffEnd": 300, "minDamage": 0.6,
-      "velocity": 920, "projectile": true, "pellets": 1, "penetration": 1.2,
-      "spreadHip": 3.4, "spreadAds": 0.28, "moveSpread": 2.6,
-      "recoil": { "v": 0.9, "h": 0.75, "recover": 7, "kick": 0.035, "rot": 0.12 },
-      "adsTime": 0.42, "reloadTime": 5.2, "reloadType": "mag", "equipTime": 1.0,
-      "sway": 1.4, "weight": 8.2, "sight": "iron", "adsFov": 0.82, "noise": 480,
-      "attach": { "optic": ["opt_reflex", "opt_4x"], "light": ["light_rail"] },
-      "model": { "kind": "lmg", "tone": "olive", "stock": "fixed", "mag": "drum", "length": 1.08 },
-      "sound": { "body": 1.15, "crack": 1.05, "pitch": 0.92, "tail": 1.1 }
-    },
-    {
-      "id": "wpn_homestead", "name": "Homestead Hunter", "class": "sniper", "slot": "primary",
-      "ammo": "ammo_762", "magSize": 3, "fireModes": ["semi"], "rpm": 50,
-      "action": "bolt", "cycleTime": 1.25,
-      "damage": 82, "falloffStart": 150, "falloffEnd": 600, "minDamage": 0.7,
-      "velocity": 800, "projectile": true, "pellets": 1, "penetration": 1.8,
-      "spreadHip": 3.6, "spreadAds": 0.12, "moveSpread": 2.3,
-      "recoil": { "v": 5.0, "h": 1.1, "recover": 5, "kick": 0.13, "rot": 0.45 },
-      "adsTime": 0.34, "reloadTime": 0.7, "reloadType": "single", "reloadStart": 0.45, "reloadEnd": 0.5, "equipTime": 0.7,
-      "sway": 1.35, "weight": 4.1, "sight": "iron", "adsFov": 0.78, "noise": 560,
-      "attach": { "optic": ["opt_4x"] },
-      "model": { "kind": "bolt", "tone": "wood", "stock": "wood", "mag": "internal", "length": 1.12, "improvised": true },
-      "sound": { "body": 1.4, "crack": 1.3, "pitch": 0.78, "tail": 1.3 }
-    },
-    {
-      "id": "wpn_rebar", "name": "Rebar Club", "class": "melee", "slot": "melee",
-      "damage": 38, "range": 2.1, "rpm": 70, "swingTime": 0.55, "fireModes": ["melee"],
-      "weight": 1.6, "sway": 0.5, "noise": 20,
-      "model": { "kind": "club" },
-      "sound": { "body": 0.6, "pitch": 0.6 }
-    },
-    {
-      "id": "wpn_knife", "name": "Combat Knife", "class": "melee", "slot": "melee",
-      "damage": 46, "range": 1.7, "rpm": 110, "swingTime": 0.35, "fireModes": ["melee"],
-      "weight": 0.3, "sway": 0.3, "noise": 10,
-      "model": { "kind": "knife" },
-      "sound": { "body": 0.4, "pitch": 1.4 }
-    }
-  ]
+ "_doc": "Weapon catalogue. Angles in degrees, distances in metres, times in seconds. recoil.v/h = per-shot camera kick; spread = cone half-angle. projectile=true uses simulated bullets with drop/travel time, otherwise hitscan.",
+ "weapons": [
+  {
+   "id": "wpn_vk9",
+   "name": "VK-9 Compact",
+   "class": "pistol",
+   "slot": "sidearm",
+   "ammo": "ammo_9mm",
+   "magSize": 15,
+   "fireModes": [
+    "semi"
+   ],
+   "rpm": 480,
+   "damage": 28,
+   "falloffStart": 20,
+   "falloffEnd": 60,
+   "minDamage": 0.55,
+   "velocity": 360,
+   "projectile": false,
+   "pellets": 1,
+   "penetration": 0.6,
+   "spreadHip": 2.2,
+   "spreadAds": 0.35,
+   "moveSpread": 1.5,
+   "recoil": {
+    "v": 1.4,
+    "h": 0.5,
+    "recover": 9,
+    "kick": 0.05,
+    "rot": 0.22
+   },
+   "adsTime": 0.16,
+   "reloadTime": 1.6,
+   "reloadType": "mag",
+   "equipTime": 0.35,
+   "sway": 0.7,
+   "weight": 0.7,
+   "sight": "iron",
+   "adsFov": 0.86,
+   "noise": 230,
+   "attach": {
+    "muzzle": [
+     "sup_9mm"
+    ],
+    "light": [
+     "light_pistol",
+     "laser_pistol"
+    ],
+    "mag": [
+     "mag_ext_9mm"
+    ]
+   },
+   "model": {
+    "kind": "pistol",
+    "tone": "black"
+   },
+   "sound": {
+    "body": 0.75,
+    "crack": 0.55,
+    "pitch": 1.25,
+    "tail": 0.5
+   }
+  },
+  {
+   "id": "wpn_harrow45",
+   "name": "Harrow .45",
+   "class": "pistol",
+   "slot": "sidearm",
+   "ammo": "ammo_45",
+   "magSize": 8,
+   "fireModes": [
+    "semi"
+   ],
+   "rpm": 380,
+   "damage": 40,
+   "falloffStart": 18,
+   "falloffEnd": 55,
+   "minDamage": 0.5,
+   "velocity": 260,
+   "projectile": false,
+   "pellets": 1,
+   "penetration": 0.55,
+   "spreadHip": 2.4,
+   "spreadAds": 0.4,
+   "moveSpread": 1.6,
+   "recoil": {
+    "v": 2.4,
+    "h": 0.7,
+    "recover": 8,
+    "kick": 0.07,
+    "rot": 0.32
+   },
+   "adsTime": 0.17,
+   "reloadTime": 1.75,
+   "reloadType": "mag",
+   "equipTime": 0.4,
+   "sway": 0.75,
+   "weight": 1.1,
+   "sight": "iron",
+   "adsFov": 0.86,
+   "noise": 250,
+   "attach": {
+    "muzzle": [
+     "sup_45"
+    ],
+    "light": [
+     "light_pistol",
+     "laser_pistol"
+    ],
+    "mag": [
+     "mag_ext_45"
+    ]
+   },
+   "model": {
+    "kind": "pistol",
+    "tone": "steel",
+    "heavy": true
+   },
+   "sound": {
+    "body": 1.0,
+    "crack": 0.45,
+    "pitch": 0.95,
+    "tail": 0.6
+   }
+  },
+  {
+   "id": "wpn_m6rev",
+   "name": "M-6 Service Revolver",
+   "class": "pistol",
+   "slot": "sidearm",
+   "ammo": "ammo_357",
+   "magSize": 6,
+   "fireModes": [
+    "semi"
+   ],
+   "rpm": 260,
+   "damage": 54,
+   "falloffStart": 22,
+   "falloffEnd": 70,
+   "minDamage": 0.55,
+   "velocity": 410,
+   "projectile": false,
+   "pellets": 1,
+   "penetration": 0.8,
+   "spreadHip": 2.1,
+   "spreadAds": 0.3,
+   "moveSpread": 1.6,
+   "recoil": {
+    "v": 3.6,
+    "h": 0.8,
+    "recover": 7,
+    "kick": 0.09,
+    "rot": 0.45
+   },
+   "adsTime": 0.18,
+   "reloadTime": 0.55,
+   "reloadType": "single",
+   "reloadStart": 0.45,
+   "reloadEnd": 0.35,
+   "equipTime": 0.4,
+   "sway": 0.8,
+   "weight": 1.2,
+   "sight": "iron",
+   "adsFov": 0.85,
+   "noise": 280,
+   "attach": {},
+   "model": {
+    "kind": "revolver",
+    "tone": "steel"
+   },
+   "sound": {
+    "body": 1.1,
+    "crack": 0.8,
+    "pitch": 0.9,
+    "tail": 0.8
+   }
+  },
+  {
+   "id": "wpn_fieldline",
+   "name": "Fieldline 12P",
+   "class": "shotgun",
+   "slot": "primary",
+   "ammo": "ammo_12ga",
+   "magSize": 6,
+   "fireModes": [
+    "semi"
+   ],
+   "rpm": 75,
+   "action": "pump",
+   "cycleTime": 0.55,
+   "damage": 15,
+   "falloffStart": 8,
+   "falloffEnd": 35,
+   "minDamage": 0.2,
+   "velocity": 400,
+   "projectile": false,
+   "pellets": 9,
+   "pelletSpread": 3.2,
+   "penetration": 0.3,
+   "spreadHip": 1.4,
+   "spreadAds": 0.8,
+   "moveSpread": 1.0,
+   "recoil": {
+    "v": 5.2,
+    "h": 1.2,
+    "recover": 6,
+    "kick": 0.14,
+    "rot": 0.55
+   },
+   "adsTime": 0.26,
+   "reloadTime": 0.55,
+   "reloadType": "single",
+   "reloadStart": 0.4,
+   "reloadEnd": 0.45,
+   "equipTime": 0.6,
+   "sway": 1.0,
+   "weight": 3.4,
+   "sight": "iron",
+   "adsFov": 0.88,
+   "noise": 330,
+   "attach": {
+    "light": [
+     "light_rail"
+    ],
+    "optic": [
+     "opt_reflex"
+    ]
+   },
+   "model": {
+    "kind": "shotgun",
+    "tone": "black",
+    "stock": "fixed",
+    "mag": "tube",
+    "length": 1.0
+   },
+   "sound": {
+    "body": 1.4,
+    "crack": 0.4,
+    "pitch": 0.7,
+    "tail": 1.0
+   }
+  },
+  {
+   "id": "wpn_breaker",
+   "name": "Breaker S12",
+   "class": "shotgun",
+   "slot": "primary",
+   "ammo": "ammo_12ga",
+   "magSize": 8,
+   "fireModes": [
+    "semi"
+   ],
+   "rpm": 240,
+   "damage": 13,
+   "falloffStart": 8,
+   "falloffEnd": 32,
+   "minDamage": 0.2,
+   "velocity": 390,
+   "projectile": false,
+   "pellets": 8,
+   "pelletSpread": 3.6,
+   "penetration": 0.3,
+   "spreadHip": 1.6,
+   "spreadAds": 0.9,
+   "moveSpread": 1.0,
+   "recoil": {
+    "v": 4.4,
+    "h": 1.4,
+    "recover": 6.5,
+    "kick": 0.12,
+    "rot": 0.5
+   },
+   "adsTime": 0.27,
+   "reloadTime": 0.5,
+   "reloadType": "single",
+   "reloadStart": 0.35,
+   "reloadEnd": 0.4,
+   "equipTime": 0.65,
+   "sway": 1.0,
+   "weight": 3.8,
+   "sight": "iron",
+   "adsFov": 0.88,
+   "noise": 330,
+   "attach": {
+    "optic": [
+     "opt_reflex",
+     "opt_holo"
+    ],
+    "light": [
+     "light_rail",
+     "laser_combo"
+    ],
+    "under": [
+     "grip_vert",
+     "grip_angled"
+    ]
+   },
+   "model": {
+    "kind": "shotgun",
+    "tone": "tan",
+    "stock": "fixed",
+    "mag": "tube",
+    "length": 1.02,
+    "semi": true
+   },
+   "sound": {
+    "body": 1.35,
+    "crack": 0.45,
+    "pitch": 0.75,
+    "tail": 0.95
+   }
+  },
+  {
+   "id": "wpn_kestrel",
+   "name": "Kestrel SMG",
+   "class": "smg",
+   "slot": "primary",
+   "ammo": "ammo_9mm",
+   "magSize": 30,
+   "fireModes": [
+    "auto",
+    "semi"
+   ],
+   "rpm": 860,
+   "damage": 23,
+   "falloffStart": 20,
+   "falloffEnd": 65,
+   "minDamage": 0.5,
+   "velocity": 380,
+   "projectile": false,
+   "pellets": 1,
+   "penetration": 0.55,
+   "spreadHip": 2.0,
+   "spreadAds": 0.45,
+   "moveSpread": 1.2,
+   "recoil": {
+    "v": 0.75,
+    "h": 0.55,
+    "recover": 10,
+    "kick": 0.03,
+    "rot": 0.12
+   },
+   "adsTime": 0.19,
+   "reloadTime": 2.1,
+   "reloadType": "mag",
+   "equipTime": 0.45,
+   "sway": 0.7,
+   "weight": 2.6,
+   "sight": "iron",
+   "adsFov": 0.84,
+   "noise": 240,
+   "attach": {
+    "optic": [
+     "opt_reflex",
+     "opt_holo",
+     "opt_2x"
+    ],
+    "muzzle": [
+     "sup_9mm"
+    ],
+    "under": [
+     "grip_vert",
+     "grip_angled"
+    ],
+    "light": [
+     "light_rail",
+     "laser_combo"
+    ],
+    "mag": [
+     "mag_ext_9mm",
+     "mag_drum_9mm"
+    ],
+    "stock": [
+     "stock_fold"
+    ]
+   },
+   "model": {
+    "kind": "smg",
+    "tone": "black",
+    "stock": "folding",
+    "mag": "box",
+    "length": 0.62
+   },
+   "sound": {
+    "body": 0.8,
+    "crack": 0.55,
+    "pitch": 1.2,
+    "tail": 0.45
+   }
+  },
+  {
+   "id": "wpn_arv7",
+   "name": "AR-V7 Rifle",
+   "class": "rifle",
+   "slot": "primary",
+   "ammo": "ammo_556",
+   "magSize": 30,
+   "fireModes": [
+    "auto",
+    "semi"
+   ],
+   "rpm": 720,
+   "damage": 34,
+   "falloffStart": 60,
+   "falloffEnd": 260,
+   "minDamage": 0.6,
+   "velocity": 900,
+   "projectile": true,
+   "pellets": 1,
+   "penetration": 1.1,
+   "spreadHip": 2.4,
+   "spreadAds": 0.12,
+   "moveSpread": 1.6,
+   "recoil": {
+    "v": 0.95,
+    "h": 0.42,
+    "recover": 9,
+    "kick": 0.035,
+    "rot": 0.14
+   },
+   "adsTime": 0.24,
+   "reloadTime": 2.4,
+   "reloadType": "mag",
+   "equipTime": 0.55,
+   "sway": 0.85,
+   "weight": 3.4,
+   "sight": "iron",
+   "adsFov": 0.8,
+   "noise": 420,
+   "attach": {
+    "optic": [
+     "opt_reflex",
+     "opt_4x",
+     "opt_holo",
+     "opt_2x"
+    ],
+    "muzzle": [
+     "sup_556",
+     "brake_rifle",
+     "flash_hider"
+    ],
+    "under": [
+     "grip_vert",
+     "grip_angled",
+     "bipod"
+    ],
+    "light": [
+     "light_rail",
+     "laser_combo"
+    ],
+    "mag": [
+     "mag_ext_556"
+    ],
+    "stock": [
+     "stock_precision"
+    ]
+   },
+   "model": {
+    "kind": "rifle",
+    "tone": "black",
+    "stock": "fixed",
+    "mag": "curved",
+    "length": 0.9
+   },
+   "sound": {
+    "body": 1.0,
+    "crack": 1.0,
+    "pitch": 1.0,
+    "tail": 0.9
+   }
+  },
+  {
+   "id": "wpn_lk4",
+   "name": "LK-4 Carbine",
+   "class": "rifle",
+   "slot": "primary",
+   "ammo": "ammo_556",
+   "magSize": 30,
+   "fireModes": [
+    "auto",
+    "semi"
+   ],
+   "rpm": 780,
+   "damage": 31,
+   "falloffStart": 45,
+   "falloffEnd": 200,
+   "minDamage": 0.58,
+   "velocity": 820,
+   "projectile": true,
+   "pellets": 1,
+   "penetration": 1.0,
+   "spreadHip": 2.0,
+   "spreadAds": 0.16,
+   "moveSpread": 1.35,
+   "recoil": {
+    "v": 0.85,
+    "h": 0.5,
+    "recover": 10,
+    "kick": 0.03,
+    "rot": 0.13
+   },
+   "adsTime": 0.2,
+   "reloadTime": 2.2,
+   "reloadType": "mag",
+   "equipTime": 0.5,
+   "sway": 0.75,
+   "weight": 2.9,
+   "sight": "iron",
+   "adsFov": 0.82,
+   "noise": 400,
+   "attach": {
+    "optic": [
+     "opt_reflex",
+     "opt_4x",
+     "opt_holo",
+     "opt_2x"
+    ],
+    "muzzle": [
+     "sup_556",
+     "brake_rifle",
+     "flash_hider"
+    ],
+    "under": [
+     "grip_vert",
+     "grip_angled",
+     "bipod"
+    ],
+    "light": [
+     "light_rail",
+     "laser_combo"
+    ],
+    "mag": [
+     "mag_ext_556"
+    ],
+    "stock": [
+     "stock_fold"
+    ]
+   },
+   "model": {
+    "kind": "rifle",
+    "tone": "olive",
+    "stock": "folding",
+    "mag": "curved",
+    "length": 0.78,
+    "short": true
+   },
+   "sound": {
+    "body": 0.95,
+    "crack": 0.95,
+    "pitch": 1.06,
+    "tail": 0.85
+   }
+  },
+  {
+   "id": "wpn_vbr30",
+   "name": "VBR-30 Battle Rifle",
+   "class": "rifle",
+   "slot": "primary",
+   "ammo": "ammo_762",
+   "magSize": 20,
+   "fireModes": [
+    "semi",
+    "auto"
+   ],
+   "rpm": 580,
+   "damage": 52,
+   "falloffStart": 90,
+   "falloffEnd": 380,
+   "minDamage": 0.65,
+   "velocity": 840,
+   "projectile": true,
+   "pellets": 1,
+   "penetration": 1.6,
+   "spreadHip": 2.8,
+   "spreadAds": 0.1,
+   "moveSpread": 1.8,
+   "recoil": {
+    "v": 2.1,
+    "h": 0.8,
+    "recover": 7,
+    "kick": 0.06,
+    "rot": 0.26
+   },
+   "adsTime": 0.3,
+   "reloadTime": 2.7,
+   "reloadType": "mag",
+   "equipTime": 0.65,
+   "sway": 1.05,
+   "weight": 4.5,
+   "sight": "iron",
+   "adsFov": 0.8,
+   "noise": 520,
+   "attach": {
+    "optic": [
+     "opt_reflex",
+     "opt_4x",
+     "opt_8x",
+     "opt_holo",
+     "opt_2x"
+    ],
+    "muzzle": [
+     "sup_762",
+     "brake_rifle",
+     "flash_hider"
+    ],
+    "under": [
+     "grip_vert",
+     "grip_angled",
+     "bipod"
+    ],
+    "light": [
+     "light_rail"
+    ],
+    "mag": [
+     "mag_ext_762"
+    ],
+    "stock": [
+     "stock_precision"
+    ]
+   },
+   "model": {
+    "kind": "rifle",
+    "tone": "wood",
+    "stock": "wood",
+    "mag": "box",
+    "length": 1.05
+   },
+   "sound": {
+    "body": 1.25,
+    "crack": 1.2,
+    "pitch": 0.85,
+    "tail": 1.15
+   }
+  },
+  {
+   "id": "wpn_sentinel",
+   "name": "Sentinel DMR",
+   "class": "dmr",
+   "slot": "primary",
+   "ammo": "ammo_762",
+   "magSize": 10,
+   "fireModes": [
+    "semi"
+   ],
+   "rpm": 300,
+   "damage": 60,
+   "falloffStart": 140,
+   "falloffEnd": 500,
+   "minDamage": 0.7,
+   "velocity": 880,
+   "projectile": true,
+   "pellets": 1,
+   "penetration": 1.7,
+   "spreadHip": 3.2,
+   "spreadAds": 0.05,
+   "moveSpread": 2.2,
+   "recoil": {
+    "v": 2.6,
+    "h": 0.6,
+    "recover": 6.5,
+    "kick": 0.07,
+    "rot": 0.3
+   },
+   "adsTime": 0.32,
+   "reloadTime": 2.6,
+   "reloadType": "mag",
+   "equipTime": 0.65,
+   "sway": 1.1,
+   "weight": 4.8,
+   "sight": "scope",
+   "scopeZoom": 4,
+   "adsFov": 0.25,
+   "noise": 540,
+   "attach": {
+    "optic": [
+     "opt_reflex",
+     "opt_4x",
+     "opt_8x",
+     "opt_holo",
+     "opt_2x"
+    ],
+    "muzzle": [
+     "sup_762",
+     "brake_rifle"
+    ],
+    "under": [
+     "grip_vert",
+     "bipod"
+    ],
+    "stock": [
+     "stock_precision"
+    ]
+   },
+   "defaultAttach": {
+    "optic": "opt_4x"
+   },
+   "model": {
+    "kind": "rifle",
+    "tone": "tan",
+    "stock": "fixed",
+    "mag": "box",
+    "length": 1.1,
+    "long": true
+   },
+   "sound": {
+    "body": 1.3,
+    "crack": 1.25,
+    "pitch": 0.82,
+    "tail": 1.2
+   }
+  },
+  {
+   "id": "wpn_ridgeline",
+   "name": "Ridgeline M90",
+   "class": "sniper",
+   "slot": "primary",
+   "ammo": "ammo_762",
+   "magSize": 5,
+   "fireModes": [
+    "semi"
+   ],
+   "rpm": 60,
+   "action": "bolt",
+   "cycleTime": 1.05,
+   "damage": 96,
+   "falloffStart": 220,
+   "falloffEnd": 800,
+   "minDamage": 0.75,
+   "velocity": 900,
+   "projectile": true,
+   "pellets": 1,
+   "penetration": 2.2,
+   "spreadHip": 4.0,
+   "spreadAds": 0.02,
+   "moveSpread": 2.5,
+   "recoil": {
+    "v": 4.8,
+    "h": 0.9,
+    "recover": 5,
+    "kick": 0.12,
+    "rot": 0.4
+   },
+   "adsTime": 0.36,
+   "reloadTime": 3.1,
+   "reloadType": "mag",
+   "equipTime": 0.75,
+   "sway": 1.2,
+   "weight": 5.2,
+   "sight": "scope",
+   "scopeZoom": 8,
+   "adsFov": 0.125,
+   "noise": 600,
+   "attach": {
+    "optic": [
+     "opt_4x",
+     "opt_8x"
+    ],
+    "muzzle": [
+     "sup_762",
+     "brake_rifle"
+    ],
+    "under": [
+     "bipod"
+    ],
+    "stock": [
+     "stock_precision"
+    ]
+   },
+   "defaultAttach": {
+    "optic": "opt_8x"
+   },
+   "model": {
+    "kind": "bolt",
+    "tone": "olive",
+    "stock": "fixed",
+    "mag": "box",
+    "length": 1.15
+   },
+   "sound": {
+    "body": 1.5,
+    "crack": 1.45,
+    "pitch": 0.75,
+    "tail": 1.4
+   }
+  },
+  {
+   "id": "wpn_anvil",
+   "name": "Anvil LMG",
+   "class": "lmg",
+   "slot": "primary",
+   "ammo": "ammo_556",
+   "magSize": 100,
+   "fireModes": [
+    "auto"
+   ],
+   "rpm": 680,
+   "damage": 33,
+   "falloffStart": 70,
+   "falloffEnd": 300,
+   "minDamage": 0.6,
+   "velocity": 920,
+   "projectile": true,
+   "pellets": 1,
+   "penetration": 1.2,
+   "spreadHip": 3.4,
+   "spreadAds": 0.28,
+   "moveSpread": 2.6,
+   "recoil": {
+    "v": 0.9,
+    "h": 0.75,
+    "recover": 7,
+    "kick": 0.035,
+    "rot": 0.12
+   },
+   "adsTime": 0.42,
+   "reloadTime": 5.2,
+   "reloadType": "mag",
+   "equipTime": 1.0,
+   "sway": 1.4,
+   "weight": 8.2,
+   "sight": "iron",
+   "adsFov": 0.82,
+   "noise": 480,
+   "attach": {
+    "optic": [
+     "opt_reflex",
+     "opt_4x",
+     "opt_holo",
+     "opt_2x"
+    ],
+    "light": [
+     "light_rail"
+    ],
+    "under": [
+     "bipod"
+    ],
+    "muzzle": [
+     "flash_hider"
+    ]
+   },
+   "model": {
+    "kind": "lmg",
+    "tone": "olive",
+    "stock": "fixed",
+    "mag": "drum",
+    "length": 1.08
+   },
+   "sound": {
+    "body": 1.15,
+    "crack": 1.05,
+    "pitch": 0.92,
+    "tail": 1.1
+   }
+  },
+  {
+   "id": "wpn_homestead",
+   "name": "Homestead Hunter",
+   "class": "sniper",
+   "slot": "primary",
+   "ammo": "ammo_762",
+   "magSize": 3,
+   "fireModes": [
+    "semi"
+   ],
+   "rpm": 50,
+   "action": "bolt",
+   "cycleTime": 1.25,
+   "damage": 82,
+   "falloffStart": 150,
+   "falloffEnd": 600,
+   "minDamage": 0.7,
+   "velocity": 800,
+   "projectile": true,
+   "pellets": 1,
+   "penetration": 1.8,
+   "spreadHip": 3.6,
+   "spreadAds": 0.12,
+   "moveSpread": 2.3,
+   "recoil": {
+    "v": 5.0,
+    "h": 1.1,
+    "recover": 5,
+    "kick": 0.13,
+    "rot": 0.45
+   },
+   "adsTime": 0.34,
+   "reloadTime": 0.7,
+   "reloadType": "single",
+   "reloadStart": 0.45,
+   "reloadEnd": 0.5,
+   "equipTime": 0.7,
+   "sway": 1.35,
+   "weight": 4.1,
+   "sight": "iron",
+   "adsFov": 0.78,
+   "noise": 560,
+   "attach": {
+    "optic": [
+     "opt_4x",
+     "opt_2x"
+    ]
+   },
+   "model": {
+    "kind": "bolt",
+    "tone": "wood",
+    "stock": "wood",
+    "mag": "internal",
+    "length": 1.12,
+    "improvised": true
+   },
+   "sound": {
+    "body": 1.4,
+    "crack": 1.3,
+    "pitch": 0.78,
+    "tail": 1.3
+   }
+  },
+  {
+   "id": "wpn_rebar",
+   "name": "Rebar Club",
+   "class": "melee",
+   "slot": "melee",
+   "damage": 38,
+   "range": 2.1,
+   "rpm": 70,
+   "swingTime": 0.55,
+   "fireModes": [
+    "melee"
+   ],
+   "weight": 1.6,
+   "sway": 0.5,
+   "noise": 20,
+   "model": {
+    "kind": "club"
+   },
+   "sound": {
+    "body": 0.6,
+    "pitch": 0.6
+   }
+  },
+  {
+   "id": "wpn_knife",
+   "name": "Combat Knife",
+   "class": "melee",
+   "slot": "melee",
+   "damage": 46,
+   "range": 1.7,
+   "rpm": 110,
+   "swingTime": 0.35,
+   "fireModes": [
+    "melee"
+   ],
+   "weight": 0.3,
+   "sway": 0.3,
+   "noise": 10,
+   "model": {
+    "kind": "knife"
+   },
+   "sound": {
+    "body": 0.4,
+    "pitch": 1.4
+   }
+  },
+  {
+   "id": "wpn_px17",
+   "name": "PX-17 Pistol",
+   "class": "pistol",
+   "slot": "sidearm",
+   "ammo": "ammo_9mm",
+   "magSize": 17,
+   "fireModes": [
+    "semi"
+   ],
+   "rpm": 520,
+   "damage": 26,
+   "falloffStart": 20,
+   "falloffEnd": 60,
+   "minDamage": 0.55,
+   "velocity": 360,
+   "projectile": false,
+   "pellets": 1,
+   "penetration": 0.6,
+   "spreadHip": 2.2,
+   "spreadAds": 0.35,
+   "moveSpread": 1.5,
+   "recoil": {
+    "v": 1.4,
+    "h": 0.5,
+    "recover": 9,
+    "kick": 0.05,
+    "rot": 0.22
+   },
+   "adsTime": 0.16,
+   "reloadTime": 1.6,
+   "reloadType": "mag",
+   "equipTime": 0.35,
+   "sway": 0.7,
+   "weight": 0.7,
+   "sight": "iron",
+   "adsFov": 0.86,
+   "noise": 230,
+   "attach": {
+    "muzzle": [
+     "sup_9mm"
+    ],
+    "light": [
+     "light_pistol",
+     "laser_pistol"
+    ],
+    "mag": [
+     "mag_ext_9mm"
+    ]
+   },
+   "model": {
+    "kind": "pistol",
+    "tone": "tan"
+   },
+   "sound": {
+    "body": 0.75,
+    "crack": 0.55,
+    "pitch": 1.25,
+    "tail": 0.5
+   }
+  },
+  {
+   "id": "wpn_hornet",
+   "name": "Hornet .45 SMG",
+   "class": "smg",
+   "slot": "primary",
+   "ammo": "ammo_45",
+   "magSize": 25,
+   "fireModes": [
+    "auto",
+    "semi"
+   ],
+   "rpm": 700,
+   "damage": 31,
+   "falloffStart": 20,
+   "falloffEnd": 55,
+   "minDamage": 0.5,
+   "velocity": 380,
+   "projectile": false,
+   "pellets": 1,
+   "penetration": 0.55,
+   "spreadHip": 2.0,
+   "spreadAds": 0.45,
+   "moveSpread": 1.2,
+   "recoil": {
+    "v": 1.0,
+    "h": 0.6,
+    "recover": 9,
+    "kick": 0.035,
+    "rot": 0.14
+   },
+   "adsTime": 0.19,
+   "reloadTime": 2.1,
+   "reloadType": "mag",
+   "equipTime": 0.45,
+   "sway": 0.7,
+   "weight": 2.6,
+   "sight": "iron",
+   "adsFov": 0.84,
+   "noise": 240,
+   "attach": {
+    "optic": [
+     "opt_reflex",
+     "opt_holo",
+     "opt_2x"
+    ],
+    "muzzle": [
+     "sup_45"
+    ],
+    "under": [
+     "grip_vert",
+     "grip_angled"
+    ],
+    "light": [
+     "light_rail",
+     "laser_combo"
+    ],
+    "mag": [
+     "mag_ext_45"
+    ],
+    "stock": [
+     "stock_fold"
+    ]
+   },
+   "model": {
+    "kind": "smg",
+    "tone": "olive",
+    "stock": "folding",
+    "mag": "box",
+    "length": 0.66
+   },
+   "sound": {
+    "body": 0.95,
+    "crack": 0.6,
+    "pitch": 1.0,
+    "tail": 0.5
+   }
+  },
+  {
+   "id": "wpn_wasp",
+   "name": "Wasp PDW",
+   "class": "smg",
+   "slot": "primary",
+   "ammo": "ammo_9mm",
+   "magSize": 40,
+   "fireModes": [
+    "auto",
+    "semi"
+   ],
+   "rpm": 980,
+   "damage": 21,
+   "falloffStart": 20,
+   "falloffEnd": 65,
+   "minDamage": 0.5,
+   "velocity": 380,
+   "projectile": false,
+   "pellets": 1,
+   "penetration": 0.55,
+   "spreadHip": 1.8,
+   "spreadAds": 0.45,
+   "moveSpread": 1.2,
+   "recoil": {
+    "v": 0.75,
+    "h": 0.55,
+    "recover": 10,
+    "kick": 0.03,
+    "rot": 0.12
+   },
+   "adsTime": 0.19,
+   "reloadTime": 2.1,
+   "reloadType": "mag",
+   "equipTime": 0.45,
+   "sway": 0.7,
+   "weight": 2.6,
+   "sight": "iron",
+   "adsFov": 0.84,
+   "noise": 240,
+   "attach": {
+    "optic": [
+     "opt_reflex",
+     "opt_holo",
+     "opt_2x"
+    ],
+    "muzzle": [
+     "sup_9mm"
+    ],
+    "under": [
+     "grip_vert",
+     "grip_angled"
+    ],
+    "light": [
+     "light_rail",
+     "laser_combo"
+    ],
+    "mag": [
+     "mag_drum_9mm"
+    ],
+    "stock": [
+     "stock_fold"
+    ]
+   },
+   "model": {
+    "kind": "smg",
+    "tone": "tan",
+    "stock": "folding",
+    "mag": "box",
+    "length": 0.56
+   },
+   "sound": {
+    "body": 0.75,
+    "crack": 0.5,
+    "pitch": 1.3,
+    "tail": 0.4
+   }
+  },
+  {
+   "id": "wpn_kresta",
+   "name": "Kresta Rifle",
+   "class": "rifle",
+   "slot": "primary",
+   "ammo": "ammo_762",
+   "magSize": 30,
+   "fireModes": [
+    "auto",
+    "semi"
+   ],
+   "rpm": 600,
+   "damage": 46,
+   "falloffStart": 60,
+   "falloffEnd": 260,
+   "minDamage": 0.6,
+   "velocity": 720,
+   "projectile": true,
+   "pellets": 1,
+   "penetration": 1.4,
+   "spreadHip": 2.4,
+   "spreadAds": 0.12,
+   "moveSpread": 1.6,
+   "recoil": {
+    "v": 1.35,
+    "h": 0.7,
+    "recover": 8,
+    "kick": 0.045,
+    "rot": 0.18
+   },
+   "adsTime": 0.24,
+   "reloadTime": 2.4,
+   "reloadType": "mag",
+   "equipTime": 0.55,
+   "sway": 0.85,
+   "weight": 3.9,
+   "sight": "iron",
+   "adsFov": 0.8,
+   "noise": 470,
+   "attach": {
+    "optic": [
+     "opt_reflex",
+     "opt_holo",
+     "opt_2x",
+     "opt_4x"
+    ],
+    "muzzle": [
+     "sup_762",
+     "brake_rifle",
+     "flash_hider"
+    ],
+    "under": [
+     "grip_vert",
+     "grip_angled"
+    ],
+    "light": [
+     "light_rail",
+     "laser_combo"
+    ],
+    "mag": [
+     "mag_ext_762"
+    ]
+   },
+   "model": {
+    "kind": "rifle",
+    "tone": "wood",
+    "stock": "wood",
+    "mag": "curved",
+    "length": 0.92
+   },
+   "sound": {
+    "body": 1.15,
+    "crack": 1.05,
+    "pitch": 0.9,
+    "tail": 1.0
+   }
+  },
+  {
+   "id": "wpn_talon",
+   "name": "Talon Carbine",
+   "class": "rifle",
+   "slot": "primary",
+   "ammo": "ammo_556",
+   "magSize": 30,
+   "fireModes": [
+    "auto",
+    "semi"
+   ],
+   "rpm": 820,
+   "damage": 31,
+   "falloffStart": 60,
+   "falloffEnd": 260,
+   "minDamage": 0.6,
+   "velocity": 900,
+   "projectile": true,
+   "pellets": 1,
+   "penetration": 1.1,
+   "spreadHip": 2.4,
+   "spreadAds": 0.12,
+   "moveSpread": 1.6,
+   "recoil": {
+    "v": 0.95,
+    "h": 0.42,
+    "recover": 9,
+    "kick": 0.035,
+    "rot": 0.14
+   },
+   "adsTime": 0.21,
+   "reloadTime": 2.4,
+   "reloadType": "mag",
+   "equipTime": 0.55,
+   "sway": 0.85,
+   "weight": 3.0,
+   "sight": "iron",
+   "adsFov": 0.8,
+   "noise": 420,
+   "attach": {
+    "optic": [
+     "opt_reflex",
+     "opt_holo",
+     "opt_2x",
+     "opt_4x"
+    ],
+    "muzzle": [
+     "sup_556",
+     "brake_rifle",
+     "flash_hider"
+    ],
+    "under": [
+     "grip_vert",
+     "grip_angled",
+     "bipod"
+    ],
+    "light": [
+     "light_rail",
+     "laser_combo"
+    ],
+    "mag": [
+     "mag_ext_556"
+    ],
+    "stock": [
+     "stock_fold"
+    ]
+   },
+   "model": {
+    "kind": "rifle",
+    "tone": "tan",
+    "stock": "folding",
+    "mag": "curved",
+    "length": 0.76,
+    "short": true
+   },
+   "sound": {
+    "body": 1.0,
+    "crack": 1.0,
+    "pitch": 1.0,
+    "tail": 0.9
+   }
+  },
+  {
+   "id": "wpn_halberd",
+   "name": "Halberd SR",
+   "class": "dmr",
+   "slot": "primary",
+   "ammo": "ammo_762",
+   "magSize": 20,
+   "fireModes": [
+    "semi"
+   ],
+   "rpm": 360,
+   "damage": 62,
+   "falloffStart": 140,
+   "falloffEnd": 500,
+   "minDamage": 0.7,
+   "velocity": 880,
+   "projectile": true,
+   "pellets": 1,
+   "penetration": 1.7,
+   "spreadHip": 3.2,
+   "spreadAds": 0.05,
+   "moveSpread": 2.2,
+   "recoil": {
+    "v": 2.6,
+    "h": 0.6,
+    "recover": 6.5,
+    "kick": 0.07,
+    "rot": 0.3
+   },
+   "adsTime": 0.32,
+   "reloadTime": 2.6,
+   "reloadType": "mag",
+   "equipTime": 0.65,
+   "sway": 1.1,
+   "weight": 4.8,
+   "sight": "scope",
+   "scopeZoom": 4,
+   "adsFov": 0.25,
+   "noise": 540,
+   "attach": {
+    "optic": [
+     "opt_reflex",
+     "opt_holo",
+     "opt_2x",
+     "opt_4x",
+     "opt_8x"
+    ],
+    "muzzle": [
+     "sup_762",
+     "brake_rifle",
+     "flash_hider"
+    ],
+    "under": [
+     "grip_vert",
+     "grip_angled",
+     "bipod"
+    ],
+    "light": [
+     "light_rail",
+     "laser_combo"
+    ],
+    "stock": [
+     "stock_precision"
+    ]
+   },
+   "model": {
+    "kind": "rifle",
+    "tone": "black",
+    "stock": "fixed",
+    "mag": "box",
+    "length": 1.12,
+    "long": true
+   },
+   "sound": {
+    "body": 1.3,
+    "crack": 1.25,
+    "pitch": 0.82,
+    "tail": 1.2
+   },
+   "defaultAttach": {
+    "optic": "opt_4x"
+   }
+  },
+  {
+   "id": "wpn_frontier",
+   "name": "Frontier Lever Carbine",
+   "class": "sniper",
+   "slot": "primary",
+   "ammo": "ammo_357",
+   "magSize": 8,
+   "fireModes": [
+    "semi"
+   ],
+   "rpm": 90,
+   "action": "bolt",
+   "cycleTime": 0.6,
+   "damage": 50,
+   "falloffStart": 60,
+   "falloffEnd": 220,
+   "minDamage": 0.7,
+   "velocity": 480,
+   "projectile": true,
+   "pellets": 1,
+   "penetration": 1.0,
+   "spreadHip": 3.6,
+   "spreadAds": 0.12,
+   "moveSpread": 2.3,
+   "recoil": {
+    "v": 3.0,
+    "h": 0.8,
+    "recover": 6,
+    "kick": 0.09,
+    "rot": 0.3
+   },
+   "adsTime": 0.34,
+   "reloadTime": 0.7,
+   "reloadType": "single",
+   "reloadStart": 0.45,
+   "reloadEnd": 0.5,
+   "equipTime": 0.7,
+   "sway": 1.35,
+   "weight": 3.3,
+   "sight": "iron",
+   "adsFov": 0.78,
+   "noise": 560,
+   "attach": {
+    "optic": [
+     "opt_2x",
+     "opt_4x"
+    ]
+   },
+   "model": {
+    "kind": "bolt",
+    "tone": "wood",
+    "stock": "wood",
+    "mag": "internal",
+    "length": 0.95
+   },
+   "sound": {
+    "body": 1.2,
+    "crack": 0.9,
+    "pitch": 0.95,
+    "tail": 1.0
+   }
+  },
+  {
+   "id": "wpn_goliath",
+   "name": "Goliath .50 AMR",
+   "class": "sniper",
+   "slot": "primary",
+   "ammo": "ammo_50",
+   "magSize": 5,
+   "fireModes": [
+    "semi"
+   ],
+   "rpm": 60,
+   "action": "bolt",
+   "cycleTime": 1.4,
+   "damage": 190,
+   "falloffStart": 400,
+   "falloffEnd": 1400,
+   "minDamage": 0.75,
+   "velocity": 850,
+   "projectile": true,
+   "pellets": 1,
+   "penetration": 3.4,
+   "spreadHip": 4.0,
+   "spreadAds": 0.02,
+   "moveSpread": 2.5,
+   "recoil": {
+    "v": 8.5,
+    "h": 1.6,
+    "recover": 4,
+    "kick": 0.2,
+    "rot": 0.6
+   },
+   "adsTime": 0.5,
+   "reloadTime": 3.1,
+   "reloadType": "mag",
+   "equipTime": 0.75,
+   "sway": 1.5,
+   "weight": 12.5,
+   "sight": "scope",
+   "scopeZoom": 8,
+   "adsFov": 0.125,
+   "noise": 900,
+   "attach": {
+    "optic": [
+     "opt_4x",
+     "opt_8x"
+    ],
+    "muzzle": [
+     "brake_rifle"
+    ],
+    "under": [
+     "bipod"
+    ]
+   },
+   "model": {
+    "kind": "bolt",
+    "tone": "black",
+    "stock": "fixed",
+    "mag": "box",
+    "length": 1.38
+   },
+   "sound": {
+    "body": 2.0,
+    "crack": 1.9,
+    "pitch": 0.55,
+    "tail": 1.8
+   },
+   "defaultAttach": {
+    "optic": "opt_8x",
+    "muzzle": "brake_rifle"
+   }
+  },
+  {
+   "id": "wpn_riot",
+   "name": "Riot-12 Shotgun",
+   "class": "shotgun",
+   "slot": "primary",
+   "ammo": "ammo_12ga",
+   "magSize": 5,
+   "fireModes": [
+    "semi"
+   ],
+   "rpm": 75,
+   "action": "pump",
+   "cycleTime": 0.5,
+   "damage": 15,
+   "falloffStart": 8,
+   "falloffEnd": 35,
+   "minDamage": 0.2,
+   "velocity": 400,
+   "projectile": false,
+   "pellets": 9,
+   "pelletSpread": 3.2,
+   "penetration": 0.3,
+   "spreadHip": 1.2,
+   "spreadAds": 0.8,
+   "moveSpread": 1.0,
+   "recoil": {
+    "v": 5.2,
+    "h": 1.2,
+    "recover": 6,
+    "kick": 0.14,
+    "rot": 0.55
+   },
+   "adsTime": 0.26,
+   "reloadTime": 0.55,
+   "reloadType": "single",
+   "reloadStart": 0.4,
+   "reloadEnd": 0.45,
+   "equipTime": 0.6,
+   "sway": 1.0,
+   "weight": 3.0,
+   "sight": "iron",
+   "adsFov": 0.88,
+   "noise": 330,
+   "attach": {
+    "optic": [
+     "opt_reflex",
+     "opt_holo"
+    ],
+    "light": [
+     "light_rail",
+     "laser_combo"
+    ],
+    "under": [
+     "grip_vert",
+     "grip_angled"
+    ]
+   },
+   "model": {
+    "kind": "shotgun",
+    "tone": "black",
+    "stock": "folding",
+    "mag": "tube",
+    "length": 0.86
+   },
+   "sound": {
+    "body": 1.4,
+    "crack": 0.4,
+    "pitch": 0.7,
+    "tail": 1.0
+   }
+  },
+  {
+   "id": "wpn_machete",
+   "name": "Machete",
+   "class": "melee",
+   "slot": "melee",
+   "damage": 58,
+   "range": 2.0,
+   "rpm": 80,
+   "swingTime": 0.45,
+   "fireModes": [
+    "melee"
+   ],
+   "weight": 0.7,
+   "sway": 0.3,
+   "noise": 10,
+   "model": {
+    "kind": "knife",
+    "long": true
+   },
+   "sound": {
+    "body": 0.4,
+    "pitch": 1.4
+   }
+  },
+  {
+   "id": "wpn_crowbar",
+   "name": "Crowbar",
+   "class": "melee",
+   "slot": "melee",
+   "damage": 40,
+   "range": 1.9,
+   "rpm": 75,
+   "swingTime": 0.5,
+   "fireModes": [
+    "melee"
+   ],
+   "weight": 1.4,
+   "sway": 0.3,
+   "noise": 10,
+   "model": {
+    "kind": "club"
+   },
+   "sound": {
+    "body": 0.4,
+    "pitch": 1.4
+   }
+  }
+ ]
 }

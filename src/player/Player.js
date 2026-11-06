@@ -99,7 +99,7 @@ export class Player {
       bus.emit('notify', { text: `${def.name} can't be used directly`, kind: 'info' });
       return;
     }
-    if (def.use.refuel || def.use.revealRegion || def.use.read) {
+    if (def.use.refuel || def.use.revealRegion || def.use.read || def.use.placeCharge || def.use.detonate) {
       this.game.useSpecialItem(s.id, slotIndex);
       return;
     }

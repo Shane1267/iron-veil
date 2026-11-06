@@ -30,7 +30,7 @@ export class LightPool {
       for (const s of this.sources) {
         if (s.street && night < 0.5) continue;
         if (s.active && !s.active()) continue;
-        const d = Math.hypot(s.x - pos.x, s.z - pos.z);
+        const d = Math.hypot(s.x - pos.x, (s.y - pos.y) * 1.5, s.z - pos.z); // 3D: facility lights below ground stay below
         if (d < 90) cands.push([d, s]);
       }
       cands.sort((a, b) => a[0] - b[0]);

@@ -140,6 +140,76 @@ export function buildPieceMesh(type, materials, opts = {}) {
       for (let i = 0; i < 4; i++) B.box('logs', 0, 0.15, 0, 0.8, 0.12, 0.12, { rotY: i * 0.8, rotZ: 0.3 });
       break;
     }
+    case 'chair': {
+      for (const [x, z] of [[-0.2, -0.2], [0.2, -0.2], [-0.2, 0.2], [0.2, 0.2]]) B.box('wood_dark', x, 0.22, z, 0.05, 0.44, 0.05);
+      B.box(W, 0, 0.46, 0, 0.5, 0.05, 0.48);
+      B.box(W, 0, 0.75, 0.22, 0.5, 0.55, 0.05);
+      break;
+    }
+    case 'bench_seat': {
+      for (const x of [-0.75, 0.75]) B.box('wood_dark', x, 0.22, 0, 0.08, 0.44, 0.38);
+      B.box(W, 0, 0.46, 0, 1.8, 0.06, 0.42);
+      break;
+    }
+    case 'table': {
+      for (const [x, z] of [[-0.6, -0.35], [0.6, -0.35], [-0.6, 0.35], [0.6, 0.35]]) B.box('wood_dark', x, 0.37, z, 0.07, 0.74, 0.07);
+      B.box(W, 0, 0.76, 0, 1.4, 0.05, 0.85);
+      B.box('canvas_tan', 0.2, 0.79, 0.05, 0.5, 0.01, 0.35, { rotY: 0.2 });
+      break;
+    }
+    case 'bed': {
+      B.box('wood_dark', 0, 0.2, 0, 1.0, 0.4, 2.0);
+      B.box('fabric_blue', 0, 0.45, 0.2, 0.92, 0.12, 1.5);
+      B.box('canvas_tan', 0, 0.48, -0.72, 0.6, 0.12, 0.35);
+      B.box('wood_dark', 0, 0.55, -0.98, 1.0, 0.7, 0.06);
+      break;
+    }
+    case 'bookshelf': {
+      B.box(W, 0, 0.95, -0.2, 1.4, 1.9, 0.05);
+      for (const x of [-0.68, 0.68]) B.box(W, x, 0.95, 0, 0.05, 1.9, 0.45);
+      for (let i = 0; i < 4; i++) B.box(W, 0, 0.05 + i * 0.6, 0, 1.36, 0.04, 0.42);
+      for (let i = 0; i < 3; i++) for (let k = 0; k < 5; k++) B.box(['fabric_red', 'fabric_blue', 'olive', 'canvas_tan'][(i + k) % 4], -0.5 + k * 0.22, 0.25 + i * 0.6, 0.02, 0.16, 0.3, 0.28);
+      break;
+    }
+    case 'weapon_rack': {
+      B.box('wood_dark', 0, 0.9, -0.15, 1.4, 1.8, 0.08);
+      B.box(W, 0, 0.12, 0.05, 1.4, 0.1, 0.3);
+      B.box(W, 0, 1.3, 0.05, 1.4, 0.06, 0.1);
+      for (let i = 0; i < 4; i++) { B.box('metal_dark', -0.5 + i * 0.33, 0.8, 0.05, 0.05, 1.2, 0.06); B.box('black', -0.5 + i * 0.33, 0.3, 0.07, 0.07, 0.2, 0.12); }
+      break;
+    }
+    case 'rug': B.box('fabric_red', 0, 0.01, 0, 2.2, 0.02, 1.5); B.box('canvas_tan', 0, 0.015, 0, 1.8, 0.02, 1.1); break;
+    case 'plant_pot': B.box('rust', 0, 0.2, 0, 0.4, 0.4, 0.4); for (let i = 0; i < 5; i++) B.box('olive', Math.sin(i * 1.3) * 0.12, 0.6 + (i % 2) * 0.15, Math.cos(i * 1.3) * 0.12, 0.25, 0.35, 0.06, { rotY: i * 1.25, rotX: 0.3 }); break;
+    case 'flag': {
+      B.box('wood_dark', 0, 2.0, 0, 0.08, 4.0, 0.08);
+      B.box('metal', 0, 4.05, 0, 0.12, 0.08, 0.12);
+      break;
+    }
+    case 'flagCloth': B.box('fabric_red', 0.6, 3.5, 0, 1.2, 0.75, 0.03); break;
+    case 'sign_post': {
+      B.box('wood_dark', 0, 0.7, 0, 0.1, 1.4, 0.1);
+      B.box(W, 0, 1.35, 0.06, 1.1, 0.6, 0.05);
+      break;
+    }
+    case 'planter': {
+      B.box(W, 0, 0.25, 0, 2.0, 0.5, 0.9);
+      B.box('dirt', 0, 0.48, 0, 1.9, 0.05, 0.8);
+      for (let i = 0; i < 6; i++) B.box('olive', -0.75 + i * 0.3, 0.68, (i % 2) * 0.2 - 0.1, 0.18, 0.35, 0.18, { rotY: i });
+      break;
+    }
+    case 'rain_collector': {
+      B.box('metal', 0, 0.55, 0, 0.8, 1.1, 0.8);
+      B.box('canvas', 0, 1.6, 0, 1.6, 0.04, 1.6, { rotX: 0.15 });
+      for (const [x, z] of [[-0.75, -0.75], [0.75, -0.75], [-0.75, 0.75], [0.75, 0.75]]) B.box('metal_dark', x, 0.8, z, 0.05, 1.6, 0.05);
+      B.box('metal_dark', 0.42, 0.3, 0, 0.12, 0.06, 0.06);
+      break;
+    }
+    case 'stove': {
+      B.box('black', 0, 0.4, 0, 0.7, 0.8, 0.55);
+      B.box('emissive_lamp', 0, 0.35, 0.28, 0.3, 0.2, 0.02);
+      B.box('metal_dark', 0, 1.6, -0.15, 0.14, 1.6, 0.14);
+      break;
+    }
     case 'sentry': {
       // tripod base with an ammo box; the turning head is built separately ('sentryHead')
       for (const a of [0, 2.1, 4.2]) B.box('metal_dark', Math.sin(a) * 0.35, 0.42, Math.cos(a) * 0.35, 0.07, 0.95, 0.07, { rotX: Math.cos(a) * 0.45, rotZ: -Math.sin(a) * 0.45 });
@@ -213,6 +283,19 @@ export function pieceColliders(type) {
     case 'campfire': return [];
     case 'bedroll': return [];
     case 'sentry': return [[0, 0.5, 0, 0.8, 1.0, 0.8]];
+    case 'chair': return [[0, 0.3, 0, 0.5, 0.6, 0.5]];
+    case 'bench_seat': return [[0, 0.3, 0, 1.8, 0.6, 0.42]];
+    case 'table': return [[0, 0.4, 0, 1.4, 0.8, 0.85]];
+    case 'bed': return [[0, 0.3, 0, 1.0, 0.6, 2.0]];
+    case 'bookshelf': return [[0, 0.95, -0.05, 1.4, 1.9, 0.45]];
+    case 'weapon_rack': return [[0, 0.9, -0.05, 1.4, 1.8, 0.35]];
+    case 'rug': return [];
+    case 'plant_pot': return [[0, 0.3, 0, 0.4, 0.6, 0.4]];
+    case 'flag': return [[0, 2, 0, 0.12, 4, 0.12]];
+    case 'sign_post': return [[0, 0.7, 0, 0.12, 1.4, 0.12]];
+    case 'planter': return [[0, 0.3, 0, 2.0, 0.6, 0.9]];
+    case 'rain_collector': return [[0, 0.55, 0, 0.8, 1.1, 0.8]];
+    case 'stove': return [[0, 0.5, 0, 0.7, 1.0, 0.55]];
     case 'lumber_yard': return [[0, 0.45, 0.3, 2.4, 0.9, 0.7], [0, 0.3, -0.6, 1.0, 0.6, 1.9], [1.6, 0.3, 0.8, 0.5, 0.6, 0.5]];
     case 'scrap_yard': return [[0, 0.47, 0, 1.7, 0.95, 1.0], [1.3, 0.43, 0.2, 0.84, 0.86, 0.94]];
     case 'fuel_pump': return [[0, 0.85, 0, 0.66, 1.7, 0.5], [-0.9, 0.55, 0, 0.6, 1.1, 0.6]];
@@ -241,6 +324,19 @@ export function pieceBounds(type) {
     case 'lamp': return [0.4, 0.4, 1.8];
     case 'campfire': return [1.4, 1.4, 0.3];
     case 'sentry': return [1.2, 1.2, 1.3];
+    case 'chair': return [0.6, 0.6, 1.0];
+    case 'bench_seat': return [1.9, 0.5, 0.6];
+    case 'table': return [1.5, 0.95, 0.8];
+    case 'bed': return [1.1, 2.1, 1.0];
+    case 'bookshelf': return [1.5, 0.5, 1.9];
+    case 'weapon_rack': return [1.5, 0.45, 1.8];
+    case 'rug': return [2.2, 1.5, 0.1];
+    case 'plant_pot': return [0.5, 0.5, 1.0];
+    case 'flag': return [1.4, 0.3, 4.1];
+    case 'sign_post': return [1.2, 0.3, 1.7];
+    case 'planter': return [2.0, 0.9, 0.8];
+    case 'rain_collector': return [1.6, 1.6, 1.8];
+    case 'stove': return [0.8, 0.6, 1.8];
     case 'lumber_yard': return [3.4, 2.4, 1.9];
     case 'scrap_yard': return [2.6, 1.2, 1.8];
     case 'fuel_pump': return [1.6, 1.0, 1.7];

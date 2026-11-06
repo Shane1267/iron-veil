@@ -60,6 +60,7 @@ export class PlayerController {
   get eyePos() { return new THREE.Vector3(this.pos.x, this.pos.y + this.eyeHeight, this.pos.z); }
 
   teleport(x, y, z, yaw = this.yaw) {
+    if (![x, y, z].every(Number.isFinite)) { console.warn('[Player] ignored teleport to a non-finite position', x, y, z); return; }
     this.pos.set(x, y, z);
     this.vel.set(0, 0, 0);
     this.yaw = yaw;
@@ -109,6 +110,20 @@ export class PlayerController {
     const st = STANCE[this.stance];
     const events = {};
 
+    // sitting on a chair or bench: any movement stands you up
+    if (this.seat) {
+      const wants = !inp.uiCapture && ['forward', 'back', 'left', 'right', 'jump'].some((a) => inp.is(a));
+      if (wants || !this.enabled) { this.seat = null; this.stance = 'stand'; }
+      else {
+        this.pos.set(this.seat.x, this.seat.y, this.seat.z);
+        this.vel.set(0, 0, 0);
+        this.stance = 'crouch';
+        this.grounded = true; this.moving = false; this.airTime = 0; this.fallStartY = this.pos.y;
+        this._updateCamera(dt, 0);
+        return events;
+      }
+    }
+
     // stance toggles
     if (this.enabled && !inp.uiCapture) {
       if (inp.hit('crouch')) this.setStance(this.stance === 'crouch' ? 'stand' : 'crouch');
@@ -139,7 +154,7 @@ export class PlayerController {
     speed *= 1 - (ctx.pain || 0) * 0.3;
 
     // water
-    const water = this.world.waterAt(this.pos.x, this.pos.z);
+    const water = this.pos.y < -250 ? null : this.world.waterAt(this.pos.x, this.pos.z);
     const depth = water !== null ? water - this.pos.y : 0;
     this.inWater = Math.max(0, depth);
     if (depth > 0.5) speed *= depth > 1.3 ? 0.45 : 0.7;
@@ -293,6 +308,7 @@ export class PlayerController {
 
   _surface() {
     // indoors (standing on a box collider) vs terrain surface
+    if (this.pos.y < -250) return 'concrete';
     const t = this.world.heightAt(this.pos.x, this.pos.z);
     if (this.pos.y - t > 0.12) return this.world.bridgeAt(this.pos.x, this.pos.z) !== null ? 'concrete' : 'wood';
     return this.world.surfaceAt(this.pos.x, this.pos.z);

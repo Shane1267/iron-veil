@@ -376,10 +376,13 @@ export class BaseSystem {
       const id = `base:${piece.id}`;
       piece.inventory = this.game.loot.get(id) || this.game.loot.register(id, new Inventory(def.storage, def.name), { meta: { base: true } });
     }
+    piece.text = typeof rec.text === 'string' ? rec.text.slice(0, 40) : '';
+    if (rec.type === 'flag') this._flagCloth(piece);
+    if (def.sign) this._signText(piece);
     this._makeInteract(piece);
     if (def.sentry) piece.sentry = new Sentry(piece, this.game);
     if (def.light) {
-      piece.lightSource = { x: piece.x, y: piece.y + (rec.type === 'lamp' ? 1.7 : 0.6), z: piece.z, color: rec.type === 'lamp' ? 0xffe0b0 : 0xff9a40, intensity: rec.type === 'lamp' ? 6 : 9, range: rec.type === 'lamp' ? 16 : 14, active: () => piece.alive && piece.lit, flicker: rec.type === 'campfire' };
+      piece.lightSource = { x: piece.x, y: piece.y + (rec.type === 'lamp' ? 1.7 : 0.6), z: piece.z, color: rec.type === 'lamp' ? 0xffe0b0 : 0xff9a40, intensity: rec.type === 'lamp' ? 6 : rec.type === 'stove' ? 5 : 9, range: rec.type === 'lamp' ? 16 : 14, active: () => piece.alive && piece.lit, flicker: rec.type !== 'lamp' };
       this.game.lights?.add(piece.lightSource);
       if (rec.type === 'campfire') this.game.fires?.push({ x: piece.x, y: piece.y + 0.2, z: piece.z, active: () => piece.alive && piece.lit, piece });
     }
@@ -462,7 +465,13 @@ export class BaseSystem {
       it.kind = 'workbench'; it.label = 'Use workbench'; it.y = piece.y + 1;
     } else if (piece.type === 'bedroll') {
       it.kind = 'bedroll'; it.label = 'Bedroll — respawn point set'; it.y = piece.y + 0.2;
-    } else if (piece.type === 'lamp' || piece.type === 'campfire') {
+    } else if (def.seat) {
+      it.kind = 'sit'; it.label = 'Sit down'; it.y = piece.y + 0.6; it.radius = 1.4;
+    } else if (def.sleep) {
+      it.kind = 'sleep'; it.label = 'Sleep until morning (respawn point)'; it.y = piece.y + 0.6;
+    } else if (def.sign) {
+      it.kind = 'editSign'; it.label = () => (piece.text ? `Sign: “${piece.text}” — edit` : 'Write on the sign'); it.y = piece.y + 1.3;
+    } else if (piece.type === 'lamp' || piece.type === 'campfire' || piece.type === 'stove') {
       it.kind = 'toggleLight'; it.label = () => (piece.lit ? `Extinguish ${def.name.toLowerCase()}` : `Light ${def.name.toLowerCase()}`); it.y = piece.y + 0.5;
     } else return;
     piece.interact = this.game.interactables.add(it);
@@ -479,6 +488,7 @@ export class BaseSystem {
     piece.alive = false;
     this.pieces.delete(piece.id);
     if (piece.mesh) { this.group.remove(piece.mesh); piece.mesh.geometry.dispose(); }
+    if (piece.extra) { this.group.remove(piece.extra); piece.extra.geometry.dispose(); piece.extra = null; }
     if (piece.leaves) for (const l of piece.leaves) { this.group.remove(l); l.traverse((o) => o.geometry?.dispose()); }
     for (const c of piece.colliders) this.game.physics.remove(c);
     if (piece.ladder) this.game.physics.removeLadder(piece.ladder);
@@ -547,6 +557,67 @@ export class BaseSystem {
     return { ok: true, msg: `${piece.def.name} dismantled` };
   }
 
+  _flagCloth(piece) {
+    const colors = ['fabric_red', 'fabric_blue', 'olive', 'paint_white'];
+    const m = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.75, 0.03), this.game.materials.get(colors[piece.rot % 4]));
+    const th = (piece.rot * Math.PI) / 2;
+    m.position.set(piece.x + Math.cos(th) * 0.62, piece.y + 3.55, piece.z - Math.sin(th) * 0.62);
+    m.rotation.y = th;
+    m.castShadow = true;
+    piece.extra = m;
+    this.group.add(m);
+  }
+
+  _signText(piece) {
+    if (piece.extra) { this.group.remove(piece.extra); piece.extra.material.map?.dispose(); piece.extra = null; }
+    if (!piece.text || typeof document === 'undefined') return;
+    const c = document.createElement('canvas');
+    c.width = 256; c.height = 128;
+    const x = c.getContext('2d');
+    x.fillStyle = '#5a4630'; x.fillRect(0, 0, 256, 128);
+    x.fillStyle = '#efe6cc';
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    let size = 44;
+    do { x.font = `700 ${size}px Georgia, "Times New Roman", serif`; size -= 2; } while (x.measureText(piece.text).width > 236 && size > 14);
+    x.fillText(piece.text, 128, 66);
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1.06, 0.53), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9 }));
+    const th = (piece.rot * Math.PI) / 2;
+    m.position.set(piece.x + Math.sin(th) * 0.09, piece.y + 1.35, piece.z + Math.cos(th) * 0.09);
+    m.rotation.y = th;
+    piece.extra = m;
+    this.group.add(m);
+  }
+
+  setSignText(piece, text) {
+    piece.text = String(text || '').slice(0, 40);
+    this._signText(piece);
+  }
+
+  /** Pick a piece back up: full refund when undamaged and empty, then place it again. */
+  pickUp(piece) {
+    if (piece.inventory && piece.inventory.usedSlots()) return { ok: false, msg: 'Empty the storage first' };
+    if (piece.health < piece.maxHealth * 0.98) return { ok: false, msg: 'Repair it first (E) — damaged pieces can only be dismantled' };
+    const type = piece.type;
+    this.destroy(piece, false);
+    if (!this.game.debug?.flags.freeBuild) {
+      const inv = this.game.player.equipment.inventory;
+      for (const [id, n] of Object.entries(piece.def.cost)) { const left = inv.add({ id, qty: n }); if (left) this.game.dropItem({ id, qty: left }); }
+    }
+    this.select(type);
+    return { ok: true, msg: `${piece.def.name} picked up — place it again (left click)` };
+  }
+
+  /** Build mode: the next/previous piece in the same category (mouse wheel). */
+  cycle(dir) {
+    const cur = PIECE[this.selected];
+    if (!cur) return;
+    const list = PIECES.filter((p) => p.cat === cur.cat);
+    const i = list.indexOf(cur);
+    this.select(list[(i + dir + list.length) % list.length].id);
+  }
+
   pieceAt(eye, dir) {
     const hit = this.game.physics.raycast(eye.x, eye.y, eye.z, dir.x, dir.y, dir.z, 5, (c) => !!c.piece);
     return hit?.collider?.piece || null;
@@ -561,7 +632,7 @@ export class BaseSystem {
   }
 
   respawnPoint() {
-    for (const p of this.pieces.values()) if (p.type === 'bedroll') return { x: p.x + 0.8, y: p.y + 0.2, z: p.z };
+    for (const p of this.pieces.values()) if (p.type === 'bedroll' || p.def.respawn) return { x: p.x + 0.8, y: p.y + 0.2, z: p.z };
     return null;
   }
 
@@ -614,6 +685,8 @@ export class BaseSystem {
     }
   }
 
+  _produceAll() { for (const p of this.pieces.values()) if (p.def.produce || p.def.pump) this._produce(p); }
+
   /** Debug: run every producer forward by `minutes`. Returns how many there were. */
   debugProduce(minutes) {
     let n = 0;
@@ -655,7 +728,7 @@ export class BaseSystem {
   // ------------------------------------------------------------ persistence
   serialize() {
     return {
-      pieces: [...this.pieces.values()].map((p) => ({ id: p.id, type: p.type, x: p.x, y: p.y, z: p.z, rot: p.rot, health: Math.round(p.health), open: p.open, locked: p.locked, legs: p.legs, lit: p.lit, doorway: p.doorway?.id || null, ...(p.def.produce || p.def.pump ? { prodT: p.prodT, prodAcc: +p.prodAcc.toFixed(3), stock: +(p.stock || 0).toFixed(3) } : {}), ...(p.sentry ? { sentryLoaded: p.sentry.loaded } : {}) })),
+      pieces: [...this.pieces.values()].map((p) => ({ id: p.id, type: p.type, x: p.x, y: p.y, z: p.z, rot: p.rot, health: Math.round(p.health), open: p.open, locked: p.locked, legs: p.legs, lit: p.lit, doorway: p.doorway?.id || null, ...(p.text ? { text: p.text } : {}), ...(p.def.produce || p.def.pump ? { prodT: p.prodT, prodAcc: +p.prodAcc.toFixed(3), stock: +(p.stock || 0).toFixed(3) } : {}), ...(p.sentry ? { sentryLoaded: p.sentry.loaded } : {}) })),
       discoveredBy: [...this.discoveredBy],
       lastRaid: this.lastRaid,
     };

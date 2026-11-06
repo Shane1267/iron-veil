@@ -214,15 +214,19 @@ export class Lighting {
     this.lightDir.copy(useMoon ? this.moonDir : this.sunDir);
     if (this.lightDir.y < 0.08) this.lightDir.y = 0.08;
     this.lightDir.normalize();
+    // underground: no sun or sky reaches you (eased so the lift ride is not a hard cut)
+    this.envDim = damp(this.envDim ?? 1, this.underground ? 0.02 : 1, 3, dt);
+    const dim = this.envDim;
     if (useMoon) {
       _c1.setRGB(0.55, 0.65, 0.9);
-      this.shadows.setLight(_c1, p.moonI * (1 - weather.cloud * 0.6) + weather.flash * 6);
+      this.shadows.setLight(_c1, (p.moonI * (1 - weather.cloud * 0.6) + weather.flash * 6) * dim);
     } else {
-      this.shadows.setLight(p.sun, p.sunI + weather.flash * 6);
+      this.shadows.setLight(p.sun, (p.sunI + weather.flash * 6) * dim);
     }
     this.hemi.color.copy(p.hemiSky);
     this.hemi.groundColor.copy(p.hemiGround);
-    this.hemi.intensity = p.hemiI + weather.flash * 2;
+    // night vision: an infrared illuminator lifts the darkest scenes a little
+    this.hemi.intensity = (p.hemiI + weather.flash * 2) * dim + (this.nvAmbient || 0);
 
     // shadows follow the camera (cascades) or the player (single map)
     this.shadows.update(this.view.camera, this.lightDir, focus);
@@ -245,7 +249,11 @@ export class Lighting {
 
     // simple eye adaptation: exposure opens up under a roof and closes again outside
     this.adapt = damp(this.adapt ?? 1, this.viewIndoor ? 1.6 : 1, this.viewIndoor ? 1.2 : 2.0, dt);
-    this.r.toneMappingExposure = p.exposure * this.adapt;
+    const baseExp = p.exposure * this.adapt;
+    // night vision amplifies, but the tube saturates: cap the boosted exposure so the
+    // picture keeps its detail instead of blowing out to a flat green field
+    const nvG = this.nvGain || 1;
+    this.r.toneMappingExposure = nvG > 1 ? Math.max(baseExp, Math.min(baseExp * nvG, 2.6 + 0.12 * nvG)) : baseExp;
     this.sky.position.copy(this.view.camera.position);
 
     // viewmodel lights mirror the world lighting

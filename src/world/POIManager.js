@@ -119,7 +119,17 @@ export class POIManager {
   get radiusOut() { return this.radiusIn + 250; }
 
   update(dt, pos, timeBudget = BUILD_BUDGET_MS) {
-    for (const rt of this.active.values()) for (const d of rt.doors) d.update(dt);
+    for (const rt of this.active.values()) {
+      for (const d of rt.doors) d.update(dt);
+      for (const g of rt.gates || []) {
+        // open gates slide sideways along their width (or sink, for vault doors)
+        const want = g.open ? 1 : 0;
+        if (g.slide === want) continue;
+        g.slide += Math.sign(want - g.slide) * Math.min(Math.abs(want - g.slide), dt * 0.5);
+        if (g.def.sink) g.mesh.position.y = g.home.y - g.slide * (g.def.h - 0.05);
+        else g.mesh.position.set(g.home.x + Math.cos(g.def.yaw) * g.def.w * 0.95 * g.slide, g.home.y, g.home.z - Math.sin(g.def.yaw) * g.def.w * 0.95 * g.slide);
+      }
+    }
     this.checkTimer -= dt;
     if (this.checkTimer <= 0 && !this.building) {
       this.checkTimer = 0.5;
@@ -158,7 +168,7 @@ export class POIManager {
     const B = new BoxBuilder(this.materials);
     const ctx = {
       physics: this.physics, owner: `poi:${poi.id}`, colliders: [], doors: [], glass: [], containers: [], spots: [], ladders: [], clearZones: [],
-      lights: [], fires: [], pumps: [], signs: [], waterDiscs: [], radios: [], buildings: [], trees: [], npcs: [],
+      lights: [], fires: [], pumps: [], signs: [], waterDiscs: [], radios: [], buildings: [], trees: [], npcs: [], gates: [], lifts: [], turrets: [],
     };
     const S = new StructureBuilder(B, ctx, rng);
     const commands = [];
@@ -223,6 +233,22 @@ export class POIManager {
       c.id = id;
     });
     ctx.pumps.forEach((p, i) => inter.push(this.interactables.add({ id: `${poi.id}:pump${i}`, kind: 'pump', x: p.x, y: p.y, z: p.z, radius: 1.5, label: 'Fill jerrycan', data: {} })));
+    // key-card gates: a sliding leaf with its own collider
+    const gates = ctx.gates.map((gd, i) => {
+      const id = `${poi.id}:g${i}`;
+      const mesh = new THREE.Mesh(this._unitBox || (this._unitBox = new THREE.BoxGeometry(1, 1, 1)), this.materials.get(gd.mat || 'metal_dark'));
+      mesh.scale.set(gd.w, gd.h, gd.d);
+      mesh.position.set(gd.x, gd.y + gd.h / 2, gd.z);
+      mesh.rotation.y = gd.yaw;
+      mesh.castShadow = true;
+      group.add(mesh);
+      const ex = Math.abs(Math.cos(gd.yaw)) > 0.5 ? gd.w / 2 : gd.d / 2, ez = Math.abs(Math.cos(gd.yaw)) > 0.5 ? gd.d / 2 : gd.w / 2;
+      const collider = this.physics.addBox(gd.x - ex, gd.y, gd.z - ez, gd.x + ex, gd.y + gd.h, gd.z + ez, { material: 'metal', owner: ctx.owner, tag: 'gate' });
+      const gate = { id, def: gd, mesh, collider, open: false, slide: 0, home: mesh.position.clone() };
+      inter.push(this.interactables.add({ id: `${id}:i`, kind: 'keygate', x: gd.ix ?? gd.x, y: gd.y + 1.2, z: gd.iz ?? gd.z, radius: 2.2, label: () => (gate.open ? `${gd.name} (open)` : `${gd.name}: swipe key card`), data: { gate } }));
+      return gate;
+    });
+    ctx.lifts.forEach((l, i) => inter.push(this.interactables.add({ id: `${poi.id}:lift${i}`, kind: 'lift', x: l.x, y: l.y + 1.2, z: l.z, radius: 1.8, label: l.label, data: { lift: l } })));
     ctx.radios.forEach((r, i) => inter.push(this.interactables.add({ id: `${poi.id}:radio${i}`, kind: 'radio', x: r.x, y: r.y, z: r.z, radius: 1.6, label: 'Use radio', data: { poi: poi.id } })));
     // signs
     for (const s of ctx.signs) group.add(this._signMesh(s));
@@ -267,7 +293,7 @@ export class POIManager {
     this.scene.add(group);
     const rt = {
       poi, group, doors, glassMesh, glass: ctx.glass, colliders: ctx.colliders, interactables: inter, spots: ctx.spots, containers: ctx.containers,
-      lights: ctx.lights, fires: ctx.fires, ladders: ctx.ladders, buildings: ctx.buildings, npcs: ctx.npcs,
+      lights: ctx.lights, fires: ctx.fires, ladders: ctx.ladders, buildings: ctx.buildings, npcs: ctx.npcs, gates, turrets: ctx.turrets,
     };
     this.active.set(poi.id, rt);
     bus.emit('poi:built', rt);
@@ -386,6 +412,7 @@ export class POIManager {
             case 'pipe': { const [x1, z1, r, h] = args; S.pipe(x, y, z, px + x1, pz + z1, r, h); break; }
             case 'sandbags': { const [rot, len] = args; S.sandbagRow(new Frame(x, y, z, rot || 0), 0, 0, len || 4); break; }
             case 'container': { const [rot, color, profile] = args; S.shippingContainer(x, y, z, rot || 0, color, profile); break; }
+            case 'securityWall': { const [x0, z0, x1, z1, h, gates] = args; S.securityWall(x, y, z, x0, z0, x1, z1, h, gates, gy); break; }
             case 'hayBale': S.cyl(new Frame(x, y, z, 0), 'hay', 0, 0.65, 0, 0.65, 1.3, 12, { rotX: Math.PI / 2 }); break;
             case 'fuelBarrels': {
               const n = 3 + rng.int(0, 4);
@@ -565,6 +592,10 @@ export class POIManager {
         placed.push([x - 2.2, z - 2.2, x + 2.2, z + 2.2]);
         commands.push(() => S[name](x, gy(x, z), z, rot, ...args));
         return true;
+      },
+      /** Underground facility at depth Y under this location (built in world coordinates). */
+      underground(Y, liftTop) {
+        commands.push(() => S.facility(px, pz, Y, liftTop));
       },
       pave(x0, z0, x1, z1, mat = 'asphalt') {
         commands.push(() => S.pavement(px + x0, pz + z0, px + x1, pz + z1, gy, mat));

@@ -370,6 +370,63 @@ export const LAYOUTS = {
     L.perimeter(-108, -100, 108, 100, 'palisade', [{ side: 'S', at: 0, w: 8 }, { side: 'N', at: 10, w: 6 }]);
     for (const [x, z, t, sc] of [[-80, 60, 'broadleaf', 1.0], [84, -60, 'birch', 0.95], [78, 70, 'broadleaf', 1.1], [-86, -66, 'birch', 0.9]]) L.tree(x, z, t, sc);
   },
+  airfield(L) {
+    // Kessler Airfield: runway, apron, hangars, tower. The Launch Site key card is kept in
+    // the flight operations tent (first container placed here).
+    L.s('tent', 30, -40, 2, { profile: 'keycard', crateName: 'Flight Ops Lockbox', mat: 'olive' });
+    L.sign(-20, -250, 2, L.poi.name);
+    L.pave(-250, 40, 250, 70, 'asphalt');
+    L.pave(-60, -60, 60, 40, 'concrete_dark');
+    L.pave(-10, -230, 10, -60, 'asphalt');
+    for (let i = -220; i <= 220; i += 30) L.s('jersey', i, 55, 0);
+    L.perimeter(-265, -240, 265, 120, 'chain', [{ side: 'N', at: 0, w: 14 }]);
+    L.s('boomGate', 0, -236, 0, 10);
+    L.b('booth', 12, -228, 0);
+    L.s('hangar', -110, -10, 0, 24, 32, 11);
+    L.s('hangar', -75, -10, 0, 24, 32, 11);
+    L.s('hangar', 95, -15, 0, 26, 34, 12);
+    L.b('office', 30, -80, 0, { floors: 3, profile: 'airfield', furniture: 'control' });
+    L.s('commMast', 48, -82, 26);
+    L.s('aircraft', -20, 0, 1, {});
+    L.s('aircraft', 10, 10, 1, { color: 'paint_red' });
+    L.s('aircraft', 170, 75, 2, { wreck: true });
+    L.s('helipad', 150, -50);
+    L.s('hTank', -170, -60, 0, 10, 1.6, 'paint_white');
+    L.s('hTank', -170, -40, 0, 10, 1.6, 'paint_white');
+    L.s('fuelPump', -150, -50, 0);
+    L.b('barracks', 150, -130, 1);
+    L.b('warehouse', -150, -140, 0, { profile: 'airfield' });
+    L.s('guardTower', -255, -230, 0, { profile: 'military', sandbags: true, height: 6 });
+    L.s('guardTower', 255, -230, 1, { profile: 'military', sandbags: true, height: 6 });
+    for (const [x, z] of [[-60, -60], [60, -60], [-200, 30], [200, 30]]) L.s('floodlight', x, z, 0, 10);
+    L.s('tent', 60, -40, 2, { profile: 'airfield' });
+  },
+  launch_site(L) {
+    // Walled launch complex, opened with the key card from the airfield. Inside: rocket pad,
+    // control building, hangar, barracks, and a lift house down into the facility.
+    const Y = -400;
+    const p = L.poi;
+    L.sign(-14, 150, 0, L.poi.name);
+    L.pave(-150, -130, 150, 130, 'concrete_dark');
+    L.s('securityWall', 0, 0, -150, -130, 150, 130, 4.5, [{ side: 'S', at: 0, w: 8 }], true);
+    L.s('keyGate', 0, 130, 0, { w: 8, h: 4.5, name: 'Launch Site gate' });
+    L.s('boomGate', 0, 140, 0, 10);
+    L.b('booth', 14, 142, 0);
+    L.s('launchPad', 60, -55, 0);
+    L.b('hq', -60, -45, 0, { profile: 'launch_surface' });
+    L.s('hangar', -95, 60, 0, 24, 32, 11);
+    L.b('barracks', 50, 70, 0);
+    L.b('warehouse', 100, 20, 1, { profile: 'launch_surface' });
+    L.s('radarDome', -110, -95);
+    L.s('commMast', -125, -60, 34);
+    L.s('hTank', 115, -105, 0, 12, 2.0, 'paint_white');
+    L.s('hTank', 115, -85, 0, 12, 2.0, 'paint_white');
+    for (const [x, z, r] of [[-144, -124, 0], [144, -124, 1], [144, 124, 2], [-144, 124, 3]]) L.s('guardTower', x, z, r, { profile: 'military', sandbags: true, height: 7 });
+    for (const [x, z] of [[-40, 0], [40, 0], [0, -100], [0, 100]]) L.s('floodlight', x, z, 0, 12);
+    // lift house over the shaft; the facility far below has its own lift back up
+    L.s('liftHouse', 0, 64, 2, { to: { x: p.x, y: Y + 0.05, z: p.z + 63, yaw: 0 } });
+    L.underground(Y, { x: p.x, z: p.z + 59, yaw: Math.PI });
+  },
   dam(L) {
     L.sign(-60, 70, 0, L.poi.name);
     L.s('damWall', 0, -40, 0, 80, 14);

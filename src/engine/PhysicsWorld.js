@@ -23,6 +23,9 @@ const keyOf = (ix, iz) => (ix + 32768) * 65536 + (iz + 32768);
 
 let _colliderId = 1;
 
+/** Below this height you are inside an underground facility (see terrainHeight). */
+export const UNDERGROUND_Y = -250;
+
 export class PhysicsWorld {
   constructor(worldData) {
     this.world = worldData;
@@ -125,13 +128,18 @@ export class PhysicsWorld {
   }
 
   // ---------------------------------------------------------- terrain
-  terrainHeight(x, z) {
+  /**
+   * Terrain surface height. Anything far below every hillside (y < UNDERGROUND_Y) is in an
+   * underground facility, where the terrain does not exist and only colliders count.
+   */
+  terrainHeight(x, z, y) {
+    if (y !== undefined && y < UNDERGROUND_Y) return -1e6;
     return this.world.heightAt(x, z);
   }
 
   /** Highest walkable surface under a circle at or below maxY (terrain or box tops). */
   groundHeight(x, z, radius, maxY, list) {
-    let g = this.terrainHeight(x, z);
+    let g = this.terrainHeight(x, z, maxY);
     const deck = this.world.bridgeAt ? this.world.bridgeAt(x, z) : null;
     if (deck !== null && deck <= maxY && deck > g) g = deck;
     const cs = list || this.query(x - radius, z - radius, x + radius, z + radius, this._tmpList || (this._tmpList = []));
@@ -239,6 +247,7 @@ export class PhysicsWorld {
    * Ray vs terrain. Returns distance or Infinity. Marches in 1.5 m steps, then bisects.
    */
   raycastTerrain(ox, oy, oz, dx, dy, dz, maxDist) {
+    if (oy < UNDERGROUND_Y && oy + dy * maxDist < UNDERGROUND_Y) return Infinity; // underground: no terrain
     const step = 1.5;
     let prevT = 0;
     let prevAbove = oy - this.terrainHeight(ox, oz);
@@ -373,7 +382,18 @@ export class PhysicsWorld {
     const ux = dx / d, uy = dy / d, uz = dz / d;
     const hit = this.raycast(ax, ay, az, ux, uy, uz, d - 0.05,
       (c) => c.blocksSight && c.material !== 'glass' && c.owner !== ignoreOwner && c.tag !== 'character');
-    return !hit;
+    if (hit) return false;
+    // smoke clouds: a long enough path through one hides what is behind it
+    if (this.smokes?.length) {
+      for (const s of this.smokes) {
+        const ox = s.x - ax, oy = s.y - ay, oz = s.z - az;
+        const t = Math.max(0, Math.min(d, ox * ux + oy * uy + oz * uz));
+        const cx = ax + ux * t - s.x, cy = ay + uy * t - s.y, cz = az + uz * t - s.z;
+        const m2 = cx * cx + cy * cy * 1.6 + cz * cz, r2 = s.r * s.r;
+        if (m2 < r2 && Math.sqrt(r2 - m2) * 2 > Math.min(3, s.r * 0.6)) return false;
+      }
+    }
+    return true;
   }
 
   /** Line of fire: like sight but glass counts as transparent and bullets pass foliage. */

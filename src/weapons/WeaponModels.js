@@ -117,6 +117,7 @@ export function buildWeaponModel(weaponId, attach = {}, materials, opts = {}) {
       });
       const blade = new THREE.Mesh(bladeGeo, M.blade);
       blade.position.set(0, 0.01, -0.03);
+      if (w.model.long) { blade.scale.set(1, 1.5, 2.6); blade.position.z = -0.03; }
       body.add(blade);
       box(body, M.steel, 0, 0.01, -0.035, 0.012, 0.05, 0.012); // guard
       box(body, M.rubber, 0, 0.008, 0.025, 0.026, 0.03, 0.11, 0, 0, 0, 0.008);
@@ -142,12 +143,15 @@ export function buildWeaponModel(weaponId, attach = {}, materials, opts = {}) {
   // ---------------------------------------------------- attachments
   if (!parts.melee) {
     const railY = parts.ironSightY ? parts.ironSightY - 0.022 : parts.sightY - 0.01;
-    if (attach.optic === 'opt_reflex') {
+    const opticShape = attach.optic ? ItemDB.get(attach.optic)?.shape : null;
+    if (opticShape === 'reflex' || opticShape === 'holo') {
       const g = new THREE.Group();
-      box(g, metal, 0, railY + 0.012, 0, 0.028, 0.012, 0.055);
-      box(g, metal, -0.016, railY + 0.036, 0.004, 0.005, 0.042, 0.03);
-      box(g, metal, 0.016, railY + 0.036, 0.004, 0.005, 0.042, 0.03);
-      box(g, metal, 0, railY + 0.058, 0.004, 0.037, 0.005, 0.03);
+      const hw = opticShape === 'holo' ? 1.35 : 1; // holographic sights have a wider, boxier window
+      box(g, metal, 0, railY + 0.012, 0, 0.028 * hw, 0.012, opticShape === 'holo' ? 0.085 : 0.055);
+      box(g, metal, -0.016 * hw, railY + 0.036, 0.004, 0.005, 0.042, 0.03 * hw);
+      box(g, metal, 0.016 * hw, railY + 0.036, 0.004, 0.005, 0.042, 0.03 * hw);
+      box(g, metal, 0, railY + 0.058, 0.004, 0.037 * hw, 0.005, 0.03 * hw);
+      if (opticShape === 'holo') box(g, metal, 0, railY + 0.02, 0.035, 0.034, 0.02, 0.03);
       cyl(g, metal, 0.021, railY + 0.03, 0.01, 0.006, 0.012, 'x', 10); // brightness knob
       box(g, M.reflexGlass, 0, railY + 0.036, -0.008, 0.028, 0.036, 0.002, 0, 0, 0, 0);
       const dot = new THREE.Mesh(new THREE.CircleGeometry(0.0011, 10), M.dot);
@@ -158,11 +162,12 @@ export function buildWeaponModel(weaponId, attach = {}, materials, opts = {}) {
       parts.sightY = railY + 0.035;
       parts.reflex = g;
       if (parts.ironRear) parts.ironRear.visible = false;
-    } else if (attach.optic === 'opt_4x' || attach.optic === 'opt_8x') {
+    } else if (opticShape === 'scope') {
       const g = new THREE.Group();
-      const big = attach.optic === 'opt_8x';
-      const tubeY = railY + 0.05;
-      const L = big ? 0.26 : 0.21;
+      const zoom = ItemDB.get(attach.optic).attach.scopeZoom || 4;
+      const big = zoom >= 8;
+      const tubeY = railY + (zoom <= 2 ? 0.04 : 0.05);
+      const L = big ? 0.26 : zoom <= 2 ? 0.14 : 0.21;
       cyl(g, M.parkerized, 0, tubeY, 0, 0.0155, L * 0.55, 'z', 20);
       cyl(g, M.parkerized, 0, tubeY, -L * 0.36, 0.0155, L * 0.2, 'z', 20, big ? 0.025 : 0.021); // objective bell
       cyl(g, M.parkerized, 0, tubeY, -L * 0.5, big ? 0.026 : 0.022, L * 0.08, 'z', 20);
@@ -181,7 +186,15 @@ export function buildWeaponModel(weaponId, attach = {}, materials, opts = {}) {
       parts.scope = g;
       if (parts.ironRear) parts.ironRear.visible = false;
     }
-    if (attach.muzzle && parts.muzzle) {
+    const muzzleShape = attach.muzzle ? ItemDB.get(attach.muzzle)?.shape : null;
+    if (muzzleShape === 'brake' && parts.muzzle) {
+      // short slotted brake / flash hider
+      const mz = parts.muzzle.position;
+      cyl(body, M.parkerized, 0, mz.y, mz.z - 0.03, 0.0135, 0.065, 'z', 14);
+      if (HI) for (let i = 0; i < 3; i++) box(body, M.rubber, 0, mz.y + 0.012, mz.z - 0.012 - i * 0.018, 0.02, 0.004, 0.007, 0, 0, 0, 0);
+      parts.muzzle.position.z -= 0.06;
+      if (parts.muzzleDevice) parts.muzzleDevice.visible = false;
+    } else if (attach.muzzle && parts.muzzle) {
       const mz = parts.muzzle.position;
       cyl(body, M.parkerized, 0, mz.y, mz.z - 0.075, 0.019, 0.16, 'z', 18);
       cyl(body, M.parkerized, 0, mz.y, mz.z + 0.008, 0.0145, 0.02, 'z', 14); // mount collar
@@ -192,12 +205,26 @@ export function buildWeaponModel(weaponId, attach = {}, materials, opts = {}) {
     if (attach.under === 'grip_vert') {
       box(body, M.polymer, 0, -0.04, parts.handguardZ - 0.02, 0.026, 0.085, 0.03, 0.1, 0, 0, 0.008);
       ribs(body, M.rubber, 0, -0.06, parts.handguardZ - 0.02 + 0.016, 1, 0, 0.027, 0.04, 0.002);
+    } else if (attach.under === 'grip_angled') {
+      box(body, M.polymer, 0, -0.03, parts.handguardZ - 0.01, 0.024, 0.04, 0.09, -0.6, 0, 0, 0.008);
+    } else if (attach.under === 'bipod') {
+      box(body, M.parkerized, 0, -0.015, (parts.handguardZ ?? -0.2) - 0.08, 0.03, 0.02, 0.04);
+      for (const sx of [-1, 1]) box(body, M.parkerized, sx * 0.012, -0.03, (parts.handguardZ ?? -0.2) + 0.02, 0.008, 0.008, 0.2, 0, 0, 0, 0.002);
     }
     if (attach.light) {
       const lz = (parts.handguardZ ?? -0.1) - 0.04;
       cyl(body, M.polymer, 0.034, 0.03, lz, 0.012, 0.07, 'z', 14);
       cyl(body, M.lens, 0.034, 0.03, lz - 0.036, 0.0115, 0.002, 'z', 14);
       box(body, M.polymer, 0.026, 0.035, lz, 0.012, 0.012, 0.03);
+      if (ItemDB.get(attach.light)?.attach?.hipMul) {
+        // laser emitter beside the light, with a faint visible beam
+        cyl(body, M.lens, 0.034, 0.012, lz - 0.03, 0.004, 0.004, 'z', 8);
+        const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.0012, 0.0012, 1.2, 4), new THREE.MeshBasicMaterial({ color: 0x40ff60, transparent: true, opacity: 0.35, depthWrite: false }));
+        beam.rotation.x = Math.PI / 2;
+        beam.position.set(0.034, 0.012, lz - 0.63);
+        body.add(beam);
+        parts.laser = beam;
+      }
       parts.lightPoint = new THREE.Object3D();
       parts.lightPoint.position.set(0.034, 0.03, lz - 0.04);
       body.add(parts.lightPoint);
@@ -402,6 +429,7 @@ function buildLongGun(body, parts, w, M, furn, metal, kind, attach) {
   const mag = new THREE.Group();
   const magType = w.model.mag;
   const ext = attach.mag ? 1.35 : 1;
+  const drumMag = attach.mag && ItemDB.get(attach.mag)?.shape === 'drum';
   const magMat = kind === 'rifle' && w.model.tone === 'black' ? M.parkerized : metal;
   if (magType === 'curved') {
     // three segments with increasing forward sweep fake the curve
@@ -414,6 +442,9 @@ function buildLongGun(body, parts, w, M, furn, metal, kind, attach) {
       if (HI) box(mag, M.rubber, 0.0132, y, -z, 0.0008, segH * 0.7, 0.006, a, 0, 0, 0);
     }
     box(mag, M.polymer, 0, -0.022 - segH * 3 - 0.004, -0.05 * ext, 0.03, 0.01, 0.074, 0.42, 0, 0, 0.003);
+  } else if (magType === 'box' && drumMag) {
+    cyl(mag, metal, 0.0, -0.075, 0, 0.065, 0.065, 'x', 22);
+    box(mag, metal, 0, -0.02, 0, 0.026, 0.04, 0.05, 0, 0, 0, 0.004);
   } else if (magType === 'box') {
     const tilt = kind === 'smg' ? 0 : 0.08;
     box(mag, magMat, 0, -0.06 * ext, 0, 0.026, 0.1 * ext, 0.06, tilt, 0, 0, 0.004);

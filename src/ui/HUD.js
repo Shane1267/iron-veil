@@ -275,6 +275,14 @@ export class HUD {
     } else {
       this.weapon.append(h('div', { class: 'name' }, info.name), h('div', { class: 'meta' }, h('span', { class: 'mode' }, info.mode || '')));
     }
+    // throwables and night vision
+    const ex = g.explosives, thr = ex.carried();
+    const gear = [];
+    if (thr.length) { const id = thr.includes(ex.selected) ? ex.selected : thr[0]; gear.push(`${ItemDB.get(id).name} ×${g.player.equipment.inventory.count(id)} [Q]`); }
+    if (ex.charges.length) gear.push(`${ex.charges.length} charge${ex.charges.length > 1 ? 's' : ''} armed`);
+    const nv = g.nightVision.status;
+    if (nv) gear.push(nv);
+    if (gear.length) this.weapon.append(h('div', { class: 'meta gear' }, ...gear.map((t) => h('span', {}, t))));
     // quick slots
     this.quick.innerHTML = '';
     g.player.equipment.quick.forEach((id, i) => {

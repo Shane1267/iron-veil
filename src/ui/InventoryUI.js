@@ -9,7 +9,7 @@ import { bus } from '../core/EventBus.js';
 // routed through the atomic Inventory/Equipment APIs so items cannot be duplicated.
 
 const FILTERS = [
-  ['all', 'All'], ['weapon', 'Weapons'], ['ammo', 'Ammo'], ['attachment', 'Mods'], ['medical', 'Medical'],
+  ['all', 'All'], ['weapon', 'Weapons'], ['ammo', 'Ammo'], ['explosive', 'Throw'], ['attachment', 'Mods'], ['medical', 'Medical'],
   ['food', 'Food'], ['gear', 'Gear'], ['construction', 'Build'], ['other', 'Other'],
 ];
 const SLOT_LABEL = { primary: 'Primary', shoulder: 'Shoulder', sidearm: 'Sidearm', melee: 'Melee', head: 'Head', body: 'Body', vest: 'Vest', back: 'Back', util: 'Utility' };
@@ -223,7 +223,9 @@ export class InventoryUI {
       if (e.slots) bits.push(`+${e.slots} slots`);
       if (e.insulation) bits.push(`Insulation ${Math.round(e.insulation * 100)}`);
       if (e.rain) bits.push('Rain protection');
+      if (e.nvgMount) bits.push('Night-vision mount');
       info.append(h('p', {}, bits.join(' · ')));
+      if (e.nvgMount) info.append(...this._nvgUI(s));
     }
     if (def.use) {
       const u = def.use;
@@ -288,6 +290,43 @@ export class InventoryUI {
     }
     out.push(h('div', { class: 'cat', style: { marginTop: '6px' } }, 'Attachments'), row);
     return out;
+  }
+
+  /** Night-vision goggles on a helmet: mount from your pockets, or take them off. */
+  _nvgUI(s) {
+    const row = h('div', { class: 'attach-row' });
+    const cur = s.data?.nvg;
+    if (cur) row.appendChild(h('span', { class: 'attach on', title: 'Click to remove', onclick: () => this._nvgOff(s) }, `${ItemDB.get(cur).name} (${Math.round((s.data.nvgCharge ?? 1) * 100)}%) ✕`));
+    for (const id of ['nvg_gen1', 'nvg_gen3']) {
+      if (id === cur || this.inv.count(id) < 1) continue;
+      row.appendChild(h('span', { class: 'attach', title: 'Click to mount', onclick: () => this._nvgOn(s, id) }, `+ ${ItemDB.get(id).name}`));
+    }
+    if (!cur && !this.inv.count('nvg_gen1') && !this.inv.count('nvg_gen3')) row.appendChild(h('span', { class: 'attach', style: { opacity: 0.5, cursor: 'default' } }, 'night vision: none'));
+    return [h('div', { class: 'cat', style: { marginTop: '6px' } }, 'Night vision (toggle with V)'), row];
+  }
+
+  _nvgOn(s, id) {
+    if (!this._guard()) return;
+    if (this.inv.remove(id, 1) !== 1) return;
+    s.data = s.data || {};
+    const prev = s.data.nvg;
+    s.data.nvg = id;
+    s.data.nvgCharge = s.data.nvgCharge ?? 1;
+    if (prev) { const left = this.inv.add({ id: prev, qty: 1 }); if (left) this.game.dropItem({ id: prev, qty: 1 }); }
+    bus.emit('sound', { type: 'click', ui: true });
+    this.changed();
+  }
+
+  _nvgOff(s) {
+    if (!this._guard()) return;
+    const id = s.data?.nvg;
+    if (!id) return;
+    if (!this.inv.canAdd({ id, qty: 1 })) { bus.emit('notify', { text: 'No room for the goggles', kind: 'warn' }); return; }
+    delete s.data.nvg;
+    this.inv.add({ id, qty: 1 });
+    if (this.game.nightVision.on && this.eq.slots.head === s) this.game.nightVision.on = false;
+    bus.emit('sound', { type: 'click', ui: true });
+    this.changed();
   }
 
   _attach(stack, slot, id) {
