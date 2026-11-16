@@ -120,6 +120,59 @@ Click the game view to capture the mouse. Releasing the pointer (Esc) opens the 
   rain collector (water daily) and stove (light and warmth). Sleeping is refused with enemies nearby
   or while bleeding.
 
+## Vehicles, raids and world update (update 3)
+
+* **Vehicles rebuilt.** Six ground vehicles, each with its own cabin: pickup, civilian sedan, off-road SUV,
+  utility van, military truck and the Bastion armoured car (vision slits, bullet-resistant glass, troop
+  benches). Dashboards with live speed and fuel needles, a steering wheel that turns with the front
+  wheels, seats, console, gear lever, pedals, door cards, mirrors and a dome light. Doors swing on their
+  hinges when you get in and out; you sit on the actual seat you entered by (driver's door → driver's
+  seat) and **C** moves you to the next free seat. Every window breaks on its own: it cracks in three
+  stages and then shatters, after which bullets and sight pass through. Body panels stop sight; doors
+  and glass do not stop rifle rounds, armour does. Refit glass with a Replacement Window and a wrench (F).
+* **Helicopter.** Rarely, a damaged Kestrel appears on the Kessler Airfield pad. It needs a rotor assembly,
+  turbine components, avionics, a fuel system kit and a car battery (install with F and a wrench), then
+  repair and fuel. Controls: Space climbs, Shift descends, W/S forward and back, A/D turn. The rotor takes
+  about 8 seconds to spool up. Hard landings and collisions damage it; out of fuel it comes down.
+  Helicopter crash sites also appear rarely (smoke column, scattered wreckage, three cargo containers).
+* **Roads and bridges.** Road heights are engineered: junctions meet at one level, grades are limited,
+  raised sections get embankments, and all ten bridges follow their road with decks level with both
+  approaches. Eight bridge designs (highway, concrete, steel, long river crossing, rural timber,
+  abandoned, damaged, railway truss).
+* **Base raids.** Every 3–6 in-game days a base with walls can be raided. A warning comes first with a
+  countdown panel (default 3 in-game hours, about 7 real minutes); then raiders arrive from outside,
+  approach, breach with tools or timed charges (E on a charge defuses it), look for another way in if a
+  wall holds, loot storage and retreat after heavy losses. Four types: small, military, large assault
+  (several directions) and the rare special raid. If you are far away the outcome is estimated from your
+  defences and reported.
+* **Building.** Log perimeter walls (plain and reinforced), corner posts, gateway, large wooden gate and
+  reinforced gate (vehicles fit), military fencing, blast walls, firing platform, log watchtower, sandbag
+  position, barricades, reinforced door, storage shed, floodlight, lantern post, support pillar. Perimeter
+  pieces snap end to end and at right angles. 28 furniture and decor pieces in civilian, industrial,
+  military, modern, abandoned and survivalist styles; many do something (storage, sit, lights, clock,
+  radio and computer reports, map, noticeboard, military workbench). F restyles pieces that have variants.
+* **Explosives.** C4 must now be armed (E on the charge) before the detonator fires it, and can be
+  disarmed and picked up. Breaching charges blow after 10 seconds and are strongest against doors and
+  gates. C4 and breaching charges are crafted at a Military Workbench from Plastic Explosive. The RL-7
+  rocket launcher and its rockets are very rare (bunker armoury; tiny chance at the airfield and Launch Site).
+* **Bunker 7** (Underground Storage Facility, north-east): a lift goes down to level B2 with stores,
+  barracks, maintenance, equipment and supply rooms, a restricted armoury (Bunker 7 key card, kept in the
+  duty officer's locker) and the sealed PROJECT SUNSHINE room, which only C4 opens. **SUNSHINE** lights
+  everything within 100 m for exactly one minute, then burns out. One exists; it returns only when the
+  bunker's loot resets.
+* **Loot resets.** Bunker, airfield, Launch Site, military base, depot and research station reset as a
+  whole on a timer and announce it ("LOOT RESET: BUNKER supplies have been replenished.").
+* **Stamina.** A full bar now sprints about 13 seconds (was about 9) and refills in under 5. Trail runners,
+  military boots, light packs, fitness (trained by sprinting), energy drinks, glucose and being well fed
+  help; heavy armour and big packs cost. The best possible setup still runs out.
+* **Sentry guns** need six military components found only at the bunker and the airfield, take a moment to
+  lock on, wear with use and can be tuned in settings.
+* **16 new locations**: diner, hamlet, abandoned farm, outposts, Depot 12, a canning factory, rail
+  maintenance yard, road post, motor pool, container yard, the ghost village of Lowmere, fuel stop,
+  hunting cabin, relay tower, lookout and a raider holdout. Kessler Airfield gained a maintenance hangar,
+  workshops, vehicle sheds, a fuel farm, a control building and a helipad.
+* **Settings → World / Raids / Survival** hold every option for the above; values are range-checked.
+
 ## Debug menu
 
 Hold **Tab** and press **3**, enter **3209** on the keypad. ↑/↓ move, Enter selects, ←/→ change values,
@@ -259,6 +312,8 @@ AI difficulty, hunger/thirst rate, world-event frequency, loot restock interval)
 * Single player only (an online co-op prototype was built and then removed to save hosting costs; see MANIFEST).
 * Gamepad is not supported.
 * AI do not throw grenades or use smoke; facility turrets only target the player.
+* Single-player only: raids, loot resets and helicopters have no network synchronisation.
+* AI do not fly helicopters or drive anything except convoy trucks.
 
 ## Performance notes
 

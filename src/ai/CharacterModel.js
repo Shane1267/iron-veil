@@ -240,9 +240,34 @@ export class CharacterModel {
   /**
    * Animate. s: {speed (m/s), crouch 0..1, aiming 0..1, aimPitch, reloading, moving}
    */
+  /** Seated pose for vehicle crew (root on the seat cushion); drivers hold the wheel. */
+  setSeated(on, driving = false) {
+    this.seated = on;
+    this.seatDriving = driving;
+  }
+
+  _seatedPose() {
+    const B = this.bones;
+    B.hips.position.set(0, 0.06, 0.02);
+    B.hips.rotation.set(0, 0, 0);
+    B.spine.rotation.set(0.05, 0, 0); B.chest.rotation.set(0, 0, 0);
+    B.thighL.rotation.set(1.45, 0, 0.05); B.thighR.rotation.set(1.45, 0, -0.05);
+    B.shinL.rotation.set(-1.35, 0, 0); B.shinR.rotation.set(-1.35, 0, 0);
+    B.footL.rotation.set(0.1, 0, 0); B.footR.rotation.set(0.1, 0, 0);
+    if (this.seatDriving) {
+      B.armL.rotation.set(1.0, 0.1, 0.25); B.foreL.rotation.set(0.7, 0, 0);
+      B.armR.rotation.set(1.0, -0.1, -0.25); B.foreR.rotation.set(0.7, 0, 0);
+    } else {
+      B.armL.rotation.set(0.5, 0, 0.15); B.foreL.rotation.set(1.0, 0, 0);
+      B.armR.rotation.set(0.5, 0, -0.15); B.foreR.rotation.set(1.0, 0, 0);
+    }
+    B.neck.rotation.set(0, 0, 0);
+  }
+
   animate(dt, s) {
     const B = this.bones;
-    if (this.dead) { this._death(dt); return; }
+    if (this.dead) { this.seated = false; this._death(dt); return; }
+    if (this.seated) { this._seatedPose(); return; }
     this.speed = damp(this.speed, s.speed, 10, dt);
     this.crouch = damp(this.crouch, s.crouch, 8, dt);
     this.aiming = damp(this.aiming, s.aiming, 9, dt);

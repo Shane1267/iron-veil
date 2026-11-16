@@ -34,6 +34,48 @@ export const DEFAULT_SETTINGS = {
   aiDifficulty: 1.0,
   showFPS: false,
   hudScale: 1.0,
+  // vehicles
+  vehicleAvailability: 'normal', // normal | rare | none
+  vehicleDamage: 1.0,
+  glassDurability: 1.0,
+  vehicleRepair: 'normal', // normal | strict
+  // base raids
+  raidsEnabled: true,
+  raidMinDays: 3,
+  raidMaxDays: 6,
+  raidWarningMinutes: 180, // in-game minutes between the warning and the attack (1 game day = 60 real minutes)
+  raidSize: 1.0,
+  raidDifficulty: 1.0,
+  raidSpecialChance: 0.06,
+  raidBreaching: 'explosives', // none | tools | explosives
+  // loot
+  bunkerResetHours: 48,
+  airfieldResetHours: 24,
+  majorResetHours: 24,
+  lootResetNotify: true,
+  rareLootChance: 1.0,
+  // helicopters
+  heliCrashChance: 0.12, // chance per in-game day
+  airfieldHeliChance: 0.08, // chance per in-game day that a wreck-in-waiting appears at Kessler
+  heliRepair: 'normal', // normal | strict
+  heliFuelUse: 1.0,
+  // stamina
+  staminaDrain: 1.0,
+  staminaRegen: 1.0,
+  staminaWeight: 1.0,
+  staminaBonuses: true,
+  // sentry guns
+  turretCost: 'high', // normal | high | extreme
+  turretParts: 'restricted', // restricted (bunker + airfield only) | military (any military site)
+  turretDamage: 1.0,
+  turretAmmoUse: 1.0,
+};
+
+/** Allowed values for string settings (anything else falls back to the default). */
+const ENUMS = {
+  preset: ['chromebook', 'low', 'medium', 'high', 'custom'],
+  vehicleAvailability: ['normal', 'rare', 'none'], vehicleRepair: ['normal', 'strict'], raidBreaching: ['none', 'tools', 'explosives'],
+  heliRepair: ['normal', 'strict'], turretCost: ['normal', 'high', 'extreme'], turretParts: ['restricted', 'military'],
 };
 
 const LIMITS = {
@@ -41,7 +83,12 @@ const LIMITS = {
   textures: [128, 1024], sensitivity: [0.1, 4], adsSensitivity: [0.2, 1.5], fov: [60, 100],
   volMaster: [0, 1], volWeapons: [0, 1], volAmbience: [0, 1], volVehicles: [0, 1], volUI: [0, 1],
   lootRespawnMinutes: [0, 240], eventFrequency: [0, 2], survivalRate: [0.25, 2], aiDifficulty: [0.5, 1.5], hudScale: [0.75, 1.4],
+  vehicleDamage: [0.25, 3], glassDurability: [0.25, 4], raidMinDays: [1, 30], raidMaxDays: [1, 30], raidWarningMinutes: [30, 720],
+  raidSize: [0.5, 2], raidDifficulty: [0.5, 2], raidSpecialChance: [0, 0.5], bunkerResetHours: [2, 240], airfieldResetHours: [2, 240],
+  majorResetHours: [2, 240], rareLootChance: [0, 3], heliCrashChance: [0, 1], airfieldHeliChance: [0, 1], heliFuelUse: [0.25, 3],
+  staminaDrain: [0.25, 2], staminaRegen: [0.25, 3], staminaWeight: [0, 2], turretDamage: [0.25, 2], turretAmmoUse: [0.5, 3],
 };
+const INTEGER = new Set(['raidMinDays', 'raidMaxDays', 'raidWarningMinutes', 'bunkerResetHours', 'airfieldResetHours', 'majorResetHours']);
 
 export class SettingsManager {
   constructor() {
@@ -88,16 +135,22 @@ export class SettingsManager {
         val = Number(v);
         if (!Number.isFinite(val)) continue;
         if (LIMITS[k]) val = Math.min(LIMITS[k][1], Math.max(LIMITS[k][0], val));
+        if (INTEGER.has(k)) val = Math.round(val);
       } else if (typeof def === 'boolean') {
         val = !!v;
       } else if (typeof def === 'string') {
         val = String(v);
-        if (k === 'preset' && !['chromebook', 'low', 'medium', 'high', 'custom'].includes(val)) continue;
+        if (ENUMS[k] && !ENUMS[k].includes(val)) continue;
       }
       if (this.values[k] !== val) {
         this.values[k] = val;
         changed[k] = val;
       }
+    }
+    // impossible combinations: the raid window must not be inverted
+    if (this.values.raidMaxDays < this.values.raidMinDays) {
+      if ('raidMinDays' in changed && !('raidMaxDays' in changed)) this.values.raidMaxDays = changed.raidMaxDays = this.values.raidMinDays;
+      else this.values.raidMinDays = changed.raidMinDays = this.values.raidMaxDays;
     }
     if (Object.keys(changed).length) {
       if (persist) this.save();

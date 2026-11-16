@@ -40,13 +40,52 @@ const GROUPS = [
     { k: 'eventFrequency', name: 'World event frequency', min: 0, max: 2, step: 0.1, fmt: (v) => (v === 0 ? 'Off' : `${Math.round(v * 100)}%`) },
     { k: 'lootRespawnMinutes', name: 'Loot restock interval', min: 0, max: 240, step: 5, fmt: (v) => (v === 0 ? 'Never' : `${v} game min`), hint: 'Containers restock only after being emptied' },
   ]],
+  ['World', [
+    { head: 'Vehicles' },
+    { k: 'vehicleAvailability', name: 'Vehicle availability', type: 'select', options: [['normal', 'Normal'], ['rare', 'Rare (fewer spawns)'], ['none', 'None']], hint: 'Applies to new games' },
+    { k: 'vehicleDamage', name: 'Vehicle damage taken', min: 0.25, max: 3, step: 0.05, fmt: (v) => `${Math.round(v * 100)}%` },
+    { k: 'glassDurability', name: 'Vehicle glass durability', min: 0.25, max: 4, step: 0.05, fmt: (v) => `${Math.round(v * 100)}%` },
+    { k: 'vehicleRepair', name: 'Vehicle repair requirements', type: 'select', options: [['normal', 'Normal'], ['strict', 'Strict (more parts, less repaired)']] },
+    { head: 'Loot' },
+    { k: 'bunkerResetHours', name: 'Bunker loot reset', min: 2, max: 240, step: 2, fmt: (v) => `${v} game h` },
+    { k: 'airfieldResetHours', name: 'Airfield loot reset', min: 2, max: 240, step: 2, fmt: (v) => `${v} game h` },
+    { k: 'majorResetHours', name: 'Other major sites loot reset', min: 2, max: 240, step: 2, fmt: (v) => `${v} game h` },
+    { k: 'lootResetNotify', name: 'Announce major loot resets', type: 'bool' },
+    { k: 'rareLootChance', name: 'Rare item spawn chance', min: 0, max: 3, step: 0.05, fmt: (v) => `${Math.round(v * 100)}%` },
+    { head: 'Helicopters' },
+    { k: 'heliCrashChance', name: 'Crash site chance (per day)', min: 0, max: 1, step: 0.01, fmt: (v) => `${Math.round(v * 100)}%` },
+    { k: 'airfieldHeliChance', name: 'Airfield helicopter chance (per day)', min: 0, max: 1, step: 0.01, fmt: (v) => `${Math.round(v * 100)}%` },
+    { k: 'heliRepair', name: 'Helicopter repair requirements', type: 'select', options: [['normal', 'Normal'], ['strict', 'Strict']] },
+    { k: 'heliFuelUse', name: 'Helicopter fuel use', min: 0.25, max: 3, step: 0.05, fmt: (v) => `${Math.round(v * 100)}%` },
+  ]],
+  ['Raids', [
+    { k: 'raidsEnabled', name: 'Base raids', type: 'bool' },
+    { k: 'raidMinDays', name: 'Minimum days between raids', min: 1, max: 30, step: 1, fmt: (v) => `${v}` },
+    { k: 'raidMaxDays', name: 'Maximum days between raids', min: 1, max: 30, step: 1, fmt: (v) => `${v}` },
+    { k: 'raidWarningMinutes', name: 'Warning time', min: 30, max: 720, step: 15, fmt: (v) => `${v} game min (~${Math.round(v / 24)} real min)` },
+    { k: 'raidSize', name: 'Raid size', min: 0.5, max: 2, step: 0.05, fmt: (v) => `${Math.round(v * 100)}%` },
+    { k: 'raidDifficulty', name: 'Raid difficulty', min: 0.5, max: 2, step: 0.05, fmt: (v) => `${Math.round(v * 100)}%` },
+    { k: 'raidSpecialChance', name: 'Special raid chance', min: 0, max: 0.5, step: 0.01, fmt: (v) => `${Math.round(v * 100)}%` },
+    { k: 'raidBreaching', name: 'Raider breaching', type: 'select', options: [['explosives', 'Tools and explosives'], ['tools', 'Tools only'], ['none', 'None (shoot only)']] },
+  ]],
+  ['Survival', [
+    { k: 'staminaDrain', name: 'Sprint stamina drain', min: 0.25, max: 2, step: 0.05, fmt: (v) => `${Math.round(v * 100)}%` },
+    { k: 'staminaRegen', name: 'Stamina regeneration', min: 0.25, max: 3, step: 0.05, fmt: (v) => `${Math.round(v * 100)}%` },
+    { k: 'staminaWeight', name: 'Weight penalty on stamina', min: 0, max: 2, step: 0.05, fmt: (v) => `${Math.round(v * 100)}%` },
+    { k: 'staminaBonuses', name: 'Gear, food and training stamina bonuses', type: 'bool' },
+    { head: 'Sentry guns' },
+    { k: 'turretCost', name: 'Sentry gun crafting cost', type: 'select', options: [['normal', 'Normal'], ['high', 'High (default)'], ['extreme', 'Extreme']] },
+    { k: 'turretParts', name: 'Sentry component sources', type: 'select', options: [['restricted', 'Bunker and airfield only'], ['military', 'Any military site']] },
+    { k: 'turretDamage', name: 'Sentry gun damage', min: 0.25, max: 2, step: 0.05, fmt: (v) => `${Math.round(v * 100)}%` },
+    { k: 'turretAmmoUse', name: 'Sentry ammunition use', min: 0.5, max: 3, step: 0.05, fmt: (v) => `${Math.round(v * 100)}%` },
+  ]],
 ];
 
 export const CONTROLS = [
   ['Move', 'W A S D'], ['Look', 'Mouse'], ['Sprint', 'Shift'], ['Crouch / Prone', 'C / Z'], ['Jump', 'Space'], ['Fire / Aim', 'LMB / RMB'],
   ['Hold breath (scoped)', 'Shift'], ['Reload / clear jam', 'R'], ['Fire mode', 'B'], ['Weapon slots', '1 2 3 4'], ['Holster', 'X'], ['Quick items', '5 6 7 8'],
   ['Interact / loot / drive', 'E'], ['Secondary action (lock, refuel, fill)', 'F'], ['Light', 'T'], ['Inspect weapon', 'Y'],
-  ['Inventory', 'Tab / I'], ['Map', 'M'], ['Build menu', 'G'], ['Crafting', 'H'], ['Journal & skills', 'J'], ['Rotate piece', 'Q'], ['Vehicle lights', 'L'], ['Pause', 'Esc'],
+  ['Inventory', 'Tab / I'], ['Map', 'M'], ['Build menu', 'G'], ['Crafting', 'H'], ['Journal & skills', 'J'], ['Rotate piece', 'Q'], ['Vehicle lights', 'L'], ['Vehicle: change seat', 'C'], ['Night vision', 'V'], ['Throw / choose throwable', 'Q / Shift+Q'], ['Pause', 'Esc'],
 ];
 
 export class SettingsUI {
@@ -97,11 +136,13 @@ export class SettingsUI {
   _row(s) {
     const v = settings.get(s.k);
     let ctrl, valEl = h('span', { class: 'v' });
+    if (s.head) return h('div', { class: 'setting-head' }, s.head);
     if (s.type === 'bool') {
       ctrl = h('div', { class: `toggle ${v ? 'on' : ''}`, onclick: () => { settings.apply({ [s.k]: !settings.get(s.k), ...(this.tab === 'Graphics' ? { preset: 'custom' } : {}) }); this.render(); } });
     } else if (s.type === 'select') {
-      ctrl = h('select', { onchange: (e) => { settings.apply({ [s.k]: Number(e.target.value), preset: 'custom' }); this.render(); } },
-        ...s.options.map(([val, label]) => h('option', { value: val, selected: Number(v) === val }, label)));
+      const num = typeof s.options[0][0] === 'number';
+      ctrl = h('select', { onchange: (e) => { settings.apply({ [s.k]: num ? Number(e.target.value) : e.target.value, ...(this.tab === 'Graphics' ? { preset: 'custom' } : {}) }); this.render(); } },
+        ...s.options.map(([val, label]) => h('option', { value: val, selected: (num ? Number(v) : v) === val }, label)));
     } else {
       ctrl = h('input', { type: 'range', min: s.min, max: s.max, step: s.step, value: v });
       ctrl.addEventListener('input', (e) => { valEl.textContent = s.fmt(Number(e.target.value)); });

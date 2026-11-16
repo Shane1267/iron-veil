@@ -158,7 +158,7 @@ await check('demolition', async () => {
     return { hp: wall.health };
   });
   await gs(0.4);
-  const p = await ev(() => { const g = window.__IV.game; const r = g.explosives.plant(); if (r.ok) g.player.equipment.inventory.remove('c4', 1); return r; });
+  const p = await ev(() => { const g = window.__IV.game; const r = g.explosives.plant(); if (r.ok) { g.player.equipment.inventory.remove('c4', 1); g.explosives.interactCharge(r.charge); } return { ok: r.ok, msg: r.msg }; });
   if (!p.ok) throw new Error(p.msg);
   await ev(() => { const g = window.__IV.game, pc = g.player.controller; pc.teleport(pc.pos.x, pc.pos.y, pc.pos.z + 25, 0); });
   await gs(0.3);

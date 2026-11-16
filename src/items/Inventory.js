@@ -53,6 +53,8 @@ export class Inventory {
   count(id) {
     let n = 0;
     for (const s of this.slots) if (s && s.id === id) n += s.qty;
+    // multi-tools (the military toolkit) count as each tool they contain
+    if (!n && id.startsWith('tool_')) for (const s of this.slots) if (s && ItemDB.get(s.id)?.tool?.includes?.(id)) n += 1;
     return n;
   }
 

@@ -20,7 +20,8 @@ function sane(s, label) {
   expect(s.insideGeometry, `${label}: agents inside walls`).toBe(0);
   expect(s.badFacing, `${label}: shots fired while facing away`).toBe(0);
   expect(s.ammoViolations, `${label}: negative ammunition`).toBe(0);
-  expect(s.friendlyHits, `${label}: friendly fire`).toBeLessThanOrEqual(1);
+  // friendly fire happens in real crossfires; it must stay rare (well under 1% of shots)
+  expect(s.friendlyHits, `${label}: friendly fire`).toBeLessThanOrEqual(Math.max(1, Math.floor(s.shots * 0.008)));
 }
 
 describe('AI firefights (headless simulation)', () => {

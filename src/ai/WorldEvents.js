@@ -31,7 +31,7 @@ export class WorldEvents {
       if (!alive) this.history.push({ type: e.type, ended: this.game.clock.gameMinutes });
       return alive || (e.vehicle && !e.vehicle.destroyed && this.game.vehicles.vehicles.has(e.vehicle.id));
     });
-    this._raidCheck(dt);
+    // base raids are run by RaidDirector (warnings, countdown, raid types)
     if (this.timer > 0) return;
     this.timer = 150 + this.rng.next() * 200;
     if (this.active.length >= 2) return;
@@ -152,7 +152,7 @@ export class WorldEvents {
     const cargo = rollLoot('military', (Math.random() * 1e9) | 0, 12);
     for (const st of cargo.slots) if (st) veh.storage.add(st);
     const squad = this.game.ai.spawnSquad(['vsf_rifleman', 'vsf_rifleman', 'vsf_rifleman', 'vsf_gunner'], start.x, start.z, { role: 'rifleman' });
-    for (const m of squad.members) this._mount(m, veh);
+    squad.members.forEach((m, i) => this._mount(m, veh, i < 2 ? i : null));
     const e = this._register('convoy', [squad], { vehicle: veh });
     const dismount = () => {
       if (e.dismounted) return;
@@ -168,19 +168,25 @@ export class WorldEvents {
       const pp = this.game.player.controller.pos;
       const d = Math.hypot(pp.x - veh.pos.x, pp.z - veh.pos.z);
       if (veh.health < veh.t.health * 0.85 || (d < 70 && this.game.physics.lineOfSight(veh.pos.x, veh.pos.y + 2.4, veh.pos.z, pp.x, pp.y + 1.5, pp.z))) dismount();
-      for (const m of squad.members) if (m.mountedOn) { m.pos.copy(veh.pos); m.pos.y = veh.pos.y + 1.2; }
+      for (const m of squad.members) if (m.mountedOn && m.vehicleSeat === undefined) { m.pos.copy(veh.pos); m.pos.y = veh.pos.y + 1.2; }
+      // driver shot: the truck rolls to a stop and the crew bails out
+      if (veh.driver === null && !veh.aiStopped) dismount();
     };
   }
 
-  _mount(agent, veh) {
+  /** Put an agent in a vehicle: seat index (visible in the cab, can be shot) or the cargo. */
+  _mount(agent, veh, seat = null) {
     agent.mountedOn = veh;
-    agent.model.root.visible = false;
     agent.state = 'mounted';
+    if (seat !== null && this.game.vehicles.seatAgent(veh, agent, seat)) return;
+    agent.model.root.visible = false;
     this.game.characters.remove(agent);
   }
 
   _dismount(agent, veh) {
     if (!agent.alive) return;
+    const seated = agent.vehicleSeat !== undefined;
+    if (seated) this.game.vehicles.unseatAgent(veh, agent);
     agent.mountedOn = null;
     const f = veh.forward;
     const r = { x: Math.cos(veh.yaw), z: -Math.sin(veh.yaw) };
@@ -189,7 +195,7 @@ export class WorldEvents {
     const x = veh.pos.x + r.x * side * 2.2 + f.x * back, z = veh.pos.z + r.z * side * 2.2 + f.z * back;
     agent.pos.set(x, this.game.world.heightAt(x, z), z);
     agent.model.root.visible = true;
-    this.game.characters.add(agent);
+    if (!seated) this.game.characters.add(agent);
     agent.state = 'idle';
     agent.post = { x, z, yaw: veh.yaw };
     const pc = this.game.player.character;

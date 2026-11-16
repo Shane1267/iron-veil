@@ -39,6 +39,10 @@ import { DebugMenu } from '../ui/DebugMenu.js';
 import { NPCSystem } from '../npc/NPCSystem.js';
 import { Explosives } from '../weapons/Explosives.js';
 import { NightVision } from '../player/NightVision.js';
+import { LootResets } from '../world/LootResets.js';
+import { RaidDirector } from '../ai/RaidDirector.js';
+import { Sunshine } from '../weapons/Sunshine.js';
+import { Helicopters } from '../vehicles/Helicopters.js';
 import { FacilityTurrets } from '../world/FacilityTurrets.js';
 
 // Top-level orchestrator: owns every system, runs the frame loop, routes input to
@@ -99,6 +103,10 @@ export class Game {
     this.explosives = new Explosives(this);
     this.nightVision = new NightVision(this);
     this.turrets = new FacilityTurrets(this);
+    this.lootResets = new LootResets(this);
+    this.raids = new RaidDirector(this);
+    this.sunshine = new Sunshine(this);
+    this.helis = new Helicopters(this);
     this.openGates = new Set();
 
     this.started = false;
@@ -166,7 +174,7 @@ export class Game {
 
   nearStation(type) {
     const p = this.player.controller.pos;
-    for (const pc of this.base.pieces.values()) if (pc.def.station === type && Math.hypot(pc.x - p.x, pc.z - p.z) < 3.5) return true;
+    for (const pc of this.base.pieces.values()) if ((pc.def.station === type || pc.def.stations?.includes(type)) && Math.hypot(pc.x - p.x, pc.z - p.z) < 3.5) return true;
     for (const rt of this.pois.active.values()) {
       for (const c of rt.containers) if (c.kind === type && Math.hypot(c.x - p.x, c.z - p.z) < 3) return true;
     }
@@ -276,7 +284,7 @@ export class Game {
     const inv = this.player.equipment.inventory;
     const def = ItemDB.get(id);
     if (def.use.placeCharge) {
-      const r = this.explosives.plant();
+      const r = this.explosives.plant(def.use.placeCharge === 'breach' ? 'breach' : 'c4');
       if (r.ok) inv.remove(id, 1);
       bus.emit('notify', { text: r.msg, kind: r.ok ? 'good' : 'info' });
       return;
@@ -284,6 +292,16 @@ export class Game {
     if (def.use.detonate) {
       const r = this.explosives.detonate();
       bus.emit('notify', { text: r.msg, kind: r.ok ? 'warn' : 'info' });
+      return;
+    }
+    if (def.use.sunshine) {
+      const r = this.sunshine.activate(inv);
+      bus.emit('notify', { text: r.msg, kind: r.ok ? 'warn' : 'info' });
+      return;
+    }
+    if (def.use.note) {
+      if (!this.journalPages.includes(def.use.note)) this.journalPages.push(def.use.note);
+      bus.emit('notify', { text: def.use.note, kind: 'info' });
       return;
     }
     if (def.use.revealRegion) {
@@ -336,6 +354,7 @@ export class Game {
     if (it.kind === 'basedoor') return it.data.piece.locked ? 'Unlock' : 'Lock';
     if (it.kind === 'container' && it.data.piece?.def.lockable) return it.data.piece.locked ? 'Unlock' : 'Lock';
     if (it.kind === 'water' || it.kind === 'pump') return null;
+    if (it.data?.piece?.def.variants) return 'Restyle';
     return null;
   }
 
@@ -355,6 +374,10 @@ export class Game {
     this.explosives.clear();
     this.openGates.clear();
     this.turrets.deserialize(null);
+    this.lootResets.deserialize(null);
+    this.raids.deserialize(null);
+    this.sunshine.clear();
+    this.helis.deserialize(null);
     this.nightVision.on = false;
     this.discovered.clear();
     this.fog.data.fill(0);
@@ -480,7 +503,7 @@ export class Game {
       world: {
         clock: this.clock.serialize(), weather: this.weather.serialize(), discovered: [...this.discovered],
         fog: Array.from(this.fog.data).join(''), markers: this.markers, waypoint: this.waypoint, journal: this.journalPages,
-        gates: [...this.openGates], turretsDown: this.turrets.serialize(),
+        gates: [...this.openGates], turretsDown: this.turrets.serialize(), lootResets: this.lootResets.serialize(), raids: this.raids.serialize(), helis: this.helis.serialize(),
       },
       objectives: this.objectives.serialize(),
       loot: this.loot.serialize(),
@@ -553,6 +576,9 @@ export class Game {
     this.journalPages = Array.isArray(d.world.journal) ? d.world.journal.filter((x) => typeof x === 'string') : [];
     this.openGates = new Set(Array.isArray(d.world.gates) ? d.world.gates.filter((x) => typeof x === 'string') : []);
     this.turrets.deserialize(d.world.turretsDown);
+    this.lootResets.deserialize(d.world.lootResets);
+    this.raids.deserialize(d.world.raids);
+    this.helis.deserialize(d.world.helis);
     this._restorePiles();
     const slot = d.player?.weaponSlot;
     this.weapons.select(slot && this.player.equipment.slots[slot] ? slot : null);
@@ -623,7 +649,8 @@ export class Game {
       case 'radio': { const r = this.objectives.transmit(); bus.emit('notify', { text: r.msg, kind: r.ok ? 'objective' : 'info' }); bus.emit('sound', { type: 'radio', x: it.x, y: it.y, z: it.z }); break; }
       case 'workbench': this.ui.open('craft'); break;
       case 'bedroll': bus.emit('notify', { text: 'You will respawn here if you die', kind: 'info' }); break;
-      case 'toggleLight': { const pc = it.data.piece; pc.lit = !pc.lit; break; }
+      case 'toggleLight': { const pc = it.data.piece; pc.lit = !pc.lit; if (pc.extra && pc.def.interact) pc.extra.visible = pc.lit; break; }
+      case 'piece_clock': case 'piece_tv': case 'piece_computer': case 'piece_radio': case 'piece_map': this._pieceInteract(it.kind, it.data.piece); break;
       case 'npc': this.npcs.interact(it.data.npc); break;
       case 'sit': {
         const pc = it.data.piece;
@@ -635,12 +662,22 @@ export class Game {
       }
       case 'sleep': this._sleep(it.data.piece); break;
       case 'editSign': this._editSign(it.data.piece); break;
+      case 'charge': {
+        const r = this.explosives.interactCharge(it.data.charge);
+        bus.emit('notify', { text: r.msg, kind: r.ok ? 'good' : 'info' });
+        break;
+      }
       case 'keygate': {
         const gt = it.data.gate;
         if (gt.open) { bus.emit('notify', { text: `${gt.def.name} is open`, kind: 'info' }); break; }
-        if (this.player.equipment.inventory.count('keycard_launch') < 1) {
+        if (gt.def.breach) {
+          bus.emit('notify', { text: `${gt.def.name}: sealed from the inside, no reader, no handle. Only a demolition charge will open it.`, kind: 'warn' });
+          break;
+        }
+        const card = gt.def.card || 'keycard_launch';
+        if (this.player.equipment.inventory.count(card) < 1) {
           bus.emit('sound', { type: 'uiError', ui: true });
-          bus.emit('notify', { text: 'ACCESS DENIED — you need the Launch Site key card. Word is it is kept at Kessler Airfield.', kind: 'warn' });
+          bus.emit('notify', { text: card === 'keycard_launch' ? 'ACCESS DENIED — you need the Launch Site key card. Word is it is kept at Kessler Airfield.' : `ACCESS DENIED — you need the ${ItemDB.get(card)?.name || 'right key card'}.`, kind: 'warn' });
           break;
         }
         gt.open = true;
@@ -674,6 +711,32 @@ export class Game {
       it.data.piece.locked = !it.data.piece.locked;
       bus.emit('sound', { type: 'click', ui: true });
       bus.emit('notify', { text: `${it.data.piece.def.name} ${it.data.piece.locked ? 'locked' : 'unlocked'}`, kind: 'info' });
+    } else if (it.data?.piece?.def.variants) {
+      if (this.base.restyle(it.data.piece)) bus.emit('sound', { type: 'build', x: it.data.piece.x, y: it.data.piece.y, z: it.data.piece.z });
+    }
+  }
+
+  /** Roleplay furniture: clock, TV, computer terminal, radio, wall map. */
+  _pieceInteract(kind, piece) {
+    const hh = Math.floor(this.clock.hours), mm = Math.floor((this.clock.gameMinutes % 60));
+    const t = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+    if (kind === 'piece_clock') { bus.emit('notify', { text: `The clock says ${t}, day ${Math.floor(this.clock.gameMinutes / 1440) + 1}.`, kind: 'info' }); bus.emit('sound', { type: 'click', ui: true }); return; }
+    if (kind === 'piece_tv') { piece.lit = !piece.lit; if (piece.extra) piece.extra.visible = piece.lit; bus.emit('notify', { text: piece.lit ? 'Static hiss. No station has broadcast in two years.' : 'TV off', kind: 'info' }); bus.emit('sound', { type: 'radio', x: piece.x, y: piece.y + 1, z: piece.z }); return; }
+    if (kind === 'piece_map') { this.ui.open('map'); return; }
+    if (kind === 'piece_computer' || kind === 'piece_radio') {
+      const b = this.base;
+      const R = this.raids.raid;
+      const raidLine = R && R.phase !== 'over' ? `${R.phase === 'warning' ? 'Raid expected' : 'RAID IN PROGRESS'}: ${R.status}` : this.raids.nextAt && kind === 'piece_computer' ? 'No raid activity detected' : 'Quiet on the raid net';
+      const resets = this.lootResets.log.slice(-2).map((l) => `${l.poi.replace('_', ' ')} restocked`).join(', ');
+      if (kind === 'piece_radio') {
+        bus.emit('sound', { type: 'radio', x: piece.x, y: piece.y + 1, z: piece.z });
+        bus.emit('notify', { text: `Radio: ${raidLine}.${resets ? ` Supply chatter: ${resets}.` : ' No supply broadcasts.'}`, kind: R && R.phase !== 'over' ? 'warn' : 'info' });
+        return;
+      }
+      let sentries = 0, armed = 0, storage = 0, hp = 0, max = 0;
+      for (const p of b.pieces.values()) { hp += p.health; max += p.maxHealth; if (p.sentry) { sentries++; if (p.sentryLoaded > 0) armed++; } if (p.inventory) storage += p.inventory.usedSlots(); }
+      bus.emit('notify', { text: `BASE REPORT ${t} — ${b.pieces.size} structures at ${Math.round((hp / Math.max(1, max)) * 100)}% · sentries ${armed}/${sentries} loaded · ${storage} stored stacks · ${raidLine}`, kind: 'info' });
+      bus.emit('sound', { type: 'click', ui: true });
     }
   }
 
@@ -893,6 +956,10 @@ export class Game {
     this.debug.update(dt);
     this.explosives.update(dt);
     this.turrets.update(dt);
+    if (gameplay) this.lootResets.update(dt);
+    if (this.started) this.raids.update(gameplay ? dt : 0);
+    this.sunshine.update(gameplay ? dt : 0);
+    if (gameplay) this.helis.update(dt);
     this.nightVision.update(dt);
 
     // survival
@@ -904,8 +971,10 @@ export class Game {
       sprinting: pc.sprinting, moving: pc.moving, jumped: events.jumped, swimming: pc.swimming, raining: this.weather.cur.rain > 0.2,
       sheltered, night: night > 0.5, warmthNearby: nearFire, insulation: this.player.equipment.insulation(), rainProtection: this.player.equipment.rainProtection(),
       encumbrance: this.encumbrance(), holdBreath,
+      fitness: this.player.skills.level('fitness'), gearStamina: this.player.equipment.staminaMul(),
     });
     if (pc.sprinting || pc.moving) this.player.skills.gain('survival', dt * 0.002);
+    if (pc.sprinting) this.player.skills.gain('fitness', dt * 0.08);
     this.player.update(dt);
 
     // weapons
@@ -1153,7 +1222,7 @@ export class Game {
   _debugApi() {
     const game = this;
     return {
-      game,
+      game, bus,
       state() {
         const p = game.player.controller.pos;
         return {

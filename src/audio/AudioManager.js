@@ -297,6 +297,31 @@ export class AudioManager {
         this._noise(this.white, out, t0, 0.3, { type: 'highpass', freq: 3000, q: 0.7, gain: 0.3, decay: 0.25 });
         break;
       }
+      case 'sunshineSpin': {
+        const out = this._out('world', pos, { verb: 0.3 });
+        this._tone(out, t0, 3.0, { type: 'sawtooth', freq: 80, to: 2400, gain: 0.08, attack: 0.2 });
+        this._tone(out, t0, 3.0, { type: 'sine', freq: 160, to: 4800, gain: 0.05, attack: 0.2 });
+        break;
+      }
+      case 'sunshineBurst': {
+        const out = this._out('world', pos, { verb: 0.6 });
+        this._noise(this.white, out, t0, 1.6, { type: 'lowpass', freq: 3000, q: 0.5, gain: 1.0, decay: 1.2 });
+        this._tone(out, t0, 2.0, { type: 'sine', freq: 55, to: 30, gain: 0.6 });
+        this._tone(out, t0, 60, { type: 'sine', freq: 7200, gain: 0.006, attack: 0.5 });
+        break;
+      }
+      case 'sunshineDie': {
+        const out = this._out('world', pos, { verb: 0.3 });
+        this._noise(this.pink, out, t0, 0.5, { type: 'bandpass', freq: 900, q: 1, gain: 0.7, decay: 0.3 });
+        this._tone(out, t0, 0.4, { type: 'square', freq: 300, to: 40, gain: 0.15 });
+        break;
+      }
+      case 'glassCrack': {
+        const out = this._out('world', pos, { verb: 0.1 });
+        this._noise(this.white, out, t0, 0.08, { type: 'highpass', freq: 2500, q: 0.8, gain: 0.35, decay: 0.06 });
+        this._tone(out, t0, 0.05, { type: 'square', freq: 1800, to: 900, gain: 0.04 });
+        break;
+      }
       case 'radio': {
         const out = this._out('world', pos);
         this._noise(this.white, out, t0, 0.25, { type: 'bandpass', freq: 2200, q: 3, gain: 0.08, decay: 0.22 });

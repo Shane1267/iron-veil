@@ -35,8 +35,10 @@ describe('World generation', () => {
   it('places bridges where roads cross rivers', () => {
     expect(world.bridges.length).toBeGreaterThan(0);
     for (const b of world.bridges) {
-      const mx = (b.ax + b.bx) / 2, mz = (b.az + b.bz) / 2;
-      expect(world.bridgeAt(mx, mz)).not.toBeNull();
+      // bridges follow the road: test the middle of every span segment
+      for (const [x0, z0, x1, z1] of b.segs) expect(world.bridgeAt((x0 + x1) / 2, (z0 + z1) / 2)).not.toBeNull();
+      // and the deck meets the road at both ends (no step)
+      for (const i of [b.start, b.end]) expect(Math.abs(b.road.heights[i] - b.deck)).toBeLessThan(0.05);
     }
   });
 

@@ -78,6 +78,97 @@ guard for missing localStorage. The section below records what the prototype did
   save/load with sentry, farms and trader state: all 9 checks passed across two runs (lights in the
   second run after the flashlight fix), 0 console errors. Unit 56/56; single-player regression 4/4.
 
+## Update 3: vehicles, roads, raids, building, bunker, helicopters (2026-11-16)
+Work order: audit first, fix broken systems, then new content. Engine: Three.js + Vite, no external
+assets or frameworks; every model is built in code. Multiplayer was removed earlier at the owner's
+request, so every "multiplayer synchronisation" item in the brief is **not applicable / not done**;
+the systems are single-instance by design (one raid director, one reset clock), which is what a server
+would own if networking returned.
+
+### Bug report (found in the audit, all fixed)
+| # | Issue | Fix |
+|---|---|---|
+| 1 | Roads met at junctions at different heights (steps up to several metres) | `_engineerRoads`: junction ends take the height of the road they join |
+| 2 | Road grades up to ~35% on hills | grade limits per class (8/10/14%), cuts and embankments with 1:1.6 side slopes |
+| 3 | Bridge decks were set from the higher bank: one end stood above its road | deck from the lower approach and water clearance; road points on the span pinned to the deck |
+| 4 | Bridges were one straight box between two points while the road curved: deck beside the road, gaps | spans follow every road segment; `bridgeAt` tests the real path |
+| 5 | Roads crossing the lake had no bridge (road under water) | lake crossings detected (`_crossingWater`); 650 m causeway bridge on R6 |
+| 6 | Terrain under bridge ends was left natural: a drop between road and deck | abutment zones flattened; spans extended one segment past each bank |
+| 7 | Vehicles were hollow boxes: no interior faces, camera saw through the body | panel-built cabins with inner faces, per-type interiors |
+| 8 | Player camera sat at one fixed offset for every vehicle; "seat" was the vehicle centre | per-vehicle seat table (hip and eye points); camera follows body pitch and roll |
+| 9 | Suspension sampled ground at guessed offsets, wheels floated or sank on slopes | contact points at the real axle and track positions |
+| 10 | Vehicle hit volume was a row of cylinders: glass and doors stopped everything, crew could not be shot | oriented panel hit boxes; glass, door, body, engine and armour materials |
+| 11 | Raiders without ammunition "attacked" the breach marker object, never the wall | damage applied to the wall piece |
+| 12 | Raids aimed at the average position of all pieces (empty ground between two builds) | raid target is the densest cluster |
+| 13 | Raids started with no warning when a patrol happened to notice the base | replaced by `RaidDirector` |
+| 14 | Night vision washed out to flat green (previous update) | fixed there; re-verified |
+
+### Stage results
+* **Vehicles** (`vehicles/VehicleModels.js`, `VehicleSystem.js`): specs per type (pickup, sedan, SUV, van,
+  military truck, armoured car), hinged doors with their own windows, live gauge needles, steering wheel
+  linked to steering, driver hands and legs, seat switching (C), enter by nearest door, exit beside your
+  own door, per-window glass (3 crack stages → shatter, saved), doors can be shot or blown off, AI convoy
+  crews sit in the cab and can be shot through the glass. `physics.dynamic` gives bullets and sight the
+  panel boxes. New items: repair kit, replacement window. All 13 placed vehicles enter, start and drive
+  in the browser test.
+* **Roads and bridges** (`world/WorldData.js`, `Infrastructure.js`): numeric audit
+  `tests/audit/roads.mjs` over 20,580 road samples: 0 floating, 0 sunk, 0 over-steep, 10 bridges with 0
+  bad ends (before: junction steps, 35% grades, 5 bad abutments, one road under the lake).
+* **Stamina**: drain 11→7.5/s, regen 16→22/s, jump 9→6, load penalty starts at 50% instead of 60%;
+  fitness skill, feet slot (3 boots), gear multipliers, energy drink/glucose buff; drain floor 55%.
+* **Sentries**: tiered cost (default needs 6 military components), parts only in airfield and bunker
+  profiles (`turretPart` entries elsewhere are filtered unless the setting allows), 0.7 s lock-on,
+  slower traverse, wider cone, wear per shot, damage and ammo-use settings.
+* **Loot resets** (`world/LootResets.js`, `data/lootResets.json`): six major sites; containers there no
+  longer restock one by one; announcement only when something was actually re-rolled, once.
+* **Raids** (`ai/RaidDirector.js`): schedule, warning, countdown panel, four types, spawn 140–200 m out
+  on open ground out of sight, cap 14 raiders, tool/charge breaching, alternative breach point after
+  45 s, retreat at 60% losses, 2-hour limit, away-from-base resolution, saved.
+* **Building**: 18 compound pieces and 28 furniture/decor pieces (`PieceModelsExtra.js`), perimeter
+  snapping, generic gates and door leaves, lights, variants, interactions, support pillar.
+* **Explosives and gear**: C4 arming/disarming, breaching charge, recipes at the military workbench, RL-7
+  launcher with rockets, military toolkit, surgical kit, blood bag, visor helmet, EOD vest, military
+  power cell, field radio, rations.
+* **Bunker 7 and SUNSHINE** (`Structures.bunker`, `weapons/Sunshine.js`): level B2 with 47 containers,
+  3 ceiling turrets, key-card armoury, C4-only containment door. SUNSHINE: one point light with 100 m
+  range plus ambient and exposure lift by distance, glare overlay, blinds AI; 3 s spin-up, 60 s burn,
+  then spent. Frame rate in the test: 21 fps before, 20 fps during (software rendering).
+* **Helicopters** (`vehicles/Helicopters.js`, `buildHelicopter`, `Vehicle._fly`): daily chance rolls for a
+  crash site and for the airfield helicopter; repair parts; flight inside the existing vehicle system.
+* **Locations**: 16 new POIs with their own layouts; airfield expansion.
+* **Settings**: World, Raids and Survival tabs; enums and ranges validated, raid window cannot invert.
+
+### Test results (software WebGL, chromebook preset 960×540; not measured on real GPUs)
+* Unit: 48/48. Road audit: clean (see above).
+* `tests/e2e/update3.mjs`, 12 stages, each passed in its final run, 0 console errors (stages were run in
+  groups, not as one uninterrupted pass, because a full pass takes over an hour here):
+  vehicles-drive-all (14 vehicles: enter by the driver's door, engine, drive, door closes),
+  vehicle-interior-glass-doors, bridges-traversable (9 road bridges driven end to end by the route driver),
+  stamina (sprint 13.3 s; boots 15.1; best case 24.2; refill 4.5 s), turret-economy (0 components in 300
+  rolls each of residential, industrial and military profiles), building-compound (44 new pieces, inline
+  and corner snapping), explosives, raid (warning → countdown → 5 raiders spawned 135–140 m out → charge
+  planted, 2 walls destroyed, base breached → repelled, next raid 3+ days later), loot-reset (one
+  announcement, no duplicate), helicopter (repair, take-off to 55 m, 111 m flown with a turn, landing,
+  crash from 60 m, crash site with 3 containers), bunker-sunshine (key-card and wrong-card checks, grenade
+  does not open the blast door, C4 does, 60 s burn, 100 m radius, single use, back after bunker reset),
+  new-locations (16), save-load.
+* Regression: playtest new-game/weapons/kill-ai/save-load 4/4; update2 launch-site and demolition pass
+  (demolition test updated: C4 now has to be armed).
+* Found by these tests and fixed: raid targeted the gap between scattered builds; two bridges that meet
+  (D2/D3 at Millbrook ford) railed each other off; wheels past a deck edge dipped the vehicle; full-rate
+  helicopter descent always damaged the skids (descent slowed to 5 m/s).
+
+### Not done or limited (honest list)
+* No multiplayer of any kind (removed earlier).
+* AI raiders use timed charges and tools; they do not use rockets or grenades.
+* Raid away from home is an estimate, not a simulation.
+* The rocket launcher is held like a rifle (no shoulder pose); reload animation is a rocket sliding in.
+* Vehicle doors have no physical collision while open; damaged or missing wheels are not modelled
+  (burnt wrecks lose their tyres).
+* Culverts and retaining walls are not separate models: embankments and bridges cover those cases.
+* Helicopter flight is assisted (hover hold); there is no free cyclic roll, and AI do not fly.
+* Performance was measured only in software WebGL in the test environment, not on real GPUs.
+
 ## Gear, explosives and Launch Site update (2026-11-06)
 Second batch of player suggestions.
 

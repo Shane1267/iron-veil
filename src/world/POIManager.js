@@ -245,7 +245,7 @@ export class POIManager {
       const ex = Math.abs(Math.cos(gd.yaw)) > 0.5 ? gd.w / 2 : gd.d / 2, ez = Math.abs(Math.cos(gd.yaw)) > 0.5 ? gd.d / 2 : gd.w / 2;
       const collider = this.physics.addBox(gd.x - ex, gd.y, gd.z - ez, gd.x + ex, gd.y + gd.h, gd.z + ez, { material: 'metal', owner: ctx.owner, tag: 'gate' });
       const gate = { id, def: gd, mesh, collider, open: false, slide: 0, home: mesh.position.clone() };
-      inter.push(this.interactables.add({ id: `${id}:i`, kind: 'keygate', x: gd.ix ?? gd.x, y: gd.y + 1.2, z: gd.iz ?? gd.z, radius: 2.2, label: () => (gate.open ? `${gd.name} (open)` : `${gd.name}: swipe key card`), data: { gate } }));
+      inter.push(this.interactables.add({ id: `${id}:i`, kind: 'keygate', x: gd.breach ? gd.x : gd.ix ?? gd.x, y: gd.y + 1.2, z: gd.breach ? gd.z : gd.iz ?? gd.z, radius: 2.2, label: () => (gate.open ? `${gd.name} (${gd.breach ? 'blown open' : 'open'})` : gd.breach ? `${gd.name} — sealed. It will take a demolition charge.` : `${gd.name}: swipe key card`), data: { gate } }));
       return gate;
     });
     ctx.lifts.forEach((l, i) => inter.push(this.interactables.add({ id: `${poi.id}:lift${i}`, kind: 'lift', x: l.x, y: l.y + 1.2, z: l.z, radius: 1.8, label: l.label, data: { lift: l } })));
@@ -594,8 +594,8 @@ export class POIManager {
         return true;
       },
       /** Underground facility at depth Y under this location (built in world coordinates). */
-      underground(Y, liftTop) {
-        commands.push(() => S.facility(px, pz, Y, liftTop));
+      underground(Y, liftTop, plan = 'facility') {
+        commands.push(() => S[plan](px, pz, Y, liftTop));
       },
       pave(x0, z0, x1, z1, mat = 'asphalt') {
         commands.push(() => S.pavement(px + x0, pz + z0, px + x1, pz + z1, gy, mat));

@@ -136,6 +136,38 @@ export function buildWeaponModel(weaponId, attach = {}, materials, opts = {}) {
     parts.length = 0.3;
     parts.gripPos = new THREE.Vector3(0, 0, 0.02);
     parts.supportHand = null;
+  } else if (kind === 'launcher') {
+    // shoulder-fired launcher: olive tube, flared venturi at the back, pistol grip and
+    // fore grip, folding iron sight, and the rocket (warhead + motor) in the front
+    const olive = toneMat('olive') || furn;
+    cyl(body, olive, 0, 0.0, -0.05, 0.042, 0.95, 'z', 18);
+    cyl(body, metal, 0, 0.0, 0.48, 0.042, 0.12, 'z', 18, 0.065); // venturi flare
+    cyl(body, metal, 0, 0.0, -0.53, 0.046, 0.04, 'z', 18);
+    box(body, M.polymer, 0, -0.07, 0.08, 0.026, 0.1, 0.035, 0.25); // pistol grip
+    box(body, M.polymer, 0, -0.065, -0.18, 0.024, 0.08, 0.03, 0.15); // fore grip
+    box(body, metal, 0, -0.045, 0.08, 0.03, 0.02, 0.07); // trigger housing
+    box(body, metal, -0.045, 0.05, -0.06, 0.012, 0.05, 0.03); // sight bracket
+    box(body, metal, -0.045, 0.082, -0.06, 0.02, 0.012, 0.02);
+    for (const z of [-0.35, 0.3]) cyl(body, M.steel, 0, 0, z, 0.0445, 0.02, 'z', 18);
+    const rocket = new THREE.Group();
+    cyl(rocket, olive, 0, 0, -0.04, 0.034, 0.12, 'z', 14);
+    cyl(rocket, olive, 0, 0, -0.16, 0.05, 0.12, 'z', 14, 0.034);
+    cyl(rocket, olive, 0, 0, -0.27, 0.012, 0.1, 'z', 10, 0.05);
+    rocket.position.set(0, 0, -0.5);
+    body.add(rocket);
+    parts.mag = rocket;
+    parts.magHome = rocket.position.clone();
+    parts.frontLoad = true;
+    parts.muzzle = new THREE.Object3D();
+    parts.muzzle.position.set(0, 0, -0.85);
+    body.add(parts.muzzle);
+    parts.sightY = 0.095;
+    parts.ironSightY = 0.095;
+    parts.sightZ = -0.1;
+    parts.length = 1.0;
+    parts.gripPos = new THREE.Vector3(0, -0.07, 0.08);
+    parts.supportHand = new THREE.Vector3(0, -0.065, -0.18);
+    parts.magWell = new THREE.Vector3(0, -0.02, -0.45);
   } else {
     buildLongGun(body, parts, w, M, furn, metal, kind, attach);
   }

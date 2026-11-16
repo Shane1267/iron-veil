@@ -1,3 +1,4 @@
+import { settings } from '../core/SettingsManager.js';
 import * as THREE from 'three';
 import buildingData from '../data/building.json';
 import { buildPieceMesh, pieceColliders, pieceBounds } from './PieceModels.js';
@@ -14,9 +15,16 @@ import { Sentry } from './Sentry.js';
 
 export const PIECES = buildingData.pieces;
 export const PIECE = Object.fromEntries(PIECES.map((p) => [p.id, p]));
+// pieces with cost tiers (sentry guns) read their cost from the current setting
+for (const p of PIECES) {
+  if (!p.costTiers) continue;
+  Object.defineProperty(p, 'cost', { get: () => p.costTiers[settings.get('turretCost')] || p.costTiers.high, enumerable: true, configurable: true });
+}
 const G = buildingData.grid;
 const WALL_TYPES = new Set(['wall', 'wall_reinforced', 'doorway', 'window_wall', 'firing_wall', 'gate']);
 const SUPPORT_TYPES = new Set(['foundation', 'floor']);
+const isDoorLike = (def) => def && (def.id === 'door' || (def.snap === 'door' && def.leaf));
+const isGateLike = (def) => def && (def.id === 'gate' || !!def.gate);
 
 const cellOf = (v) => Math.floor(v / G);
 const cellCenter = (i) => i * G + G / 2;
@@ -75,7 +83,8 @@ export class BaseSystem {
     const key = `${type}:${legs ? legs.toFixed(1) : ''}`;
     if (this.ghost && this.ghostType === key) return;
     this._clearGhost();
-    const m = buildPieceMesh(type === 'door' ? 'door' : type, this.game.materials, { legs });
+    const def0 = PIECE[type];
+    const m = buildPieceMesh(isDoorLike(def0) ? (def0.leaf || 'door') : type, this.game.materials, { legs, variant: this.variant || 0 });
     m.material = this.ghostOk;
     m.renderOrder = 10;
     m.castShadow = false;
@@ -98,6 +107,7 @@ export class BaseSystem {
     else if (def.snap === 'door') p = this._snapDoor(aim);
     else if (def.snap === 'floor') p = this._snapFloor(aim);
     else if (def.snap === 'cell') p = this._snapCell(aim);
+    else if (def.snap === 'perimeter') p = this._snapPerimeter(aim, hit, def);
     else p = this._snapFree(aim, hit);
     if (!p) { if (this.ghost) this.ghost.visible = false; this.placement = null; return { ok: false, reason: 'Aim at a valid surface', def }; }
     p.type = type;
@@ -223,6 +233,7 @@ export class BaseSystem {
 
   _floorSupported(x, z, y, ignore = null) {
     const s = { x, z };
+    for (const pc of this.pieces.values()) if (pc.def.support && pc !== ignore && Math.abs(pc.x - x) < 0.4 && Math.abs(pc.z - z) < 0.4 && Math.abs(pc.y + 3.0 - y) < 0.4) return true;
     if (this._edges(s).some(([ex, ez]) => { const w = this._wallAt(ex, ez, y - 3.0); return w && w !== ignore; })) return true;
     for (const [dx, dz] of [[G, 0], [-G, 0], [0, G], [0, -G]]) {
       const f = this._findAt('floor', x + dx, z + dz, y, 0.3);
@@ -240,6 +251,51 @@ export class BaseSystem {
     if (!best) return null;
     const p = { x: best.x, y: best.y, z: best.z, rot: this.rot };
     for (const pc of this.pieces.values()) if (pc.type === 'stairs' && Math.abs(pc.x - p.x) < 0.3 && Math.abs(pc.z - p.z) < 0.3 && Math.abs(pc.y - p.y) < 0.5) p.reason = 'Cell already has stairs';
+    return p;
+  }
+
+  /**
+   * Compound walls (log walls, gates, fencing, blast walls): free-standing on the ground,
+   * running along local x. Near the open end of another perimeter piece the new piece snaps
+   * to it, in line or at a right angle (corners), at the same height.
+   */
+  _snapPerimeter(aim, hit, def) {
+    if (!hit) return null;
+    const len = def.len || 4;
+    const rot = this.rot;
+    const axis = (r) => (r % 2 ? { x: 0, z: -1 } : { x: 1, z: 0 }); // local +x in world for rot (see toWorld)
+    let best = null, bd = 3.2;
+    for (const pc of this.pieces.values()) {
+      if (pc.def.snap !== 'perimeter') continue;
+      if (Math.hypot(pc.x - aim.x, pc.z - aim.z) > 9) continue;
+      const a = axis(pc.rot), plen = pc.def.len || 4;
+      for (const s of [-1, 1]) {
+        const ex = pc.x + a.x * s * plen / 2, ez = pc.z + a.z * s * plen / 2;
+        const b = axis(rot);
+        // the new piece continues away from this end
+        for (const t of [-1, 1]) {
+          const cx = ex + b.x * t * len / 2, cz = ez + b.z * t * len / 2;
+          if (Math.hypot(cx - pc.x, cz - pc.z) < Math.max(plen, len) / 2 - 0.05) continue; // would overlap the piece
+          const d = Math.hypot(cx - aim.x, cz - aim.z);
+          if (d < bd) { bd = d; best = { x: cx, z: cz, y: pc.y, from: pc }; }
+        }
+      }
+    }
+    let x, z, y;
+    if (best) { x = best.x; z = best.z; y = best.y; }
+    else {
+      x = Math.round(aim.x * 2) / 2; z = Math.round(aim.z * 2) / 2;
+      y = this.game.world.heightAt(x, z);
+    }
+    const p = { x, y, z, rot, snapped: !!best };
+    // ground along the piece: logs are sunk 1.2 m, so up to ~1 m of fall is fine
+    const a = axis(rot);
+    let mn = Infinity, mx = -Infinity;
+    for (const t of [-0.5, 0, 0.5]) { const h = this.game.world.heightAt(x + a.x * t * len, z + a.z * t * len); mn = Math.min(mn, h); mx = Math.max(mx, h); }
+    if (mx - mn > 1.6) p.reason = 'Ground too uneven along the wall';
+    else if (y - mn > 1.1) p.reason = 'Too high above the ground here';
+    else if (mx - y > 0.9) p.reason = 'The ground rises into the wall';
+    for (const pc of this.pieces.values()) if (pc.def.snap === 'perimeter' && Math.hypot(pc.x - x, pc.z - z) < 0.3 && pc.rot % 2 === rot % 2) p.reason = 'Already built here';
     return p;
   }
 
@@ -272,14 +328,15 @@ export class BaseSystem {
     // overlap with world / other pieces
     const [bw, bd, bh] = pieceBounds(p.type);
     const [W, D] = p.rot % 2 ? [bd, bw] : [bw, bd];
-    if (def.snap === 'free' || def.snap === 'foundation') {
-      const shrink = 0.08;
+    if (def.snap === 'free' || def.snap === 'foundation' || def.snap === 'perimeter') {
+      const shrink = def.snap === 'perimeter' ? 0.3 : 0.08;
       const y0 = def.snap === 'foundation' ? p.y - 0.35 : p.y + 0.05;
       const y1 = p.y + bh;
       const list = this.game.physics.query(p.x - W / 2 + shrink, p.z - D / 2 + shrink, p.x + W / 2 - shrink, p.z + D / 2 - shrink, []);
       for (const c of list) {
         if (!c.blocksMove || c.maxY <= y0 + 0.02 || c.minY >= y1) continue;
         if (def.snap === 'foundation' && c.owner && String(c.owner).startsWith('base:') && c.maxY <= p.y + 0.01) continue;
+        if (def.snap === 'perimeter' && c.piece && c.piece.def.snap === 'perimeter' && p.snapped) continue; // the piece we join
         if (c.tag === 'character') continue;
         return 'Blocked by an obstacle';
       }
@@ -331,14 +388,15 @@ export class BaseSystem {
     const piece = {
       id: rec.id, type: rec.type, def, x: rec.x, y: rec.y, z: rec.z, rot: rec.rot | 0,
       health: Math.min(def.health, rec.health ?? def.health), maxHealth: def.health, alive: true,
-      colliders: [], interact: null, open: !!rec.open, locked: !!rec.locked, legs: rec.legs || 0.6, lit: rec.lit ?? true,
+      colliders: [], interact: null, open: !!rec.open, locked: !!rec.locked, legs: rec.legs || 0.6, lit: rec.lit ?? def.interact !== 'tv',
       // producers: game-minute clock of the last update, fractional output carried over, pump stock
       prodT: Number.isFinite(rec.prodT) ? rec.prodT : this.game.clock.gameMinutes, prodAcc: rec.prodAcc || 0, stock: rec.stock || 0, sentryLoaded: rec.sentryLoaded || 0,
     };
     const owner = `base:${piece.id}`;
     const theta = (piece.rot * Math.PI) / 2;
-    if (rec.type !== 'door') {
-      const mesh = buildPieceMesh(rec.type, this.game.materials, { legs: piece.legs });
+    piece.variant = rec.variant | 0;
+    if (!isDoorLike(def)) {
+      const mesh = buildPieceMesh(rec.type, this.game.materials, { legs: piece.legs, variant: piece.variant });
       mesh.position.set(piece.x, piece.y, piece.z);
       mesh.rotation.y = theta;
       mesh.castShadow = true;
@@ -370,7 +428,10 @@ export class BaseSystem {
       const [wx, wz] = toWorld(-0.7, 1.4);
       piece.ladder = this.game.physics.addLadder(wx, wz, piece.y, piece.y + 4.45, s, c, owner);
     }
-    if (rec.type === 'door' || rec.type === 'gate') this._makeLeaves(piece, toWorld, addBox);
+    if (isDoorLike(def) || isGateLike(def)) this._makeLeaves(piece, toWorld, addBox);
+    if (rec.type === 'log_platform') { const [wx, wz] = toWorld(-1.2, -1.15); piece.ladder = this.game.physics.addLadder(wx, wz, piece.y, piece.y + 2.05, -s, -c, owner); }
+    if (rec.type === 'log_tower') { const [wx, wz] = toWorld(-0.7, 1.6); piece.ladder = this.game.physics.addLadder(wx, wz, piece.y, piece.y + 6.45, s, c, owner); }
+    if (rec.type === 'tv' || rec.type === 'computer') this._screen(piece);
     // storage
     if (def.storage) {
       const id = `base:${piece.id}`;
@@ -381,7 +442,11 @@ export class BaseSystem {
     if (def.sign) this._signText(piece);
     this._makeInteract(piece);
     if (def.sentry) piece.sentry = new Sentry(piece, this.game);
-    if (def.light) {
+    if (def.light && typeof def.light === 'object') {
+      const L = def.light;
+      piece.lightSource = { x: piece.x, y: piece.y + L.y, z: piece.z, color: L.color, intensity: L.intensity, range: L.range, active: () => piece.alive && piece.lit, flicker: !!L.flicker };
+      this.game.lights?.add(piece.lightSource);
+    } else if (def.light) {
       piece.lightSource = { x: piece.x, y: piece.y + (rec.type === 'lamp' ? 1.7 : 0.6), z: piece.z, color: rec.type === 'lamp' ? 0xffe0b0 : 0xff9a40, intensity: rec.type === 'lamp' ? 6 : rec.type === 'stove' ? 5 : 9, range: rec.type === 'lamp' ? 16 : 14, active: () => piece.alive && piece.lit, flicker: rec.type !== 'lamp' };
       this.game.lights?.add(piece.lightSource);
       if (rec.type === 'campfire') this.game.fires?.push({ x: piece.x, y: piece.y + 0.2, z: piece.z, active: () => piece.alive && piece.lit, piece });
@@ -393,8 +458,10 @@ export class BaseSystem {
   _makeLeaves(piece, toWorld, addBox) {
     const theta = (piece.rot * Math.PI) / 2;
     piece.leaves = [];
-    const leafType = piece.type === 'gate' ? 'gateLeaf' : 'door';
-    const hinges = piece.type === 'gate' ? [[-1.42, 1], [1.42, -1]] : [[-0.575, 1]];
+    const def = piece.def;
+    const gate = def.gate || (piece.type === 'gate' ? { leaf: 'gateLeaf', hinges: [[-1.42, 1], [1.42, -1]], w: 2.7, h: 2.6 } : null);
+    const leafType = gate ? gate.leaf : def.leaf || 'door';
+    const hinges = gate ? gate.hinges : [[-0.575, 1]];
     for (const [hx, dirSign] of hinges) {
       const pivot = new THREE.Group();
       const [wx, wz] = toWorld(hx, 0);
@@ -410,8 +477,8 @@ export class BaseSystem {
       piece.leaves.push(pivot);
     }
     // closed-state collider spanning the opening
-    const w = piece.type === 'gate' ? 2.7 : 1.15;
-    piece.leafCollider = addBox(0, piece.type === 'gate' ? 1.3 : 1.08, 0, w, piece.type === 'gate' ? 2.6 : 2.15, 0.12, { tag: 'basedoor' });
+    const w = gate ? gate.w : 1.15, hh = gate ? gate.h : 2.15;
+    piece.leafCollider = addBox(0, hh / 2, 0, w, hh, 0.12, { tag: 'basedoor' });
     piece.leafCollider.enabled = !piece.open;
     this._poseLeaves(piece, true);
   }
@@ -432,6 +499,30 @@ export class BaseSystem {
     piece.leafCollider.enabled = !open;
     this._poseLeaves(piece);
     bus.emit('sound', { type: 'door', x: piece.x, y: piece.y + 1, z: piece.z, open, npc: true });
+  }
+
+  /** F on a piece with variants: next colour / material, rebuilt in place. */
+  restyle(piece) {
+    if (!piece.def.variants || !piece.mesh) return false;
+    piece.variant = (piece.variant + 1) % 5;
+    const mesh = buildPieceMesh(piece.type, this.game.materials, { legs: piece.legs, variant: piece.variant });
+    mesh.position.copy(piece.mesh.position);
+    mesh.rotation.copy(piece.mesh.rotation);
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    this.group.remove(piece.mesh); piece.mesh.geometry.dispose();
+    this.group.add(mesh);
+    piece.mesh = mesh;
+    return true;
+  }
+
+  /** Emissive screen for TVs and computers (on while piece.lit). */
+  _screen(piece) {
+    const m = buildPieceMesh(piece.type === 'tv' ? 'tvScreen' : 'computerScreen', this.game.materials);
+    m.position.copy(piece.mesh.position);
+    m.rotation.copy(piece.mesh.rotation);
+    m.visible = !!piece.lit;
+    this.group.add(m);
+    piece.extra = m;
   }
 
   _makeInteract(piece) {
@@ -456,9 +547,10 @@ export class BaseSystem {
       it.label = () => `${piece.locked ? 'Locked ' : ''}${def.name}${def.lockable ? '  [F] ' + (piece.locked ? 'unlock' : 'lock') : ''}`;
       it.data = { containerId: `base:${piece.id}`, name: def.name, custom: true, piece };
       it.y = piece.y + 0.6;
-    } else if (piece.type === 'door' || piece.type === 'gate') {
+    } else if (isDoorLike(def) || isGateLike(def)) {
       it.kind = 'basedoor';
-      it.label = () => `${piece.open ? 'Close' : 'Open'} ${piece.type}${piece.locked ? ' (locked)' : ''}  [F] ${piece.locked ? 'unlock' : 'lock'}`;
+      it.label = () => `${piece.open ? 'Close' : 'Open'} ${def.name.toLowerCase()}${piece.locked ? ' (locked)' : ''}  [F] ${piece.locked ? 'unlock' : 'lock'}`;
+      if (def.gate) it.y = piece.y + 1.4, it.radius = 2.6;
       it.y = piece.y + 1.1;
       it.priority = 1;
     } else if (piece.type === 'workbench') {
@@ -471,6 +563,12 @@ export class BaseSystem {
       it.kind = 'sleep'; it.label = 'Sleep until morning (respawn point)'; it.y = piece.y + 0.6;
     } else if (def.sign) {
       it.kind = 'editSign'; it.label = () => (piece.text ? `Sign: “${piece.text}” — edit` : 'Write on the sign'); it.y = piece.y + 1.3;
+    } else if (def.interact) {
+      it.kind = `piece_${def.interact}`;
+      it.label = { clock: 'Read the clock', tv: () => (piece.lit ? 'Switch the TV off' : 'Switch the TV on'), computer: 'Base status report', radio: 'Listen to the radio', map: 'Look at the map' }[def.interact] || def.name;
+      it.y = piece.y + 1.0;
+    } else if (def.light && typeof def.light === 'object') {
+      it.kind = 'toggleLight'; it.label = () => (piece.lit ? `Switch off ${def.name.toLowerCase()}` : `Switch on ${def.name.toLowerCase()}`); it.y = piece.y + 1.0;
     } else if (piece.type === 'lamp' || piece.type === 'campfire' || piece.type === 'stove') {
       it.kind = 'toggleLight'; it.label = () => (piece.lit ? `Extinguish ${def.name.toLowerCase()}` : `Light ${def.name.toLowerCase()}`); it.y = piece.y + 0.5;
     } else return;
@@ -523,7 +621,7 @@ export class BaseSystem {
         if (WALL_TYPES.has(pc.type)) {
           ok = this._supports().some((s) => Math.abs(s.y - pc.y) < 0.3 && this._edges(s).some(([x, z]) => Math.abs(x - pc.x) < 0.3 && Math.abs(z - pc.z) < 0.3));
         } else if (pc.type === 'floor') ok = this._floorSupported(pc.x, pc.z, pc.y);
-        else if (pc.type === 'door') ok = !!pc.doorway && pc.doorway.alive;
+        else if (isDoorLike(pc.def)) ok = !!pc.doorway && pc.doorway.alive;
         else if (pc.type === 'stairs') ok = this._supports().some((s) => Math.abs(s.x - pc.x) < 0.3 && Math.abs(s.z - pc.z) < 0.3 && Math.abs(s.y - pc.y) < 0.3);
         if (!ok) { this.destroy(pc, true); changed = true; }
       }
@@ -533,7 +631,8 @@ export class BaseSystem {
   repair(piece) {
     if (piece.health >= piece.maxHealth) return { ok: false, msg: 'Already at full condition' };
     const inv = this.game.player.equipment.inventory;
-    const frac = buildingData.repair.structureFraction;
+    // the military toolkit halves repair materials
+    const frac = buildingData.repair.structureFraction * (inv.slots.some((x) => x?.id === 'mil_toolkit') ? 0.5 : 1);
     const cost = {};
     for (const [id, n] of Object.entries(piece.def.cost)) cost[id] = Math.max(1, Math.ceil(n * frac));
     if (piece.def.tool && inv.count(piece.def.tool) < 1) return { ok: false, msg: `Requires ${ItemDB.get(piece.def.tool).name}` };
@@ -646,10 +745,11 @@ export class BaseSystem {
     return best;
   }
 
-  breachPoint(from, base) {
+  breachPoint(from, base, exclude = null) {
     let best = null, bd = Infinity;
     for (const p of this.pieces.values()) {
-      if (!(WALL_TYPES.has(p.type) || p.type === 'door')) continue;
+      if (!(WALL_TYPES.has(p.type) || /door|gate/.test(p.type) || p.def.wall)) continue;
+      if (exclude?.has(p.id)) continue;
       const d = Math.hypot(p.x - from.x, p.z - from.z);
       if (d < bd) { bd = d; best = p; }
     }
@@ -728,7 +828,7 @@ export class BaseSystem {
   // ------------------------------------------------------------ persistence
   serialize() {
     return {
-      pieces: [...this.pieces.values()].map((p) => ({ id: p.id, type: p.type, x: p.x, y: p.y, z: p.z, rot: p.rot, health: Math.round(p.health), open: p.open, locked: p.locked, legs: p.legs, lit: p.lit, doorway: p.doorway?.id || null, ...(p.text ? { text: p.text } : {}), ...(p.def.produce || p.def.pump ? { prodT: p.prodT, prodAcc: +p.prodAcc.toFixed(3), stock: +(p.stock || 0).toFixed(3) } : {}), ...(p.sentry ? { sentryLoaded: p.sentry.loaded } : {}) })),
+      pieces: [...this.pieces.values()].map((p) => ({ id: p.id, type: p.type, x: p.x, y: p.y, z: p.z, rot: p.rot, health: Math.round(p.health), open: p.open, locked: p.locked, legs: p.legs, lit: p.lit, doorway: p.doorway?.id || null, ...(p.variant ? { variant: p.variant } : {}), ...(p.text ? { text: p.text } : {}), ...(p.def.produce || p.def.pump ? { prodT: p.prodT, prodAcc: +p.prodAcc.toFixed(3), stock: +(p.stock || 0).toFixed(3) } : {}), ...(p.sentry ? { sentryLoaded: p.sentry.loaded } : {}) })),
       discoveredBy: [...this.discoveredBy],
       lastRaid: this.lastRaid,
     };
@@ -747,14 +847,14 @@ export class BaseSystem {
     this.clear();
     if (!o || !Array.isArray(o.pieces)) return;
     // supports first, then walls, then doors, then the rest
-    const order = (t) => (t === 'foundation' ? 0 : t === 'floor' ? 2 : WALL_TYPES.has(t) ? 1 : t === 'door' ? 3 : 4);
+    const order = (t) => (t === 'foundation' ? 0 : t === 'floor' ? 2 : WALL_TYPES.has(t) ? 1 : isDoorLike(PIECE[t]) ? 3 : 4);
     const recs = o.pieces.filter((r) => r && PIECE[r.type] && Number.isFinite(r.x) && Number.isFinite(r.y) && Number.isFinite(r.z)).sort((a, b) => order(a.type) - order(b.type));
     const seen = new Set();
     for (const r of recs) {
       if (seen.has(r.id)) continue; // never spawn duplicates
       seen.add(r.id);
       const p = this._create(r);
-      if (r.type === 'door' && r.doorway && this.pieces.get(r.doorway)) { p.doorway = this.pieces.get(r.doorway); p.doorway.door = p; }
+      if (isDoorLike(PIECE[r.type]) && r.doorway && this.pieces.get(r.doorway)) { p.doorway = this.pieces.get(r.doorway); p.doorway.door = p; }
     }
     for (const f of o.discoveredBy || []) this.discoveredBy.add(f);
     this.lastRaid = Number.isFinite(o.lastRaid) ? o.lastRaid : -1e9;

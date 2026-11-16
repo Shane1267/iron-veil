@@ -5,7 +5,7 @@ import { Inventory } from './Inventory.js';
 // whose capacity is derived from worn clothing, vest and backpack.
 
 export const WEAPON_SLOTS = ['primary', 'shoulder', 'sidearm', 'melee'];
-export const GEAR_SLOTS = ['head', 'body', 'vest', 'back', 'util'];
+export const GEAR_SLOTS = ['head', 'body', 'vest', 'back', 'feet', 'util'];
 export const BASE_SLOTS = 6;
 
 export class Equipment {
@@ -130,6 +130,16 @@ export class Equipment {
       if (e?.armor && e.zones?.includes(zone)) a = Math.max(a, e.armor);
     }
     return a;
+  }
+
+  /** Product of worn gear's stamina drain multipliers (equip.stamina, e.g. 0.88 trainers, 1.12 frame pack). */
+  staminaMul() {
+    let m = 1;
+    for (const s of GEAR_SLOTS) {
+      const it = this.slots[s];
+      if (it) m *= ItemDB.get(it.id)?.equip?.stamina || 1;
+    }
+    return m;
   }
 
   insulation() {

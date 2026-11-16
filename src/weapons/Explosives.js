@@ -27,8 +27,8 @@ export class Explosives {
     this.stunT = 0;
     game.physics.smokes = this.smokes;
     const gm = (c, r, e) => new THREE.MeshStandardMaterial({ color: c, roughness: r, emissive: e || 0x000000 });
-    this.mats = { grenade_frag: gm(0x3e4a30, 0.7), grenade_smoke: gm(0x7a7a74, 0.6), grenade_flash: gm(0x4a4a48, 0.6), molotov: gm(0x7a5a2a, 0.2), c4: gm(0xc8c0a0, 0.9), led: gm(0x300000, 0.5, 0xff2010) };
-    this.geo = { sphere: new THREE.SphereGeometry(0.045, 10, 8), can: new THREE.CylinderGeometry(0.032, 0.032, 0.12, 10), bottle: new THREE.CylinderGeometry(0.035, 0.035, 0.2, 10), c4: new THREE.BoxGeometry(0.16, 0.05, 0.1), led: new THREE.BoxGeometry(0.02, 0.012, 0.02) };
+    this.mats = { grenade_frag: gm(0x3e4a30, 0.7), grenade_smoke: gm(0x7a7a74, 0.6), grenade_flash: gm(0x4a4a48, 0.6), molotov: gm(0x7a5a2a, 0.2), c4: gm(0xc8c0a0, 0.9), breach: gm(0x4a4a3a, 0.8), rocket: gm(0x4a5038, 0.6), led: gm(0x300000, 0.5, 0xff2010), ledSafe: gm(0x003000, 0.5, 0x20ff40) };
+    this.geo = { sphere: new THREE.SphereGeometry(0.045, 10, 8), can: new THREE.CylinderGeometry(0.032, 0.032, 0.12, 10), bottle: new THREE.CylinderGeometry(0.035, 0.035, 0.2, 10), c4: new THREE.BoxGeometry(0.16, 0.05, 0.1), rocket: new THREE.CylinderGeometry(0.045, 0.03, 0.75, 10), led: new THREE.BoxGeometry(0.02, 0.012, 0.02) };
   }
 
   // ------------------------------------------------------------ player input
@@ -77,38 +77,91 @@ export class Explosives {
     this.projectiles.push({ id, def, pos: pos.clone(), vel: vel.clone(), fuse: def.fuse, mesh, owner, rest: false, spin: new THREE.Vector3(Math.random() * 8, Math.random() * 8, Math.random() * 8) });
   }
 
+  /** Rocket from a launcher: fast, nearly flat, explodes on impact (structures, vehicles, people). */
+  launch(origin, dir, L, owner) {
+    const mesh = new THREE.Group();
+    const body = new THREE.Mesh(this.geo.rocket, this.mats.rocket);
+    body.rotation.x = Math.PI / 2; // warhead (+y) forward along +z, which lookAt aims
+    mesh.add(body);
+    mesh.position.copy(origin);
+    this.game.renderer.scene.add(mesh);
+    const vel = dir.clone().multiplyScalar(L.speed || 80);
+    this.projectiles.push({ id: 'rocket', def: { type: 'rocket', ...L }, pos: origin.clone(), vel, fuse: 6, mesh, owner, rest: false, grav: L.gravity ?? 2.5, age: 0, spin: new THREE.Vector3() });
+    bus.emit('noise', { x: origin.x, y: origin.y, z: origin.z, radius: 500, source: owner, type: 'gunshot' });
+  }
+
   // ------------------------------------------------------------ demolition charges
-  plant() {
+  /**
+   * Player planting: C4 (remote, must be armed: E on the charge, 3 s) or a breaching charge
+   * (shaped, small radius, arms itself with a 10 s timer). Looks at a surface within reach.
+   */
+  plant(kind = 'c4') {
     const g = this.game, cam = g.renderer.camera;
     const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(cam.quaternion);
     const o = cam.position;
     const hit = g.physics.raycast(o.x, o.y, o.z, fwd.x, fwd.y, fwd.z, 3.2, (c) => c.blocksMove || c.blocksShots);
     if (!hit) return { ok: false, msg: 'Look at a wall, door or the ground within reach' };
     const p = o.clone().addScaledVector(fwd, hit.t - 0.03);
-    const n = hit.collider ? this._boxNormal(hit.collider, p) : g.world.normalAt(p.x, p.z, new THREE.Vector3());
+    const n = hit.collider ? (hit.collider.normal || this._boxNormal(hit.collider, p)) : g.world.normalAt(p.x, p.z, new THREE.Vector3());
+    const c = this.plantAt(p, n, { kind, owner: g.player.character, armed: kind === 'breach', fuse: kind === 'breach' ? 10 : null, player: true });
+    const armedN = this.charges.filter((x) => x.armed && x.player).length;
+    return { ok: true, msg: kind === 'breach' ? 'Breaching charge set: 10 seconds — get clear!' : `Charge planted (not armed). Arm it with E on the charge (${armedN} armed), then use the Remote Detonator`, charge: c };
+  }
+
+  /** Place a charge at a point (players and raiders). opts: kind, owner, armed, fuse (s, or null = remote). */
+  plantAt(p, n, opts = {}) {
+    const g = this.game;
     const mesh = new THREE.Group();
-    const block = new THREE.Mesh(this.geo.c4, this.mats.c4);
+    const block = new THREE.Mesh(this.geo.c4, opts.kind === 'breach' ? this.mats.breach : this.mats.c4);
     block.position.y = 0.025;
+    if (opts.kind === 'breach') block.scale.set(1.4, 1, 0.5);
     const led = new THREE.Mesh(this.geo.led, this.mats.led);
     led.position.set(0.05, 0.055, 0);
     mesh.add(block, led);
     mesh.position.copy(p);
     mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(n.x, n.y, n.z));
     g.renderer.scene.add(mesh);
-    this.charges.push({ pos: p.clone(), mesh, led, t: 0 });
-    bus.emit('sound', { type: 'click', x: p.x, y: p.y, z: p.z });
-    return { ok: true, msg: `Charge planted (${this.charges.length} armed) — use the Remote Detonator to set it off` };
+    const c = { pos: p.clone ? p.clone() : new THREE.Vector3(p.x, p.y, p.z), mesh, led, t: 0, kind: opts.kind || 'c4', armed: !!opts.armed, fuse: opts.fuse ?? null, owner: opts.owner || null, player: !!opts.player, armT: 0 };
+    c.inter = g.interactables.add({
+      id: `charge:${(Math.random() * 1e9) | 0}`, kind: 'charge', x: c.pos.x, y: c.pos.y, z: c.pos.z, radius: 1.3, priority: 2,
+      label: () => (c.player ? (c.armed ? (c.fuse !== null ? `Defuse breaching charge (${Math.ceil(c.fuse)} s)` : 'Disarm charge') : 'Arm charge') : `Defuse charge${c.fuse !== null ? ` (${Math.ceil(c.fuse)} s)` : ''}`),
+      data: { charge: c },
+    });
+    this.charges.push(c);
+    bus.emit('sound', { type: 'click', x: c.pos.x, y: c.pos.y, z: c.pos.z });
+    return c;
+  }
+
+  /** E on a charge: arm or disarm your own, defuse anyone else's (raider charges: a countermeasure). */
+  interactCharge(c) {
+    const g = this.game;
+    if (c.player && !c.armed) { c.armed = true; bus.emit('sound', { type: 'click', x: c.pos.x, y: c.pos.y, z: c.pos.z }); return { ok: true, msg: 'Charge armed' }; }
+    // disarm / defuse: the charge comes back as an item only if it was yours and not a timed breach
+    this._removeCharge(c);
+    if (c.player && c.kind === 'c4') { g.player.equipment.inventory.add({ id: 'c4', qty: 1 }); return { ok: true, msg: 'Charge disarmed and picked up' }; }
+    return { ok: true, msg: 'Charge defused' };
+  }
+
+  _removeCharge(c) {
+    const g = this.game;
+    g.renderer.scene.remove(c.mesh);
+    if (c.inter) g.interactables.remove(c.inter);
+    const i = this.charges.indexOf(c);
+    if (i >= 0) this.charges.splice(i, 1);
+  }
+
+  _blowCharge(c) {
+    this._removeCharge(c);
+    const breach = c.kind === 'breach';
+    this.explode(c.pos.x, c.pos.y, c.pos.z, breach ? { radius: 3.5, damage: 140, structure: 1600, doorMul: 1.6, owner: c.owner } : { radius: 7, damage: 260, structure: 1700, c4: true, owner: c.owner });
   }
 
   detonate() {
     const g = this.game, pp = g.player.controller.pos;
-    const list = this.charges.filter((c) => c.pos.distanceTo(pp) < 600);
-    if (!list.length) return { ok: false, msg: 'No charges in range' };
-    list.forEach((c, i) => setTimeout(() => {
-      g.renderer.scene.remove(c.mesh);
-      this.charges.splice(this.charges.indexOf(c), 1);
-      this.explode(c.pos.x, c.pos.y, c.pos.z, { radius: 7, damage: 260, structure: 1700, owner: g.player.character });
-    }, i * 120));
+    const mine = this.charges.filter((c) => c.player && c.fuse === null && c.pos.distanceTo(pp) < 600);
+    const list = mine.filter((c) => c.armed);
+    if (!list.length) return { ok: false, msg: mine.length ? 'Your charges are not armed (E on a charge to arm it)' : 'No charges in range' };
+    list.forEach((c, i) => setTimeout(() => { if (this.charges.includes(c)) this._blowCharge(c); }, i * 120));
     return { ok: true, msg: `Detonating ${list.length} charge${list.length > 1 ? 's' : ''}` };
   }
 
@@ -154,11 +207,32 @@ export class Explosives {
     // base pieces, vehicles, glass
     for (const p of [...g.base.pieces.values()]) {
       const d = Math.hypot(p.x - x, p.y + 1 - y, p.z - z);
-      if (d < R) g.base.damagePiece(p, (opts.structure ?? D * 2) * (1 - d / R));
+      // doors and gates give way faster to shaped breaching charges; blast walls resist
+      const kind = /door|gate/.test(p.type) ? (opts.doorMul || 1) : 1;
+      if (d < R) g.base.damagePiece(p, (opts.structure ?? D * 2) * (1 - d / R) * kind * (p.def.blastResist || 1));
     }
     for (const v of g.vehicles.vehicles.values()) {
       const d = Math.hypot(v.pos.x - x, v.pos.z - z);
-      if (d < R && !v.destroyed) v.damage(D * 2 * (1 - d / R));
+      if (d < R + 3 && !v.destroyed) {
+        v.damage((opts.vehicle ?? D * 2) * Math.max(0, 1 - d / (R + 3)));
+        for (const w of v.windows) if (!w.broken) v.damageGlass(w, 400 * Math.max(0, 1 - d / (R + 3)));
+      }
+    }
+    // sealed blast doors at major sites only give way to a full demolition charge (C4)
+    if (opts.c4 && g.pois?.active) {
+      for (const rt of g.pois.active.values()) {
+        for (const gate of rt.gates || []) {
+          const gd = gate.def;
+          if (!gd.breach || gate.open || Math.hypot(gd.x - x, gd.y + gd.h / 2 - y, gd.z - z) > Math.max(3, R * 0.6)) continue;
+          gate.open = true;
+          gate.collider.enabled = false;
+          gate.mesh.visible = false;
+          g.openGates?.add(gate.id);
+          fx.emit(gd.x, gd.y + 1.5, gd.z, { color: [0.35, 0.33, 0.3], count: 40, speed: 6, size: 0.2, life: 2, gravity: 9, alpha: 1 });
+          bus.emit('notify', { text: `${gd.name} blown open`, kind: 'good' });
+          bus.emit('gate:breached', { id: gate.id });
+        }
+      }
     }
     const near = g.physics.query(x - R, z - R, x + R, z + R, []);
     for (const c of near) if (c.glass && !c.glass.broken && Math.hypot(c.x ?? (c.minX + c.maxX) / 2 - x, (c.z ?? (c.minZ + c.maxZ) / 2) - z) < R) g.ballistics.onGlass?.(c.glass);
@@ -206,6 +280,7 @@ export class Explosives {
     else if (t === 'smoke') this._smoke(x, y, z, p.def);
     else if (t === 'flash') this._stun(x, y, z, p.def);
     else if (t === 'fire') this._fire(x, y, z, p.def);
+    else if (t === 'rocket') this.explode(x, y, z, { radius: p.def.radius || 6, damage: p.def.damage || 300, structure: p.def.structure || 1400, vehicle: p.def.vehicle || 1600, owner: p.owner });
   }
 
   // ------------------------------------------------------------ per frame
@@ -215,14 +290,21 @@ export class Explosives {
     for (const p of [...this.projectiles]) {
       p.fuse -= dt;
       if (!p.rest) {
-        p.vel.y -= GRAV * dt;
+        p.vel.y -= (p.grav ?? GRAV) * dt;
+        if (p.def.type === 'rocket') {
+          // exhaust trail; people in the path set it off too
+          p.age += dt;
+          g.effects.emit(p.pos.x, p.pos.y, p.pos.z, { color: [0.7, 0.68, 0.64], count: 2, speed: 0.3, size: 0.35, life: 1.6, gravity: -0.2, grow: 1.2, alpha: 0.5 });
+          if (p.age > 0.12) for (const ch of g.characters.near(p.pos.x, p.pos.z, 0.7)) if (ch !== p.owner && Math.abs(ch.pos.y + 1 - p.pos.y) < 1.1) p.fuse = 0;
+          p.mesh.lookAt(_v.copy(p.pos).add(p.vel));
+        }
         const step = p.vel.length() * dt;
         if (step > 1e-4) {
           const dir = _v.copy(p.vel).normalize();
           const hit = phys.raycast(p.pos.x, p.pos.y, p.pos.z, dir.x, dir.y, dir.z, step + 0.05, (c) => (c.blocksMove || c.blocksShots) && c.owner !== p.owner?.colliderOwner && c.tag !== 'character');
           if (hit) {
             p.pos.addScaledVector(dir, Math.max(0, hit.t - 0.06));
-            if (p.def.type === 'fire') { p.fuse = 0; }
+            if (p.def.type === 'fire' || p.def.type === 'rocket') { p.fuse = 0; }
             else {
               const n = hit.collider ? this._boxNormal(hit.collider, p.pos) : g.world.normalAt(p.pos.x, p.pos.z, {});
               const vn = p.vel.x * n.x + p.vel.y * n.y + p.vel.z * n.z;
@@ -232,7 +314,7 @@ export class Explosives {
             }
           } else p.pos.addScaledVector(dir, step);
         }
-        p.mesh.rotation.x += p.spin.x * dt; p.mesh.rotation.z += p.spin.z * dt;
+        if (p.def.type !== 'rocket') { p.mesh.rotation.x += p.spin.x * dt; p.mesh.rotation.z += p.spin.z * dt; }
       }
       p.mesh.position.copy(p.pos);
       // the smoke canister pours out smoke from where it lies
@@ -265,8 +347,19 @@ export class Explosives {
       }
       if (f.t >= f.dur) this.fires.splice(this.fires.indexOf(f), 1);
     }
-    // charges blink
-    for (const c of this.charges) { c.t += dt; c.led.visible = (c.t % 1) < 0.15; }
+    // charges: LED (green unarmed, red blinking armed, fast before a timed blast); fuses
+    for (const c of [...this.charges]) {
+      c.t += dt;
+      c.led.material = c.armed ? this.mats.led : this.mats.ledSafe;
+      const fast = c.fuse !== null && c.fuse < 3;
+      c.led.visible = !c.armed || (c.t % (fast ? 0.25 : 1)) < (fast ? 0.12 : 0.15);
+      if (c.armed && c.fuse !== null) {
+        const before = Math.ceil(c.fuse);
+        c.fuse -= dt;
+        if (Math.ceil(c.fuse) !== before && c.fuse > 0) bus.emit('sound', { type: 'click', x: c.pos.x, y: c.pos.y, z: c.pos.z });
+        if (c.fuse <= 0) this._blowCharge(c);
+      }
+    }
     // stun on the player
     this.stunT = Math.max(0, this.stunT - dt);
     this.flashEl.classList.toggle('hidden', this.stunT <= 0);
@@ -275,7 +368,7 @@ export class Explosives {
 
   clear() {
     for (const p of this.projectiles) this.game.renderer.scene.remove(p.mesh);
-    for (const c of this.charges) this.game.renderer.scene.remove(c.mesh);
+    for (const c of this.charges) { this.game.renderer.scene.remove(c.mesh); if (c.inter) this.game.interactables.remove(c.inter); }
     this.projectiles.length = 0;
     this.smokes.length = 0;
     this.fires.length = 0;

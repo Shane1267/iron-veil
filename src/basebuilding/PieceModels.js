@@ -1,4 +1,5 @@
 import { BoxBuilder } from '../world/GeometryKit.js';
+import { buildExtra, extraColliders, extraBounds } from './PieceModelsExtra.js';
 
 // Geometry for every buildable piece, authored in piece-local space (centre of the
 // 3 m cell at the piece's base, +z = outward face for wall pieces).
@@ -6,6 +7,7 @@ import { BoxBuilder } from '../world/GeometryKit.js';
 export function buildPieceMesh(type, materials, opts = {}) {
   const B = new BoxBuilder(materials);
   const W = 'wood', WD = 'wood_dark';
+  if (buildExtra(B, type, opts)) return B.build();
   switch (type) {
     case 'foundation': {
       const legs = Math.max(0.3, opts.legs || 0.6);
@@ -265,6 +267,8 @@ export function buildPieceMesh(type, materials, opts = {}) {
 
 /** Local-space collider boxes [cx, cy, cz, w, h, d, opts] for a piece. */
 export function pieceColliders(type) {
+  const ex = extraColliders(type);
+  if (ex) return ex;
   const T = 0.2;
   switch (type) {
     case 'foundation': return [[0, -0.2, 0, 3, 0.4, 3]];
@@ -309,6 +313,8 @@ export function pieceColliders(type) {
 
 /** Footprint (w, d, h) for overlap validation. */
 export function pieceBounds(type) {
+  const ex = extraBounds(type);
+  if (ex) return ex;
   switch (type) {
     case 'foundation': return [3, 3, 0.4];
     case 'floor': return [3, 3, 0.16];

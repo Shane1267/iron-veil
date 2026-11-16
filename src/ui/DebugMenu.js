@@ -330,6 +330,11 @@ export class DebugMenu {
       { label: 'Remove nearby hostiles', disabled: off, desc: 'Everyone hostile within 150 m vanishes', action: () => { let n = 0; const p = g.player.controller.pos; for (const a of [...g.ai.agents]) if (a.alive && a.isEnemy(g.player.character) && Math.hypot(a.pos.x - p.x, a.pos.z - p.z) < 150) { g.ai._despawn(a); n++; } this._notify(`${n} removed`); } },
       { label: 'Spawn squad', page: () => ({ title: 'Spawn squad (40 m ahead)', items: g.factions.constructor && ['vsf_rifleman', 'wolf_raider', 'wolf_shooter', 'guard_militia', 'free_merc', 'indep_scav'].map((pid) => ({ label: `${g.factions.get(g.factions.profile(pid).faction).name} ×3`, disabled: off, action: () => { const pc = g.player.controller; g.ai.spawnSquad([pid, pid, pid], pc.pos.x - Math.sin(pc.yaw) * 40, pc.pos.z - Math.cos(pc.yaw) * 40, {}); this._flash('Squad spawned'); } })) }), disabled: off },
       { label: 'AI ignore you', toggle: true, get: () => f.invisible, set: (v) => { f.invisible = v; }, disabled: off },
+      { label: 'Helicopter crash: spawn near you', disabled: off, action: () => { const s = g.helis.spawnCrash(g.player.controller.pos); this._notify(s ? `Crash site ${Math.round(Math.hypot(s.x - g.player.controller.pos.x, s.z - g.player.controller.pos.z))} m away` : 'No suitable spot nearby'); } },
+      { label: 'Airfield helicopter: spawn', disabled: off, action: () => { const v = g.helis.spawnAirfieldHeli(true); this._notify(v ? 'Damaged helicopter on the Kessler pad' : 'A helicopter already exists'); } },
+      { label: 'Raid: warn now', desc: 'Issue a raid warning for your base (needs 6+ pieces with a wall or door)', disabled: off, page: () => ({ title: 'Raid type', items: ['small', 'military', 'large', 'special'].map((t) => ({ label: t, action: () => { this._notify(g.raids.warn(t) ? `${t} raid warning issued` : 'No eligible base, or a raid is already under way'); } })) }) },
+      { label: 'Raid: attack now', desc: 'Skip the countdown of the current warning', disabled: off, action: () => { if (g.raids.raid?.phase === 'warning') { g.raids.raid.attackAt = g.clock.gameMinutes; this._notify('Raiders on their way'); } else this._notify('No raid warning active'); } },
+      { label: 'Loot reset: all major sites now', desc: 'Bunker, airfield, launch site, base, depot, research', action: () => { let n = 0; for (const k of Object.keys(g.lootResets.last)) g.lootResets.last[k] = -1e9; g.lootResets.t = 0; g.lootResets.update(0); n = g.lootResets.log.length; this._notify(`Reset run (${n} announced so far)`); } },
       { label: 'Restock all containers', desc: 'Searched containers fill up again', action: () => { for (const [id, c] of [...g.loot.containers]) if (!c.custom && /:c\d+$/.test(id)) g.loot.containers.delete(id); this._notify('Containers restocked'); } },
     ] };
   }
@@ -348,7 +353,7 @@ export class DebugMenu {
     const g = this.game;
     return { title: 'Vehicles', items: () => [
       { label: 'Refuel and repair nearest', action: () => { const v = g.vehicles.current || g._nearestVehicle(50); if (!v) { this._flash('No vehicle within 50 m'); return; } v.fuel = v.t.fuelCap; v.health = v.t.health; v.destroyed = false; v.needs = []; this._notify(`${v.t.name} ready to drive`); } },
-      ...['pickup', 'utility', 'offroad', 'mil_truck'].map((type) => ({ label: `Spawn ${type.replace('_', ' ')}`, action: () => { const pc = g.player.controller; const x = pc.pos.x - Math.sin(pc.yaw) * 7, z = pc.pos.z - Math.cos(pc.yaw) * 7; g.vehicles.add({ id: `dbg${Date.now().toString(36)}`, type, x, z, rot: pc.yaw, fuel: 80 }); this._flash('Vehicle spawned ahead of you'); } })),
+      ...['pickup', 'sedan', 'utility', 'offroad', 'mil_truck', 'apc', 'heli'].map((type) => ({ label: `Spawn ${type.replace('_', ' ')}`, action: () => { const pc = g.player.controller; const x = pc.pos.x - Math.sin(pc.yaw) * 7, z = pc.pos.z - Math.cos(pc.yaw) * 7; g.vehicles.add({ id: `dbg${Date.now().toString(36)}`, type, x, z, rot: pc.yaw, fuel: 80 }); this._flash('Vehicle spawned ahead of you'); } })),
     ] };
   }
 

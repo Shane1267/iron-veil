@@ -891,7 +891,7 @@ export class StructureBuilder extends BuildingGenerator {
     const rx = w / 2 + 1.2;
     this.box(f, 'metal_dark', rx, 1.25, 0.6, 0.25, 0.35, 0.12, { collide: false });
     this.box(f, 'emissive_lamp', rx, 1.32, 0.67, 0.12, 0.06, 0.02, { collide: false });
-    this.ctx.gates.push({ x, y, z, yaw: f.theta, w, h, d: opts.d || 0.35, mat: opts.mat || 'metal_dark', name: opts.name || 'Security gate', sink: !!opts.sink, ix: f.wx(rx, 0.9), iz: f.wz(rx, 0.9) });
+    this.ctx.gates.push({ x, y, z, yaw: f.theta, w, h, d: opts.d || 0.35, mat: opts.mat || 'metal_dark', name: opts.name || 'Security gate', sink: !!opts.sink, ix: f.wx(rx, 0.9), iz: f.wz(rx, 0.9), card: opts.card || 'keycard_launch', breach: !!opts.breach });
   }
 
   /** Rocket on its pad with a service gantry and flame trench. */
@@ -934,7 +934,7 @@ export class StructureBuilder extends BuildingGenerator {
     this.box(f, 'paint_yellow', 0, 3.25, -d / 2 + 0.36, 2.8, 0.2, 0.05, { collide: false });
     this.box(f, 'emissive_lamp', 0, h - 0.15, 0, 1.2, 0.08, 0.5, { collide: false });
     this.ctx.lights.push({ x, y: y + h - 0.5, z, color: 0xd8e4ff, intensity: 5, range: 10 });
-    this.ctx.lifts.push({ x: f.wx(0, -d / 2 + 1.4), y, z: f.wz(0, -d / 2 + 1.4), label: 'Take the lift down (key card)', needsCard: true, to: opts.to });
+    this.ctx.lifts.push({ x: f.wx(0, -d / 2 + 1.4), y, z: f.wz(0, -d / 2 + 1.4), label: opts.noCard ? 'Take the lift down' : 'Take the lift down (key card)', needsCard: !opts.noCard, to: opts.to });
   }
 
   /**
@@ -1035,6 +1035,136 @@ export class StructureBuilder extends BuildingGenerator {
     crate(0, -96, 'launch_vault', 'Vault Crate');
     // defence turrets
     turret(0, 30, 4.6); turret(0, -30, 4.6); turret(-24, 0, 4.2); turret(24, 0, 4.2); turret(44, 40, 4.2, 'wpn_anvil'); turret(0, -70, 4.4, 'wpn_anvil');
+  }
+
+  /**
+   * The bunker under the Underground Storage Facility: lift room, a 70 m spine with storage,
+   * barracks and maintenance rooms to the west, equipment, supply and a key-card restricted
+   * armoury to the east, and at the north end the PROJECT SUNSHINE containment room behind a
+   * sealed blast door that only a demolition charge (C4) can open.
+   */
+  bunker(x, z, Y, liftTop) {
+    const T = 0.45;
+    const self = this;
+    const F = new Frame(x, Y, z, 0);
+    const lamp = (lx, lz, h, color = 0xe4e8ff, intensity = 6) => {
+      self.box(F, 'emissive_lamp', lx, h - 0.06, lz, 1.4, 0.08, 0.3, { collide: false });
+      self.ctx.lights.push({ x: x + lx, y: Y + h - 0.5, z: z + lz, color, intensity, range: 14 });
+    };
+    const room = (x0, z0, x1, z1, h, gaps = {}, opts = {}) => {
+      const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, w = x1 - x0, d = z1 - z0;
+      self.box(F, opts.floor || 'concrete_dark', cx, -0.25, cz, w + 2 * T, 0.5, d + 2 * T);
+      self.box(F, 'concrete', cx, h + 0.25, cz, w + 2 * T, 0.5, d + 2 * T);
+      const sides = { N: [x0, z0, x1, z0], S: [x0, z1, x1, z1], W: [x0, z0, x0, z1], E: [x1, z0, x1, z1] };
+      for (const [side, [ax, az, bx, bz]] of Object.entries(sides)) {
+        const along = side === 'N' || side === 'S';
+        const a = along ? ax - T : az - T, b = along ? bx + T : bz + T;
+        const gs = (gaps[side] || []).map(([c, gw]) => [c - gw / 2, c + gw / 2]).sort((p, q) => p[0] - q[0]);
+        let t = a;
+        const seg = (s0, s1) => {
+          if (s1 - s0 < 0.05) return;
+          const m = (s0 + s1) / 2;
+          if (along) self.box(F, opts.wall || 'concrete', m, h / 2, az + (side === 'N' ? -T / 2 : T / 2), s1 - s0, h, T);
+          else self.box(F, opts.wall || 'concrete', ax + (side === 'W' ? -T / 2 : T / 2), h / 2, m, T, h, s1 - s0);
+        };
+        for (const [g0, g1] of gs) {
+          seg(t, g0);
+          const m = (g0 + g1) / 2;
+          if (along) self.box(F, 'concrete', m, (h + 3) / 2, az + (side === 'N' ? -T / 2 : T / 2), g1 - g0, h - 3, T, { collide: h - 3 > 0.1 });
+          else self.box(F, 'concrete', ax + (side === 'W' ? -T / 2 : T / 2), (h + 3) / 2, m, T, h - 3, g1 - g0, { collide: h - 3 > 0.1 });
+          t = g1;
+        }
+        seg(t, b);
+      }
+      // wainscot band and floor stripes
+      if (!opts.bare) {
+        if (w > d) for (const zz of [z0 + 0.2, z1 - 0.2]) self.box(F, 'paint_yellow', cx, 0.01, zz, w, 0.02, 0.12, { collide: false });
+        else for (const xx of [x0 + 0.2, x1 - 0.2]) self.box(F, 'paint_yellow', xx, 0.01, cz, 0.12, 0.02, d, { collide: false });
+      }
+      const n = Math.max(1, Math.round(Math.max(w, d) / 10));
+      for (let i = 0; i < n; i++) { const k = (i + 0.5) / n; if (w > d) lamp(x0 + w * k, cz, h, opts.light, opts.lightI); else lamp(cx, z0 + d * k, h, opts.light, opts.lightI); }
+    };
+    const crate = (lx, lz, profile, name = 'Supply Crate', kind = 'crate', cap = 12) => {
+      if (kind === 'gunrack') self.box(F, 'metal_dark', lx, 0.95, lz, 1.4, 1.9, 0.5);
+      else if (kind === 'locker') { self.box(F, 'olive', lx, 0.95, lz, 0.6, 1.9, 0.5); self.box(F, 'metal_dark', lx, 1.5, lz + 0.26, 0.3, 0.05, 0.01, { collide: false }); }
+      else if (kind === 'ammobox') self.box(F, 'olive', lx, 0.22, lz, 0.8, 0.45, 0.5);
+      else if (kind === 'shelf') { for (const y of [0.4, 1.1, 1.8]) self.box(F, 'metal', lx, y, lz, 1.8, 0.05, 0.6, { collide: false }); for (const [ox, oz] of [[-0.88, -0.28], [0.88, -0.28], [-0.88, 0.28], [0.88, 0.28]]) self.box(F, 'metal_dark', lx + ox, 1.05, lz + oz, 0.05, 2.1, 0.05); for (const [ox, y] of [[-0.5, 0.6], [0.4, 1.3], [0, 2.0]]) self.box(F, 'canvas_tan', lx + ox, y, lz, 0.5, 0.35, 0.45, { collide: false }); }
+      else if (kind === 'pallet') { self.box(F, 'wood', lx, 0.08, lz, 1.2, 0.16, 1.0); self.box(F, 'olive', lx, 0.6, lz, 1.1, 0.9, 0.9); self.box(F, 'black', lx, 0.6, lz, 1.12, 0.06, 0.92, { collide: false }); }
+      else if (kind === 'case') { self.box(F, 'metal', lx, 0.7, lz, 1.2, 0.08, 0.8); self.box(F, 'metal_dark', lx, 0.35, lz, 1.1, 0.7, 0.7); }
+      else { self.box(F, 'olive', lx, 0.4, lz, 1.0, 0.8, 0.8); self.box(F, 'wood_dark', lx, 0.81, lz, 1.02, 0.03, 0.82, { collide: false }); }
+      self.ctx.containers.push({ x: x + lx, y: Y + 0.9, z: z + lz, name, profile, capacity: cap, kind });
+    };
+    const turret = (lx, lz, h, weapon = 'wpn_arv7') => {
+      self.box(F, 'metal_dark', lx, h - 0.2, lz, 0.5, 0.4, 0.5, { collide: false });
+      self.ctx.turrets.push({ x: x + lx, y: Y + h - 0.75, z: z + lz, weapon, hanging: true });
+    };
+    const wallSign = (lx, lz, yaw, text) => self.ctx.signs.push({ x: x + lx, y: Y + 2.2, z: z + lz, yaw, text });
+    const bunk = (lx, lz) => { for (const y of [0.45, 1.45]) { self.box(F, 'metal_dark', lx, y, lz, 0.95, 0.08, 2.0); self.box(F, 'fabric_grey', lx, y + 0.1, lz, 0.85, 0.12, 1.9, { collide: false }); } for (const [ox, oz] of [[-0.45, -0.95], [0.45, -0.95], [-0.45, 0.95], [0.45, 0.95]]) self.box(F, 'metal_dark', lx + ox, 0.95, lz + oz, 0.05, 1.9, 0.05); };
+
+    // lift room (lift back up on its south wall)
+    room(-5, -6, 5, 4, 4.2, { N: [[0, 4]] });
+    this.box(F, 'metal_dark', 0, 1.6, -5.6, 2.6, 3.0, 0.2, { collide: false });
+    this.box(F, 'paint_yellow', 0, 3.25, -5.7, 2.8, 0.2, 0.05, { collide: false });
+    this.ctx.lifts.push({ x, y: Y, z: z - 4.4, label: 'Take the lift up', to: liftTop });
+    wallSign(0, 3.6, Math.PI, 'BUNKER 7 — LEVEL B2');
+    // spine corridor
+    room(-2.5, 4, 2.5, 70, 4.4, { S: [[0, 4]], N: [[0, 4]], W: [[15, 3], [35, 3], [55, 3]], E: [[15, 3], [36, 3], [55, 3.2]] });
+    for (let zz = 10; zz < 70; zz += 12) { this.cyl(F, 'metal_dark', -2.1, 3.9, zz, 0.12, 12, 8, { rotX: Math.PI / 2, collide: false }); this.cyl(F, 'rust', 2.1, 3.7, zz, 0.08, 12, 8, { rotX: Math.PI / 2, collide: false }); }
+    // west: storage, barracks, maintenance
+    room(-22, 8, -2.5, 22, 4.0, { E: [[15, 3]] });
+    for (let i = 0; i < 3; i++) { crate(-20.5, 10.5 + i * 4.5, 'bunker_storage', 'Storage Shelf', 'shelf'); crate(-8, 10 + i * 4.5, 'bunker_storage', 'Supply Pallet', 'pallet'); }
+    wallSign(-12, 8.3, 0, 'STORES — SIGN OUT EVERYTHING');
+    room(-22, 28, -2.5, 42, 3.6, { E: [[35, 3]] });
+    for (let i = 0; i < 4; i++) bunk(-19 + i * 3.6, 30.5);
+    for (let i = 0; i < 4; i++) crate(-19 + i * 3.6, 40.8, i === 2 ? 'bunker_keycard' : 'bunker_barracks', i === 2 ? "Duty Officer's Locker" : 'Footlocker', 'locker', 8);
+    this.box(F, 'wood_dark', -8, 0.38, 35, 1.6, 0.76, 0.9); // card table
+    this.box(F, 'paint_white', -8.2, 0.77, 35, 0.5, 0.01, 0.3, { collide: false, rotY: 0.3 });
+    room(-22, 48, -2.5, 62, 4.0, { E: [[55, 3]] }, { light: 0xffe0b0 });
+    this.box(F, 'metal_dark', -18, 0.45, 50, 3, 0.9, 1.0); // workbench
+    this.box(F, 'olive', -18, 1.4, 49.6, 3, 0.9, 0.08, { collide: false });
+    for (let i = 0; i < 3; i++) this.cyl(F, 'rust', -21.5, 2.2, 52 + i * 3, 0.35, 4.4, 10, { collide: false });
+    this.box(F, 'metal_dark', -12, 1.0, 60.6, 4, 2.0, 0.8); // generator
+    this.box(F, 'paint_yellow', -12, 1.0, 60.15, 3.6, 0.1, 0.02, { collide: false });
+    for (let i = 0; i < 3; i++) crate(-20 + i * 4.5, 58, 'bunker_parts', 'Parts Bin', 'crate');
+    wallSign(-12, 48.3, 0, 'MAINTENANCE — GENERATOR 2 OFFLINE');
+    // east: equipment, supply area, restricted armoury
+    room(2.5, 8, 22, 22, 4.0, { W: [[15, 3]] });
+    for (let i = 0; i < 4; i++) crate(20.8, 9.5 + i * 3.5, 'bunker_equipment', 'Equipment Rack', 'gunrack');
+    for (let i = 0; i < 3; i++) crate(9 + i * 3.5, 21, 'bunker_equipment', 'Equipment Locker', 'locker', 10);
+    room(2.5, 28, 26, 44, 5.0, { W: [[36, 3]] });
+    for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) crate(8 + i * 4.5, 31 + j * 9, j ? 'military' : 'bunker_storage', 'Supply Pallet', 'pallet');
+    wallSign(14, 28.3, 0, 'SUPPLY — FORKLIFT ROUTE KEEP CLEAR');
+    room(2.5, 48, 18, 62, 3.8, { W: [[55, 3.2]] }, { floor: 'metal_dark', light: 0xffd0c0 });
+    this.keyGate(x + 2.5, Y, z + 55, 1, { w: 3.2, h: 3.0, d: 0.4, name: 'Restricted armoury', card: 'keycard_bunker', mat: 'metal' });
+    for (let i = 0; i < 3; i++) crate(16.8, 50.5 + i * 4.5, 'bunker_armory', 'Weapon Rack', 'gunrack');
+    for (let i = 0; i < 2; i++) crate(9 + i * 3, 60.8, 'bunker_armory', 'Ordnance Case', 'ammobox');
+    wallSign(10, 48.3, 0, 'RESTRICTED — LEVEL 3 CLEARANCE');
+    // containment antechamber and the SUNSHINE room (blast door: explosives only)
+    room(-8, 70, 8, 80, 4.4, { S: [[0, 4]], N: [[0, 3.4]] }, { floor: 'metal_dark', light: 0xff6040, lightI: 4 });
+    for (const xx of [-5, 5]) { this.box(F, 'metal', xx, 2.2, 75, 0.1, 2.6, 2.4, { collide: false }); this.box(F, 'metal_dark', xx, 3.4, 75, 1.0, 0.1, 2.4, { collide: false }); } // decon frames
+    for (const xx of [-7.6, 7.6]) for (const yy of [0.6, 1.6, 2.6]) this.box(F, 'hazard', xx, yy, 79.6, 0.3, 0.4, 0.05, { collide: false });
+    this.box(F, 'hazard', 0, 3.6, 79.65, 4.6, 0.4, 0.05, { collide: false });
+    wallSign(-4.5, 79.5, Math.PI, 'PROJECT SUNSHINE');
+    wallSign(4.5, 79.5, Math.PI, 'DANGER — NO ENTRY');
+    wallSign(5.2, 70.4, 0, 'EYE PROTECTION MANDATORY');
+    this.box(F, 'paint_red', 3.2, 0.012, 73.5, 1.1, 0.01, 0.6, { collide: false, rotY: 0.6 }); // dried blood
+    this.box(F, 'fabric_grey', 3.0, 0.15, 74.4, 0.5, 0.3, 1.6, { collide: false, rotY: 0.4 }); // a body bag
+    crate(-6.5, 72, 'bunker_note', 'Clipboard', 'case', 4);
+    room(-6, 80, 6, 92, 5.0, { S: [[0, 3.4]] }, { floor: 'metal_dark', wall: 'metal', light: 0xfff4d0, lightI: 7, bare: true });
+    this.keyGate(x, Y, z + 80, 0, { w: 3.4, h: 3.2, d: 0.6, name: 'Containment blast door', breach: true, mat: 'metal' });
+    // the device on its pedestal under a cracked containment hood, cables, scorch marks
+    this.box(F, 'metal_dark', 0, 0.5, 87, 2.2, 1.0, 2.2);
+    this.box(F, 'hazard', 0, 1.01, 87, 2.0, 0.02, 2.0, { collide: false });
+    this.cyl(F, 'brass', 0, 1.45, 87, 0.35, 0.9, 16, { collide: false });
+    this.box(F, 'emissive_lamp', 0, 1.95, 87, 0.5, 0.05, 0.5, { collide: false });
+    for (const [ox, oz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) this.box(F, 'metal', ox, 2.0, 87 + oz, 0.06, 2.0, 0.06, { collide: false });
+    this.box(F, 'glass', 0, 3.0, 87, 2.1, 0.04, 2.1, { collide: false });
+    for (let i = 0; i < 5; i++) this.cyl(F, 'black', -5.5 + i * 0.25, 2.4, 87 + i * 0.4 - 1, 0.04, 4.6, 6, { rotZ: Math.PI / 2 - 0.2, collide: false });
+    for (const [lx, ly, lz] of [[-5.9, 2.5, 84], [5.9, 3.0, 90], [-3, 4.8, 91.9], [3.5, 1.8, 91.9]]) this.box(F, 'black', lx, ly, lz, Math.abs(lx) > 5 ? 0.02 : 2.0, 1.6, Math.abs(lx) > 5 ? 2.0 : 0.02, { collide: false }); // scorch marks
+    crate(4.5, 90.5, 'sunshine_vault', 'Containment Locker', 'case', 6);
+    wallSign(0, 91.6, Math.PI, 'SUNSHINE — PROTOTYPE 3');
+    // defences
+    turret(0, 26, 4.4); turret(0, 58, 4.4, 'wpn_anvil'); turret(0, 75, 4.4, 'wpn_anvil');
   }
 
   sign(x, y, z, rot, text) {

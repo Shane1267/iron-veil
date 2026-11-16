@@ -12,7 +12,7 @@ const FILTERS = [
   ['all', 'All'], ['weapon', 'Weapons'], ['ammo', 'Ammo'], ['explosive', 'Throw'], ['attachment', 'Mods'], ['medical', 'Medical'],
   ['food', 'Food'], ['gear', 'Gear'], ['construction', 'Build'], ['other', 'Other'],
 ];
-const SLOT_LABEL = { primary: 'Primary', shoulder: 'Shoulder', sidearm: 'Sidearm', melee: 'Melee', head: 'Head', body: 'Body', vest: 'Vest', back: 'Back', util: 'Utility' };
+const SLOT_LABEL = { primary: 'Primary', shoulder: 'Shoulder', sidearm: 'Sidearm', melee: 'Melee', head: 'Head', body: 'Body', vest: 'Vest', back: 'Back', feet: 'Feet', util: 'Utility' };
 const ATTACH_SLOTS = ['optic', 'muzzle', 'under', 'light', 'mag', 'stock'];
 
 function matchFilter(def, f) {

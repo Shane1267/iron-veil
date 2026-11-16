@@ -66,7 +66,10 @@ export class NightVision {
   }
 
   _newBattery(d) {
-    if (this.game.player.equipment.inventory.remove('battery', 1)) { d.nvgCharge = 1; bus.emit('notify', { text: 'Night vision battery replaced', kind: 'info' }); return true; }
+    const inv = this.game.player.equipment.inventory;
+    // military cells last four times as long as ordinary batteries
+    if (inv.remove('mil_battery', 1)) { d.nvgCharge = 4; bus.emit('notify', { text: 'Night vision: military power cell fitted', kind: 'info' }); return true; }
+    if (inv.remove('battery', 1)) { d.nvgCharge = 1; bus.emit('notify', { text: 'Night vision battery replaced', kind: 'info' }); return true; }
     return false;
   }
 
@@ -102,6 +105,6 @@ export class NightVision {
   get status() {
     const hm = this.helmet();
     if (!this.on || !hm) return null;
-    return `NV ${Math.round((hm.data.nvgCharge ?? 1) * 100)}%`;
+    return `NV ${Math.round(Math.min(1, hm.data.nvgCharge ?? 1) * 100)}%${(hm.data.nvgCharge ?? 1) > 1 ? ' (mil cell)' : ''}`;
   }
 }

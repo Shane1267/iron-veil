@@ -2,6 +2,7 @@
 // puts a firearm and matching rounds in its storage. It turns toward the nearest hostile
 // person it can see, fires short bursts with the weapon's own ballistics and rate of fire,
 // reloads from the stored rounds and goes quiet when they run out.
+import { settings } from '../core/SettingsManager.js';
 import * as THREE from 'three';
 import { buildPieceMesh } from './PieceModels.js';
 import { npcWeapon } from '../ai/CharacterModel.js';
@@ -130,7 +131,10 @@ export class Sentry {
     const range = RANGE[w.class] || 80;
     if (this.scanT <= 0) {
       this.scanT = 0.3;
+      const prevT = this.target;
       this.target = this._findTarget(range);
+      // a new target takes a moment to lock (the gun is not an aimbot)
+      if (this.target && this.target !== prevT) this.lockT = 0.7;
       if (this.target && !this._had) bus.emit('sound', { type: 'click', x: p.x, y: p.y + 1, z: p.z });
       this._had = !!this.target;
     }
@@ -144,12 +148,13 @@ export class Sentry {
     const ax = dx + (t.vel?.x || 0) * lead, az = dz + (t.vel?.z || 0) * lead;
     const wantYaw = Math.atan2(-ax, -az);
     const wantPitch = Math.atan2(ty - (o.y + 0.2), dist);
-    const turn = 2.4 * dt;
+    const turn = 1.8 * dt;
+    this.lockT = Math.max(0, (this.lockT || 0) - dt);
     const dy = angleWrap(wantYaw - this.yaw);
     this.yaw += Math.max(-turn, Math.min(turn, dy));
     this.pitch += Math.max(-turn, Math.min(turn, wantPitch - this.pitch));
     this._pose();
-    if (Math.abs(dy) > 0.06 || this.reloadT > 0 || this.loaded <= 0 || this.time < this.nextShot) return;
+    if (Math.abs(dy) > 0.06 || this.lockT > 0 || this.reloadT > 0 || this.loaded <= 0 || this.time < this.nextShot) return;
     this._fire(w, dist);
   }
 
@@ -177,11 +182,16 @@ export class Sentry {
     this.shooter.pos.set(p.x, p.y, p.z);
     this.shooter.yaw = this.yaw;
     for (let i = 0; i < pellets; i++) {
-      const err = ((1.1 + (1 - cond) * 1.5 + (pellets > 1 ? w.pelletSpread : 0)) * Math.PI / 180) * Math.sqrt(Math.random());
+      const err = ((1.6 + (1 - cond) * 2 + (pellets > 1 ? w.pelletSpread : 0)) * Math.PI / 180) * Math.sqrt(Math.random());
       const d = randomCone(dir.clone(), err);
-      g.ballistics.fire({ ox: muzzle.x, oy: muzzle.y, oz: muzzle.z, dx: d.x, dy: d.y, dz: d.z, weapon: w, shooter: this.shooter, damageMul: w.damageMul, muzzle, tracer: i === 0 && this.loaded % 4 === 0, attach: this.piece.inventory.slots.find((s) => s?.id === w.id)?.data?.attach || null });
+      g.ballistics.fire({ ox: muzzle.x, oy: muzzle.y, oz: muzzle.z, dx: d.x, dy: d.y, dz: d.z, weapon: w, shooter: this.shooter, damageMul: (w.damageMul || 1) * settings.get('turretDamage'), muzzle, tracer: i === 0 && this.loaded % 4 === 0, attach: this.piece.inventory.slots.find((s) => s?.id === w.id)?.data?.attach || null });
     }
-    this.loaded--;
+    // ammunition use (setting: extra rounds per shot, kept as a fraction) and mechanical wear
+    this.ammoDebt = (this.ammoDebt || 0) + settings.get('turretAmmoUse');
+    const use = Math.floor(this.ammoDebt);
+    this.ammoDebt -= use;
+    this.loaded = Math.max(0, this.loaded - use);
+    p.health = Math.max(1, p.health - 0.25);
     this.lastShotT = this.time;
     if (w.flash && g.effects.worldFlash) g.effects.worldFlash(muzzle.x, muzzle.y, muzzle.z, 1, true);
     g.effects.smoke?.(muzzle.x, muzzle.y, muzzle.z, 0.6);

@@ -1,0 +1,11 @@
+{
+  "_doc": "Major locations whose loot resets as a whole on a timer and is announced. 'setting' names the interval setting (in game hours). Containers at these places do not restock individually.",
+  "major": [
+    { "poi": "storage", "name": "BUNKER", "label": "supplies", "setting": "bunkerResetHours" },
+    { "poi": "airfield", "name": "AIRFIELD", "label": "military supplies", "setting": "airfieldResetHours" },
+    { "poi": "launch_site", "name": "LAUNCH SITE", "label": "supplies", "setting": "bunkerResetHours" },
+    { "poi": "northwatch_base", "name": "MILITARY BASE", "label": "supplies", "setting": "majorResetHours" },
+    { "poi": "fuel_depot", "name": "MILITARY DEPOT", "label": "fuel and supplies", "setting": "majorResetHours" },
+    { "poi": "research", "name": "RESEARCH STATION", "label": "supplies", "setting": "majorResetHours" }
+  ]
+}

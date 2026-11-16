@@ -117,10 +117,15 @@ export class Infrastructure {
       for (let i = 0; i < r.points.length - 1; i += 16) addPiece('river', r, i, Math.min(r.points.length - 1, i + 16));
     }
     this.bridgeTiles = new Map();
+    // long bridges cross several tiles: each tile builds the spans whose midpoint it holds
     for (const b of this.world.bridges) {
-      const k = `${Math.floor((b.ax + b.bx) / 2 / TILE)},${Math.floor((b.az + b.bz) / 2 / TILE)}`;
-      if (!this.bridgeTiles.has(k)) this.bridgeTiles.set(k, []);
-      this.bridgeTiles.get(k).push(b);
+      b.segs.forEach((sg, k) => {
+        const key = `${Math.floor((sg[0] + sg[2]) / 2 / TILE)},${Math.floor((sg[1] + sg[3]) / 2 / TILE)}`;
+        if (!this.bridgeTiles.has(key)) this.bridgeTiles.set(key, []);
+        let e = this.bridgeTiles.get(key).find((x) => x.b === b);
+        if (!e) { e = { b, ks: [] }; this.bridgeTiles.get(key).push(e); }
+        e.ks.push(k);
+      });
     }
   }
 
@@ -160,7 +165,7 @@ export class Infrastructure {
       else if (p.kind === 'rail') this._railPiece(p, group, near);
       else if (p.kind === 'river') this._riverPiece(p, group);
     }
-    for (const b of this.bridgeTiles.get(k) || []) this._bridge(b, group, tile);
+    for (const e of this.bridgeTiles.get(k) || []) this._bridge(e.b, e.ks, group, tile);
     this.scene.add(group);
     return tile;
   }
@@ -338,42 +343,98 @@ export class Infrastructure {
     this.scene.add(m);
   }
 
-  _bridge(b, group, tile) {
-    const len = Math.hypot(b.bx - b.ax, b.bz - b.az) + 6;
-    const ang = Math.atan2(b.bx - b.ax, b.bz - b.az);
-    const cx = (b.ax + b.bx) / 2, cz = (b.az + b.bz) / 2;
+  /**
+   * One bridge's spans (segment indices ks) in a tile. Designs: highway (twin columns, concrete
+   * barriers), concrete (single piers, steel rails), steel (military plate deck and truss
+   * sides), river (long crossing: big piers and arched steel girders), rural (timber deck and
+   * piles), abandoned (weathered timber, missing rails), damaged (patched concrete, broken
+   * rails, still passable) and truss (railway). Every design has a full deck at b.deck,
+   * abutments on the embankments and railing colliders along both edges.
+   */
+  _bridge(b, ks, group, tile) {
     const kit = new BoxBuilder(this.materials);
-    const w = b.width + 1.2;
-    kit.box('concrete', 0, -0.45, 0, w, 0.8, len);
-    kit.box('concrete', -w / 2 + 0.15, 0.45, 0, 0.3, 0.9, len);
-    kit.box('concrete', w / 2 - 0.15, 0.45, 0, 0.3, 0.9, len);
-    const riverBed = this.world.heightRaw(cx, cz);
-    const pierH = b.deck - riverBed + 2;
-    for (const o of [-len * 0.28, len * 0.28]) {
-      kit.box('concrete_dark', 0, -pierH / 2 - 0.8, o, w * 0.7, pierH, 1.4);
-      kit.box('concrete', 0, -0.95, o, w * 0.85, 0.3, 1.8); // pier cap
-    }
-    // edge beams, steel railings on posts, drainage spouts
-    for (const sx of [-1, 1]) {
-      kit.box('concrete_dark', sx * (w / 2 + 0.05), -0.35, 0, 0.12, 0.9, len);
-      for (let d = -len / 2 + 0.6; d <= len / 2 - 0.5; d += 2.0) kit.box('metal_dark', sx * (w / 2 - 0.15), 1.15, d, 0.08, 0.6, 0.08);
-      kit.box('metal', sx * (w / 2 - 0.15), 1.45, 0, 0.1, 0.08, len - 0.6);
-      kit.box('metal', sx * (w / 2 - 0.15), 1.15, 0, 0.05, 0.05, len - 0.6);
-      for (let d = -len / 2 + 3; d < len / 2 - 2; d += 7) kit.cylinder('metal_dark', sx * (w / 2 + 0.2), -0.55, d, 0.05, 0.05, 0.4, 6, { rotZ: Math.PI / 2 });
-    }
-    const mesh = kit.build();
-    mesh.position.set(cx, b.deck, cz);
-    mesh.rotation.y = ang;
-    mesh.castShadow = true; mesh.receiveShadow = true;
-    group.add(mesh);
-    // railings stop the player falling off: rows of small cylinders along both sides
-    const fx = Math.sin(ang), fz = Math.cos(ang), rx = Math.cos(ang), rz = -Math.sin(ang);
-    for (let d = -len / 2; d <= len / 2; d += 0.8) {
-      for (const side of [-1, 1]) {
-        const x = cx + fx * d + rx * side * (w / 2 - 0.15), z = cz + fz * d + rz * side * (w / 2 - 0.15);
-        tile.colliders.push(this.physics.addCylinder(x, z, 0.25, b.deck, b.deck + 1.0, { material: 'concrete', tag: 'rail', blocksSight: false }));
+    const D = b.deck, w = b.width + 1.2, des = b.design;
+    const timber = des === 'rural' || des === 'abandoned';
+    const deckMat = timber ? (des === 'abandoned' ? 'wood_dark' : 'wood') : des === 'steel' || des === 'truss' ? 'metal_dark' : 'concrete';
+    const n = b.segs.length;
+    // where another bridge joins or crosses this one, its deck area gets no rails here
+    const onOther = (x, z) => this.world.bridges.some((o) => { if (o === b || o.type === 'rail') return false; const r = this.world._bridgeDist(o, x, z, o.width); return r && r.d < o.width * 0.5 + 0.4 && r.t >= 0 && r.t <= 1; });
+    const hsh = (k, s) => { const v = Math.sin((k + 1) * 12.9898 + s * 78.233 + b.start) * 43758.5453; return v - Math.floor(v); };
+    for (const k of ks) {
+      const [x0, z0, x1, z1] = b.segs[k];
+      const L = Math.hypot(x1 - x0, z1 - z0) + 0.35;
+      const ang = Math.atan2(x1 - x0, z1 - z0);
+      const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+      const rx = Math.cos(ang), rz = -Math.sin(ang);
+      const o = { rotY: ang };
+      const at = (side, along, out = 0) => [cx + rx * side + Math.sin(ang) * along, cz + rz * side + Math.cos(ang) * along];
+      // deck and girder
+      kit.box(deckMat, cx, D - (timber ? 0.12 : 0.4), cz, w, timber ? 0.24 : 0.8, L, { ...o, ao: false });
+      if (timber) for (const sx of [-0.3, 0.3]) { const [gx, gz] = at(sx * w, 0); kit.box('wood_dark', gx, D - 0.45, gz, 0.35, 0.45, L, o); }
+      else if (des !== 'steel' && des !== 'truss') { const [gx, gz] = at(0, 0); kit.box('concrete_dark', gx, D - 1.15, gz, w * 0.62, 0.7, L, o); }
+      if (des === 'damaged' && hsh(k, 1) < 0.5) { const [px, pz] = at((hsh(k, 2) - 0.5) * w * 0.5, (hsh(k, 3) - 0.5) * L * 0.6); kit.box('asphalt', px, D + 0.01, pz, 1.8 + hsh(k, 4) * 1.5, 0.03, 1.4 + hsh(k, 5), { rotY: ang + hsh(k, 6) }); }
+      // edges
+      for (const sx of [-1, 1]) {
+        const [ex, ez] = at(sx * (w / 2 - 0.15), 0);
+        if (onOther(ex, ez) || onOther(...at(sx * (w / 2 - 0.15), -L / 3)) || onOther(...at(sx * (w / 2 - 0.15), L / 3))) continue;
+        if (des === 'highway') { kit.box('concrete', ex, D + 0.42, ez, 0.4, 0.84, L, o); continue; }
+        if (des === 'river' || des === 'truss' || des === 'steel') {
+          // steel truss / arched girder side: top chord, posts and diagonals
+          const hgt = des === 'river' ? 2.2 + Math.sin(((k + 0.5) / n) * Math.PI) * 3.2 : des === 'truss' ? 3.6 : 1.6;
+          kit.box('metal_dark', ex, D + 0.25, ez, 0.3, 0.5, L, o);
+          kit.box(des === 'river' ? 'metal' : 'olive', ex, D + hgt, ez, 0.28, 0.3, L, o);
+          for (const a of [-L / 2, L / 2]) { const [qx, qz] = at(sx * (w / 2 - 0.15), a); kit.box('metal_dark', qx, D + hgt / 2, qz, 0.24, hgt, 0.24, o); }
+          const diag = Math.atan2(L, hgt);
+          kit.box('metal_dark', ex, D + hgt / 2, ez, 0.14, Math.hypot(L, hgt), 0.14, { rotY: ang, rotX: (k % 2 ? 1 : -1) * diag });
+          if (des === 'truss' || des === 'river') { const [tx, tz] = at(0, 0); if (sx > 0) kit.box('metal_dark', tx, D + hgt, tz, w, 0.18, 0.2, o); }
+          continue;
+        }
+        const broken = (des === 'damaged' || des === 'abandoned') && hsh(k, 7 + sx) < 0.3;
+        if (broken) { const [bx2, bz2] = at(sx * (w / 2 - 0.15), -L / 4); kit.box(timber ? 'wood_dark' : 'metal', bx2, D + 0.6, bz2, 0.08, 0.08, L * 0.4, { rotY: ang, rotX: 0.5 }); continue; }
+        const rail = timber ? 'wood_dark' : 'metal';
+        for (let d = -L / 2 + 0.6; d <= L / 2 - 0.4; d += 2) { const [px, pz] = at(sx * (w / 2 - 0.15), d); kit.box(timber ? 'wood_dark' : 'metal_dark', px, D + 0.55, pz, timber ? 0.16 : 0.08, 1.1, timber ? 0.16 : 0.08, o); }
+        kit.box(rail, ex, D + 1.05, ez, timber ? 0.14 : 0.1, timber ? 0.12 : 0.08, L, o);
+        kit.box(rail, ex, D + 0.6, ez, 0.06, 0.06, L, o);
+      }
+      // supports at the joint ahead of this span, down to the ground or river bed
+      if (k < n - 1) {
+        const ground = this.world.heightRaw(x1, z1);
+        const hgt = D - 1.4 - ground;
+        if (hgt > 0.6) {
+          if (timber) {
+            for (const sx of [-0.35, 0.35]) { const [px, pz] = [x1 + rx * sx * w, z1 + rz * sx * w]; kit.cylinder('wood_dark', px, ground + hgt / 2 + 0.5, pz, 0.22, 0.26, hgt + 1.2, 8); }
+            kit.box('wood_dark', x1, D - 0.75, z1, w * 0.9, 0.3, 0.4, o);
+          } else if (des === 'highway') {
+            for (const sx of [-0.3, 0.3]) { const [px, pz] = [x1 + rx * sx * w, z1 + rz * sx * w]; kit.cylinder('concrete_dark', px, ground + hgt / 2 - 0.5, pz, 0.7, 0.8, hgt + 1, 12); }
+            kit.box('concrete', x1, D - 1.2, z1, w * 0.95, 0.6, 1.6, o);
+          } else {
+            const thick = des === 'river' ? 2.4 : 1.4;
+            kit.box('concrete_dark', x1, ground + hgt / 2 - 0.5, z1, w * (des === 'river' ? 0.8 : 0.6), hgt + 1, thick, o);
+            kit.box('concrete', x1, D - 1.25, z1, w * 0.85, 0.35, thick + 0.4, o);
+          }
+        }
+      }
+      // abutments at both ends (wing walls into the embankment)
+      if (k === 0 || k === n - 1) {
+        const [ax, az] = k === 0 ? [x0, z0] : [x1, z1];
+        if (!onOther(ax, az)) {
+          const g = this.world.heightRaw(ax, az);
+          const ah = D - g + 2.5;
+          kit.box(timber ? 'stone' : 'concrete', ax, D - 0.3 - ah / 2, az, w + 0.6, ah, 1.6, o);
+        }
+      }
+      // railing colliders (keep people and cars on the deck)
+      for (let d = -L / 2; d <= L / 2; d += 0.9) {
+        for (const sx of [-1, 1]) {
+          const [x, z] = at(sx * (w / 2 - 0.15), d);
+          if (onOther(x, z)) continue;
+          tile.colliders.push(this.physics.addCylinder(x, z, 0.22, D, D + 1.0, { material: timber ? 'wood' : 'metal', tag: 'rail', blocksSight: false }));
+        }
       }
     }
+    const mesh = kit.build();
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    group.add(mesh);
   }
 
   // ---------------------------------------------------------- power lines

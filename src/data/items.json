@@ -394,7 +394,8 @@
    "use": {
     "time": 1.5,
     "hunger": 15,
-    "stamina": 40
+    "stamina": 40,
+    "staminaBuff": 90
    },
    "desc": "Quick calories. Restores stamina."
   },
@@ -1095,9 +1096,10 @@
    "weight": 0.3,
    "equip": {
     "slot": "back",
-    "slots": 5
+    "slots": 5,
+    "stamina": 0.98
    },
-   "desc": "+5 inventory slots."
+   "desc": "+5 inventory slots. Stamina drain -2%."
   },
   {
    "stack": 1,
@@ -1109,9 +1111,10 @@
    "weight": 1.6,
    "equip": {
     "slot": "back",
-    "slots": 24
+    "slots": 24,
+    "stamina": 1.05
    },
-   "desc": "+24 inventory slots."
+   "desc": "+24 inventory slots. Stamina drain +5%."
   },
   {
    "stack": 1,
@@ -1123,9 +1126,10 @@
    "weight": 2.6,
    "equip": {
     "slot": "back",
-    "slots": 32
+    "slots": 32,
+    "stamina": 1.12
    },
-   "desc": "+32 inventory slots. The biggest bag in Vesper."
+   "desc": "+32 inventory slots. The biggest bag in Vesper. Stamina drain +12%."
   },
   {
    "stack": 1,
@@ -1155,9 +1159,10 @@
     "zones": [
      "torso"
     ],
-    "slots": 3
+    "slots": 3,
+    "stamina": 1.06
    },
-   "desc": "Lightweight plates. Reduces torso damage by 40%."
+   "desc": "Lightweight plates. Reduces torso damage by 40%. Stamina drain +6%."
   },
   {
    "stack": 1,
@@ -1173,9 +1178,10 @@
     "zones": [
      "torso"
     ],
-    "slots": 6
+    "slots": 6,
+    "stamina": 1.04
    },
-   "desc": "Armoured vest with magazine pouches (+6 slots, 35%)."
+   "desc": "Armoured vest with magazine pouches (+6 slots, 35%). Stamina drain +4%."
   },
   {
    "stack": 1,
@@ -1191,9 +1197,10 @@
     "zones": [
      "torso"
     ],
-    "slots": 5
+    "slots": 5,
+    "stamina": 1.15
    },
-   "desc": "Ceramic plates front, back and sides. Reduces torso damage by 65%."
+   "desc": "Ceramic plates front, back and sides. Reduces torso damage by 65%. Stamina drain +15%."
   },
   {
    "stack": 1,
@@ -1229,9 +1236,10 @@
      "head"
     ],
     "insulation": 0.05,
-    "nvgMount": true
+    "nvgMount": true,
+    "stamina": 1.03
    },
-   "desc": "Thick ballistic shell with a night-vision mount. Reduces head damage by 62%."
+   "desc": "Thick ballistic shell with a night-vision mount. Reduces head damage by 62%. Stamina drain +3%."
   },
   {
    "stack": 1,
@@ -1378,6 +1386,402 @@
    "weight": 0.02,
    "quest": true,
    "desc": "Red security pass. Opens the gate and the lift at the Launch Site, far south."
+  },
+  {
+   "id": "repair_kit",
+   "name": "Vehicle Repair Kit",
+   "cat": "technical",
+   "stack": 2,
+   "weight": 2.2,
+   "shape": "kit",
+   "color": "#8a2a20",
+   "desc": "Military field repair kit: restores 60% of a vehicle's condition in one go (use F at the vehicle)."
+  },
+  {
+   "id": "glass_pane",
+   "name": "Replacement Window",
+   "cat": "technical",
+   "stack": 4,
+   "weight": 1.6,
+   "shape": "sheet",
+   "color": "#9fb4bc",
+   "desc": "Toughened glass cut to fit. With a wrench, refits one broken vehicle window (F at the vehicle)."
+  },
+  {
+   "id": "boots_trail",
+   "name": "Trail Runners",
+   "cat": "clothing",
+   "stack": 1,
+   "weight": 0.6,
+   "shape": "bag",
+   "color": "#3a5a6a",
+   "equip": {
+    "slot": "feet",
+    "stamina": 0.88
+   },
+   "desc": "Light running shoes. Stamina drain -12%. Wear in the feet slot."
+  },
+  {
+   "id": "boots_mil",
+   "name": "Military Boots",
+   "cat": "clothing",
+   "stack": 1,
+   "weight": 1.4,
+   "shape": "bag",
+   "color": "#2e2a22",
+   "equip": {
+    "slot": "feet",
+    "stamina": 0.95,
+    "insulation": 0.1,
+    "rain": 0.2
+   },
+   "desc": "Broken-in combat boots. Stamina drain -5%, warmer and drier."
+  },
+  {
+   "id": "boots_work",
+   "name": "Work Boots",
+   "cat": "clothing",
+   "stack": 1,
+   "weight": 1.8,
+   "shape": "bag",
+   "color": "#5a3a22",
+   "equip": {
+    "slot": "feet",
+    "insulation": 0.15,
+    "rain": 0.3
+   },
+   "desc": "Heavy steel-toe boots. Warm and waterproof, no stamina bonus."
+  },
+  {
+   "id": "energy_drink",
+   "name": "Energy Drink",
+   "cat": "drink",
+   "stack": 4,
+   "weight": 0.3,
+   "shape": "can",
+   "color": "#2a7ad0",
+   "use": {
+    "time": 2,
+    "thirst": 12,
+    "stamina": 60,
+    "staminaBuff": 300
+   },
+   "desc": "Caffeine and sugar. Restores stamina; for 5 minutes sprinting costs 28% less and recovery is 30% faster."
+  },
+  {
+   "id": "glucose",
+   "name": "Glucose Tablets",
+   "cat": "medical",
+   "stack": 6,
+   "weight": 0.05,
+   "shape": "pills",
+   "color": "#e8e0c0",
+   "use": {
+    "time": 1,
+    "stamina": 30,
+    "staminaBuff": 120
+   },
+   "desc": "Fast sugar. Restores stamina and gives a 2-minute stamina boost."
+  },
+  {
+   "id": "mil_electronics",
+   "name": "Military Electronics",
+   "cat": "technical",
+   "stack": 5,
+   "weight": 0.4,
+   "shape": "board",
+   "color": "#2a5a3a",
+   "desc": "Hardened circuit modules. Sentry gun component. Found only at the bunker and the airfield."
+  },
+  {
+   "id": "targeting_unit",
+   "name": "Targeting System",
+   "cat": "technical",
+   "stack": 2,
+   "weight": 1.2,
+   "shape": "box",
+   "color": "#3a3f44",
+   "desc": "Optical tracker with a thermal sensor. Sentry gun component. Bunker and airfield only."
+  },
+  {
+   "id": "control_board",
+   "name": "Fire-Control Board",
+   "cat": "technical",
+   "stack": 3,
+   "weight": 0.3,
+   "shape": "board",
+   "color": "#1f4a6a",
+   "desc": "Weapon-mount controller. Sentry gun component. Bunker and airfield only."
+  },
+  {
+   "id": "servo_assembly",
+   "name": "Servo Assembly",
+   "cat": "technical",
+   "stack": 3,
+   "weight": 1.5,
+   "shape": "gear",
+   "color": "#7a7a70",
+   "desc": "Traverse and elevation drives. Sentry gun component. Bunker and airfield only."
+  },
+  {
+   "id": "power_unit",
+   "name": "Power Unit",
+   "cat": "technical",
+   "stack": 2,
+   "weight": 2.4,
+   "shape": "carbattery",
+   "color": "#3a3a2a",
+   "desc": "Sealed military power pack. Sentry gun component. Bunker and airfield only."
+  },
+  {
+   "id": "turret_mount",
+   "name": "Reinforced Mount",
+   "cat": "technical",
+   "stack": 1,
+   "weight": 6,
+   "shape": "box",
+   "color": "#4a5038",
+   "desc": "Armoured pedestal for a weapon mount. Sentry gun component. Bunker and airfield only."
+  },
+  {
+   "id": "rocket_he",
+   "name": "HE Rocket",
+   "cat": "ammo",
+   "stack": 2,
+   "weight": 2.6,
+   "shape": "bottle",
+   "color": "#4a5038",
+   "desc": "High-explosive rocket for the RL-7 launcher. Very rare."
+  },
+  {
+   "id": "explosive_compound",
+   "name": "Plastic Explosive",
+   "cat": "explosive",
+   "stack": 4,
+   "weight": 0.6,
+   "shape": "c4",
+   "color": "#d8d0b0",
+   "desc": "Military explosive block. Crafting material for C4 and breaching charges (military workbench). Bunker, airfield and military stores only."
+  },
+  {
+   "id": "breach_charge",
+   "name": "Breaching Charge",
+   "cat": "explosive",
+   "stack": 3,
+   "weight": 0.8,
+   "shape": "c4",
+   "color": "#4a4a3a",
+   "use": {
+    "time": 1.5,
+    "placeCharge": "breach"
+   },
+   "desc": "Shaped charge: plant it on a door, gate or wall and it blows 10 s later. Small blast, very strong against doors and gates."
+  },
+  {
+   "id": "mil_toolkit",
+   "name": "Military Toolkit",
+   "cat": "tool",
+   "stack": 1,
+   "weight": 3.5,
+   "shape": "kit",
+   "color": "#4a5038",
+   "tool": [
+    "tool_wrench",
+    "tool_hammer"
+   ],
+   "desc": "Complete armourer's kit: counts as a wrench and a hammer, and repairs base pieces for half the materials."
+  },
+  {
+   "id": "surgical_kit",
+   "name": "Surgical Kit",
+   "cat": "medical",
+   "stack": 1,
+   "weight": 1.2,
+   "shape": "kit",
+   "color": "#d8d8d0",
+   "use": {
+    "time": 10,
+    "stopBleed": true,
+    "health": 85,
+    "pain": -1,
+    "staminaBuff": 60
+   },
+   "desc": "Trauma surgery set: closes every wound, restores most of your health and kills the pain."
+  },
+  {
+   "id": "blood_bag",
+   "name": "Blood Bag",
+   "cat": "medical",
+   "stack": 2,
+   "weight": 0.5,
+   "shape": "bag",
+   "color": "#7a1010",
+   "use": {
+    "time": 8,
+    "health": 45
+   },
+   "desc": "Field transfusion. Restores a lot of health slowly \u2014 use when safe."
+  },
+  {
+   "id": "helmet_visor",
+   "name": "Ballistic Visor Helmet",
+   "cat": "clothing",
+   "stack": 1,
+   "weight": 2.8,
+   "shape": "helmet",
+   "color": "#22261e",
+   "equip": {
+    "slot": "head",
+    "armor": 0.7,
+    "zones": [
+     "head"
+    ],
+    "insulation": 0.05,
+    "nvgMount": true,
+    "stamina": 1.04
+   },
+   "desc": "Heavy helmet with an armoured face shield. Reduces head damage by 70%. Night-vision mount. Stamina drain +4%."
+  },
+  {
+   "id": "vest_eod",
+   "name": "EOD Armour Vest",
+   "cat": "clothing",
+   "stack": 1,
+   "weight": 11,
+   "shape": "vest",
+   "color": "#3a4030",
+   "equip": {
+    "slot": "vest",
+    "armor": 0.75,
+    "zones": [
+     "torso",
+     "arm"
+    ],
+    "slots": 2,
+    "blast": 0.5,
+    "stamina": 1.22
+   },
+   "desc": "Bomb-disposal armour: torso and arms, 75% protection and half damage from explosions. Very heavy: stamina drain +22%."
+  },
+  {
+   "id": "mil_battery",
+   "name": "Military Power Cell",
+   "cat": "technical",
+   "stack": 4,
+   "weight": 0.15,
+   "shape": "battery",
+   "color": "#4a5038",
+   "desc": "Lasts four times as long as an ordinary battery in night vision and lights (used first, automatically)."
+  },
+  {
+   "id": "field_radio",
+   "name": "Field Radio",
+   "cat": "tool",
+   "stack": 1,
+   "weight": 1.4,
+   "shape": "box",
+   "color": "#4a5038",
+   "desc": "Carry it to intercept raid traffic: warnings tell you the raid type, the size of the force and the direction it comes from."
+  },
+  {
+   "id": "mil_rations",
+   "name": "Military Rations",
+   "cat": "food",
+   "stack": 3,
+   "weight": 0.6,
+   "shape": "box",
+   "color": "#5a5a3a",
+   "use": {
+    "time": 4,
+    "hunger": 55,
+    "thirst": 10,
+    "stamina": 20
+   },
+   "desc": "Complete ready meal. Very filling."
+  },
+  {
+   "id": "sunshine",
+   "name": "SUNSHINE",
+   "cat": "misc",
+   "stack": 1,
+   "weight": 4,
+   "shape": "sunshine",
+   "color": "#d8c040",
+   "unique": true,
+   "use": {
+    "time": 2.5,
+    "sunshine": true
+   },
+   "desc": "Experimental illumination device from a sealed bunker vault. Activating it floods 100 m around you with blinding light for exactly one minute, then it burns out. Cannot be crafted. One of a kind."
+  },
+  {
+   "id": "keycard_bunker",
+   "name": "Bunker 7 Key Card",
+   "cat": "misc",
+   "stack": 1,
+   "weight": 0.02,
+   "shape": "keycard",
+   "color": "#b84a3a",
+   "quest": true,
+   "desc": "Level 3 clearance card from Bunker 7. Opens the restricted armoury on level B2."
+  },
+  {
+   "id": "note_sunshine",
+   "name": "Containment Log",
+   "cat": "misc",
+   "stack": 1,
+   "weight": 0.05,
+   "shape": "paper",
+   "color": "#e8e0c8",
+   "use": {
+    "time": 1,
+    "note": "Containment log, Bunker 7: \"Prototype 3 went to full output for sixty seconds during the March test. Hollis is still blind. Command wants it sealed \u2014 no keys, no handles, the blast door welded from this side. If anyone finds this: it works once, and then it is slag.\""
+   },
+   "desc": "A clipboard page from the containment antechamber. Use to read."
+  },
+  {
+   "id": "rotor_assembly",
+   "name": "Rotor Assembly",
+   "cat": "technical",
+   "stack": 1,
+   "weight": 9,
+   "shape": "plank",
+   "color": "#3a3a36",
+   "needsTool": "tool_wrench",
+   "desc": "Main rotor hub and blade grips. Helicopter repair part (install with F and a wrench)."
+  },
+  {
+   "id": "turbine_parts",
+   "name": "Turbine Components",
+   "cat": "technical",
+   "stack": 1,
+   "weight": 5,
+   "shape": "gear",
+   "color": "#8a8a80",
+   "needsTool": "tool_wrench",
+   "desc": "Compressor blades, seals and igniters. Helicopter repair part."
+  },
+  {
+   "id": "avionics",
+   "name": "Avionics Module",
+   "cat": "technical",
+   "stack": 1,
+   "weight": 2,
+   "shape": "board",
+   "color": "#1f4a6a",
+   "needsTool": "tool_wrench",
+   "desc": "Flight instruments and control computer. Helicopter repair part."
+  },
+  {
+   "id": "fuel_system_kit",
+   "name": "Fuel System Kit",
+   "cat": "technical",
+   "stack": 1,
+   "weight": 3,
+   "shape": "kit",
+   "color": "#7a5a2a",
+   "needsTool": "tool_wrench",
+   "desc": "Pump, filters and lines. Helicopter repair part."
   }
  ]
 }

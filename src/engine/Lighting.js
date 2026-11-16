@@ -226,7 +226,9 @@ export class Lighting {
     this.hemi.color.copy(p.hemiSky);
     this.hemi.groundColor.copy(p.hemiGround);
     // night vision: an infrared illuminator lifts the darkest scenes a little
-    this.hemi.intensity = (p.hemiI + weather.flash * 2) * dim + (this.nvAmbient || 0);
+    // SUNSHINE device nearby: the whole area is flooded with light
+    const sun = this.sunshineK || 0;
+    this.hemi.intensity = (p.hemiI + weather.flash * 2) * dim + (this.nvAmbient || 0) + sun * 9;
 
     // shadows follow the camera (cascades) or the player (single map)
     this.shadows.update(this.view.camera, this.lightDir, focus);
@@ -253,7 +255,7 @@ export class Lighting {
     // night vision amplifies, but the tube saturates: cap the boosted exposure so the
     // picture keeps its detail instead of blowing out to a flat green field
     const nvG = this.nvGain || 1;
-    this.r.toneMappingExposure = nvG > 1 ? Math.max(baseExp, Math.min(baseExp * nvG, 2.6 + 0.12 * nvG)) : baseExp;
+    this.r.toneMappingExposure = (nvG > 1 ? Math.max(baseExp, Math.min(baseExp * nvG, 2.6 + 0.12 * nvG)) : baseExp) * (1 + sun * 1.6);
     this.sky.position.copy(this.view.camera.position);
 
     // viewmodel lights mirror the world lighting

@@ -2,6 +2,12 @@ import lootData from '../data/lootTables.json';
 import { ItemDB } from './ItemDatabase.js';
 import { Inventory } from './Inventory.js';
 import { RNG, hashString } from '../core/MathUtil.js';
+import resetData from '../data/lootResets.json';
+import { settings } from '../core/SettingsManager.js';
+
+export const MAJOR_POIS = resetData.major;
+const MAJOR_IDS = new Set(MAJOR_POIS.map((m) => m.poi));
+const poiOf = (id) => { const i = id.indexOf(':'); return i > 0 ? id.slice(0, i) : null; };
 
 // Container contents: generated deterministically on first access from the container's
 // loot profile, persisted once touched, and restocked only when empty and after the
@@ -21,8 +27,13 @@ export function rollLoot(profileName, seed, capacity = 12) {
   }
   if (rng.chance(profile.empty || 0)) return inv;
   const rolls = rng.int(profile.rolls[0], profile.rolls[1]);
-  for (let r = 0; r < rolls; r++) {
-    const e = rng.weighted(profile.entries);
+  // settings: rare items scale with the rare-loot chance; sentry components can be limited
+  // to the bunker and airfield (their own profiles) instead of every military site
+  const rareMul = settings.get('rareLootChance') ?? 1;
+  const partsOk = settings.get('turretParts') === 'military';
+  const entries = profile.entries.filter((e) => !(e.turretPart && !partsOk)).map((e) => (e.rare ? { ...e, weight: e.weight * rareMul } : e)).filter((e) => e.weight > 0);
+  for (let r = 0; r < rolls && entries.length; r++) {
+    const e = rng.weighted(entries);
     if (!ItemDB.exists(e.item)) continue;
     const def = ItemDB.get(e.item);
     const qty = e.min !== undefined ? rng.int(e.min, e.max ?? e.min) : 1;
@@ -52,12 +63,29 @@ export class LootSystem {
       const inv = rollLoot(profile, hashString(`${id}#${cycle}`), capacity);
       c = { inv, cycle, profile, once: !!once };
       this.containers.set(id, c);
-    } else if (!c.once && this.respawnMinutes > 0 && cycle > c.cycle && c.inv.usedSlots() === 0) {
+    } else if (!c.once && !MAJOR_IDS.has(poiOf(id)) && this.respawnMinutes > 0 && cycle > c.cycle && c.inv.usedSlots() === 0) {
       c.inv = rollLoot(profile, hashString(`${id}#${cycle}`), capacity);
       c.cycle = cycle;
     }
     c.inv.name = c.inv.name || 'Container';
     return c.inv;
+  }
+
+  /**
+   * Reset every generated container of a location (major sites only reset this way).
+   * Returns how many containers were actually re-rolled (0 = nothing had been opened).
+   */
+  resetPOI(poiId, epoch) {
+    let n = 0;
+    for (const [id, c] of this.containers) {
+      if (c.custom || !c.profile || poiOf(id) !== poiId) continue;
+      const cap = c.inv.slots.length;
+      const fresh = rollLoot(c.profile, hashString(`${id}#reset${epoch}`), cap);
+      c.inv.slots = fresh.slots;
+      c.inv.version = (c.inv.version || 0) + 1;
+      n++;
+    }
+    return n;
   }
 
   /** Register an existing inventory (corpses, dropped piles, base storage). */

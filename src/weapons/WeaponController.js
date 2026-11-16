@@ -320,7 +320,16 @@ export class WeaponController {
     const origin = cam.position;
     const fwd = _v.set(0, 0, -1).applyQuaternion(cam.quaternion);
     const muzzleWorld = this._muzzleWorld();
-    const pellets = w.pellets || 1;
+    if (w.launcher) {
+      // rocket launcher: one rocket, a backblast and no bullet
+      const dir = randomCone(fwd, (spread * Math.PI / 180) * Math.sqrt(Math.random()));
+      const start = origin.clone().addScaledVector(dir, 0.9);
+      this.game.explosives.launch(start, dir, w.launcher, this.game.player.character);
+      const back = origin.clone().addScaledVector(fwd, -1.2);
+      this.game.effects.emit(back.x, back.y, back.z, { color: [0.75, 0.72, 0.68], count: 24, speed: 4, size: 0.6, dir: { x: -fwd.x, y: -fwd.y, z: -fwd.z }, spread: 0.6, life: 1.8, gravity: -0.3, grow: 1.4, alpha: 0.6 });
+      if (this.model?.mag) this.model.mag.visible = false;
+    }
+    const pellets = w.launcher ? 0 : w.pellets || 1;
     for (let p = 0; p < pellets; p++) {
       const s = (spread + (pellets > 1 ? w.pelletSpread : 0)) * Math.PI / 180;
       const dir = randomCone(fwd, s * Math.sqrt(Math.random()));
@@ -526,11 +535,18 @@ export class WeaponController {
         if (m?.mag && m.magHome) {
           // magazine follows the support hand once it leaves the weapon
           m.mag.position.copy(m.magHome);
-          m.mag.position.y -= k.magOut * 0.32;
-          m.mag.position.z += k.magOut * 0.06;
-          m.mag.position.x -= k.magOut * 0.05;
-          m.mag.rotation.z = k.magOut * 0.5;
-          m.mag.visible = k.magOut < 0.98;
+          if (m.frontLoad) {
+            // launcher: the new rocket comes from below and slides into the front of the tube
+            m.mag.position.z -= k.magOut * 0.45;
+            m.mag.position.y -= k.magOut * 0.25;
+            m.mag.visible = this.stack.data.ammo > 0 || t > 0.35;
+          } else {
+            m.mag.position.y -= k.magOut * 0.32;
+            m.mag.position.z += k.magOut * 0.06;
+            m.mag.position.x -= k.magOut * 0.05;
+            m.mag.rotation.z = k.magOut * 0.5;
+            m.mag.visible = k.magOut < 0.98;
+          }
         }
         if (m?.charging && m.chargingZ !== undefined) m.charging.position.z = m.chargingZ + k.charge * 0.07;
         if (m?.slide && ph.empty) m.slide.position.z = 0.025 * (1 - k.charge);
@@ -684,7 +700,7 @@ export class WeaponController {
       d.charge -= dt / 900; // ~15 minutes per battery
       if (d.charge <= 0) {
         const inv = this.equipment().inventory;
-        if (inv.remove('battery', 1)) { d.charge = 1; bus.emit('notify', { text: 'Battery replaced', kind: 'info' }); }
+        if (inv.remove('mil_battery', 1)) { d.charge = 4; bus.emit('notify', { text: 'Military power cell fitted', kind: 'info' }); } else if (inv.remove('battery', 1)) { d.charge = 1; bus.emit('notify', { text: 'Battery replaced', kind: 'info' }); }
         else { d.charge = 0; this.lightOn = false; bus.emit('notify', { text: 'Battery dead', kind: 'warn' }); }
       }
     }

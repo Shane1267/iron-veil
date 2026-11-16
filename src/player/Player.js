@@ -17,6 +17,7 @@ export const SKILLS = {
   crafting: { name: 'Crafting', desc: 'Faster crafting' },
   survival: { name: 'Survival', desc: 'Slower hunger and thirst' },
   vehicles: { name: 'Vehicle Operation', desc: 'Experience with vehicles' },
+  fitness: { name: 'Fitness', desc: 'Sprinting trains it: less stamina drain, faster recovery' },
 };
 
 export class Skills {
@@ -63,7 +64,7 @@ export class Player {
       faction: 'player', isPlayer: true, colliderOwner: 'player',
       get pos() { return self.controller.pos; },
       get yaw() { return self.controller.yaw; },
-      get stance() { return self.controller.stance; },
+      get stance() { return self.game?.vehicles?.current ? 'sit' : self.controller.stance; },
       get vel() { return self.controller.vel; },
       get alive() { return !self.survival.dead; },
       get lightOn() { return self.game.weapons?.lightActive || false; },
@@ -99,7 +100,7 @@ export class Player {
       bus.emit('notify', { text: `${def.name} can't be used directly`, kind: 'info' });
       return;
     }
-    if (def.use.refuel || def.use.revealRegion || def.use.read || def.use.placeCharge || def.use.detonate) {
+    if (def.use.refuel || def.use.revealRegion || def.use.read || def.use.placeCharge || def.use.detonate || def.use.sunshine || def.use.note) {
       this.game.useSpecialItem(s.id, slotIndex);
       return;
     }

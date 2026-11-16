@@ -11,6 +11,10 @@ export const MATERIALS = {
   metal: { resist: 6.0, sound: 'metal', decal: 'metal' },
   sheet: { resist: 2.0, sound: 'metal', decal: 'metal' }, // thin corrugated sheet
   glass: { resist: 0.15, sound: 'glass', decal: 'glass' },
+  carbody: { resist: 3.0, sound: 'metal', decal: 'metal' }, // car door / body panel (outer skin + inner)
+  engine: { resist: 60, sound: 'metal', decal: 'metal' }, // engine block
+  armor: { resist: 380, sound: 'metal', decal: 'metal' }, // vehicle armour plate
+  armorglass: { resist: 260, sound: 'glass', decal: 'glass' }, // bullet-resistant glass (until it fails)
   sand: { resist: 30, sound: 'dirt', decal: 'dirt' },
   rock: { resist: 40, sound: 'rock', decal: 'rock' },
   terrain: { resist: 100, sound: 'dirt', decal: 'dirt' },
@@ -33,6 +37,25 @@ export class PhysicsWorld {
     this.colliders = new Map();
     this.stamp = 1;
     this.ladders = new Set();
+    // moving shapes with their own ray test (vehicles: oriented body panels and windows)
+    this.dynamic = new Set();
+  }
+
+  /** Hits from dynamic shapes: each provider has x, y, z, r (bounding sphere) and raycast(). */
+  _dynamicHits(ox, oy, oz, dx, dy, dz, maxDist, filter, out) {
+    for (const p of this.dynamic) {
+      const fx = p.x - ox, fy = p.y - oy, fz = p.z - oz;
+      const tc = fx * dx + fy * dy + fz * dz;
+      if (tc < -p.r || tc > maxDist + p.r) continue;
+      const d2 = fx * fx + fy * fy + fz * fz - tc * tc;
+      if (d2 > p.r * p.r) continue;
+      for (const h of p.raycast(ox, oy, oz, dx, dy, dz, maxDist)) {
+        if (h.t > maxDist) continue;
+        if (filter && !filter(h.collider)) continue;
+        out.push(h);
+      }
+    }
+    return out;
   }
 
   // ---------------------------------------------------------- registration
@@ -349,6 +372,9 @@ export class PhysicsWorld {
       if (t0 < best) { best = t0; bestC = c; }
       return false;
     });
+    if (this.dynamic.size) {
+      for (const h of this._dynamicHits(ox, oy, oz, dx, dy, dz, best, filter, [])) if (h.t < best) { best = h.t; bestC = h.collider; }
+    }
     let terrainT = Infinity;
     if (includeTerrain) terrainT = this.raycastTerrain(ox, oy, oz, dx, dy, dz, best);
     if (terrainT < best) return { t: terrainT, collider: null, material: 'terrain' };
@@ -364,6 +390,7 @@ export class PhysicsWorld {
       hits.push({ t: t0, tExit: t1, collider: c, material: c.material });
       return false;
     });
+    if (this.dynamic.size) this._dynamicHits(ox, oy, oz, dx, dy, dz, maxDist, filter, hits);
     hits.sort((a, b) => a.t - b.t);
     const far = hits.length ? Math.min(maxDist, hits[hits.length - 1].tExit + 1) : maxDist;
     const terrainT = this.raycastTerrain(ox, oy, oz, dx, dy, dz, maxDist);

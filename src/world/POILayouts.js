@@ -400,6 +400,224 @@ export const LAYOUTS = {
     L.s('guardTower', 255, -230, 1, { profile: 'military', sandbags: true, height: 6 });
     for (const [x, z] of [[-60, -60], [60, -60], [-200, 30], [200, 30]]) L.s('floodlight', x, z, 0, 10);
     L.s('tent', 60, -40, 2, { profile: 'airfield' });
+    // expansion: maintenance hangar and workshops, vehicle sheds, fuel farm, control
+    // building, equipment sheds and supply containers
+    L.s('hangar', 200, -20, 0, 30, 36, 13);
+    L.b('workshop', 200, -75, 0, { profile: 'industrial' });
+    L.b('workshop', 230, -75, 0, { profile: 'airfield' });
+    L.b('garage', -205, -115, 0, { profile: 'industrial' });
+    L.s('openShed', -205, -88, 0, 14, 8, 4.5);
+    L.s('hTank', -220, -60, 0, 12, 2.0, 'paint_white');
+    L.s('hTank', -220, -30, 0, 12, 2.0, 'paint_white');
+    L.s('fuelPump', -200, -40, 0);
+    L.b('office', -60, -120, 1, { floors: 2, profile: 'airfield', furniture: 'control' });
+    for (let i = 0; i < 3; i++) L.s('container', 110 + i * 9, -160, 1, 'olive', 'airfield');
+    L.s('container', 140, -160, 0, 'corrugated_rust', 'military');
+    L.b('shed', 160, -95, 0, { profile: 'airfield' });
+    L.b('shed', -120, -100, 1, { profile: 'industrial' });
+    L.s('helipad', 150, 10);
+    L.s('floodlight', 150, -20, 0, 10);
+  },
+  // ---------------------------------------------------------------- update 3: new locations
+  roadside_stop(L) {
+    // roadside diner with a workshop garage and a fuel canopy
+    const r = L.rng;
+    L.sign(-40, 46, 0, L.poi.name);
+    L.b('shop', -12, -8, L.faceRot(0, 60), { profile: 'kitchen', furniture: 'shop' });
+    L.b('garage', 18, -12, 0, { profile: 'industrial' });
+    L.s('canopy', 0, 26, 14, 9);
+    L.s('fuelPump', -3, 26, 0); L.s('fuelPump', 3, 26, 0);
+    L.s('dumpster', -26, -12, 1, 'residential');
+    L.s('streetLight', -14, 20, 0); L.s('streetLight', 20, 20, 0);
+    L.s('bench', -18, 8, 0);
+    L.s('wreckCar', 30, 10, r.next() * 6);
+    if (r.chance(0.6)) L.s('wreckCar', -30, 22, r.next() * 6);
+    L.s('fuelBarrels', 28, -22);
+    for (const [x, z] of [[-40, -30], [40, -28], [-44, 10]]) L.tree(x, z, r.chance(0.5) ? 'birch' : 'broadleaf', 0.9 + r.next() * 0.3);
+  },
+  hamlet(L) {
+    const r = L.rng;
+    L.sign(-L.poi.radius * 0.8, L.poi.radius * 0.5, 0, L.poi.name);
+    L.alongRoads({ count: 5, arch: ['house', 'house2', 'cabin', 'house'], offset: 12, spacing: 24 });
+    L.yards(['house', 'house2']);
+    L.b('barn', 40, -36, 1);
+    L.b('shed', -36, -30, 2);
+    L.s('well', 6, -20);
+    L.s('laundryLine', -20, -18, 0);
+    L.s('gardenBed', 24, 30, 0, 5, 6);
+    L.s('woodPile', 46, -20, 0);
+    for (let i = 0; i < 6; i++) L.tree(-60 + r.next() * 120, -60 + r.next() * 120, r.chance(0.4) ? 'birch' : 'broadleaf', 0.85 + r.next() * 0.35);
+  },
+  abandoned_farm(L) {
+    // collapsed and overgrown: broken glass, heavy clutter, rubble, a dead tractor
+    const r = L.rng;
+    L.sign(-60, 60, 0, L.poi.name);
+    L.b('house2', -12, 0, 0, { ruin: 1.6, glassChance: 0.05 });
+    L.b('barn', 30, -18, 1, { ruin: 1.8 });
+    L.b('shed', -36, -26, 0, { ruin: 1.5 });
+    L.s('silo', 46, 22, 3.2, 12);
+    L.s('tractor', 18, 22, r.next() * 6);
+    L.s('hayStack', 52, -40, 0);
+    L.s('wreckCar', -30, 26, r.next() * 6);
+    L.scatterRubble(8);
+    for (let i = 0; i < 10; i++) L.tree(-60 + r.next() * 120, -60 + r.next() * 120, r.chance(0.5) ? 'dead' : 'broadleaf', 0.7 + r.next() * 0.5);
+  },
+  mil_outpost(L) {
+    L.sign(-40, 50, 0, L.poi.name);
+    L.s('hesco', -36, -32, 36, -32);
+    L.s('hesco', -36, -32, -36, 24);
+    L.s('hesco', 36, -32, 36, 24);
+    L.s('tent', -18, -14, 0, { profile: 'military' });
+    L.s('tent', 2, -14, 0, { profile: 'military' });
+    L.s('tent', 20, -14, 0, { profile: 'military', mat: 'olive' });
+    L.s('guardTower', -32, -28, 0, { profile: 'military', sandbags: true });
+    L.s('guardTower', 32, 20, 2, { profile: 'military', sandbags: true });
+    L.b('booth', 0, 22, 0);
+    L.s('sandbags', -12, 30, 0, 6);
+    L.s('sandbags', 12, 30, 0, 6);
+    L.s('floodlight', -24, 10, 0, 8);
+    L.s('fuelBarrels', 26, 0);
+    L.s('container', -24, 12, 1, 'olive', 'military');
+  },
+  supply_depot(L) {
+    L.sign(-70, 80, 0, L.poi.name);
+    L.perimeter(-80, -70, 80, 70, 'chain', [{ side: 'S', at: 0, w: 10 }]);
+    L.s('boomGate', 0, 72, 0, 10);
+    L.b('booth', 12, 62, 0);
+    L.b('warehouse', -30, -30, 0, { profile: 'military' });
+    L.b('warehouse', 30, -30, 0, { profile: 'military_high' });
+    L.b('barracks', -40, 30, 1);
+    for (let i = 0; i < 5; i++) L.s('container', 10 + i * 8, 20, 1, i % 2 ? 'olive' : 'corrugated', i === 2 ? 'military' : 'industrial');
+    for (let i = 0; i < 3; i++) L.s('container', 14 + i * 8, 38, 1, 'olive', 'military');
+    L.s('militaryTruck', 60, 0, 1);
+    L.s('guardTower', -76, -66, 0, { profile: 'military', sandbags: true });
+    L.s('guardTower', 76, 66, 2, { profile: 'military', sandbags: true });
+    for (const [x, z] of [[-60, 0], [60, -50]]) L.s('floodlight', x, z, 0, 10);
+  },
+  factory(L) {
+    const r = L.rng;
+    L.sign(-90, 100, 0, L.poi.name);
+    L.perimeter(-110, -90, 110, 95, 'wall', [{ side: 'S', at: 0, w: 12 }]);
+    L.b('warehouse', -40, -30, 0, { w: 40, d: 26, profile: 'industrial' });
+    L.b('warehouse', 40, -40, 0, { w: 30, d: 22, profile: 'industrial' });
+    L.b('office', 50, 40, 2, { floors: 2, profile: 'office' });
+    L.s('chimney', -70, -60, 34);
+    L.s('tank', -80, 30, 5, 9, 'paint_white');
+    L.s('tank', -64, 30, 5, 9, 'paint_white');
+    L.s('hTank', 0, 40, 0, 10, 1.6, 'rust');
+    L.s('conveyor', -10, 10, 0, 20, 6);
+    for (let i = 0; i < 4; i++) L.s('container', -20 + i * 9, 60, 1, ['corrugated', 'corrugated_rust', 'corrugated_blue'][i % 3], 'industrial');
+    L.s('pipe', -70, 30, -40, -10, 0.5, 4);
+    L.s('fuelBarrels', 80, -10);
+    L.scatterRubble(5);
+    if (r.chance(0.5)) L.s('wreckCar', 70, 70, r.next() * 6);
+  },
+  maintenance_yard(L) {
+    L.sign(-70, 70, 0, L.poi.name);
+    L.b('workshop', -24, -20, 0, { profile: 'industrial' });
+    L.b('workshop', 20, -26, 0, { profile: 'industrial' });
+    L.b('garage', 40, 20, 1, { profile: 'industrial' });
+    L.s('trainCar', -30, 30, 1, 'box');
+    L.s('trainCar', -30, 52, 1, 'tank', 'paint_white');
+    L.s('openShed', 0, 30, 0, 12, 8, 4.5);
+    L.s('tractor', 0, 30, 0);
+    L.s('hTank', 50, -40, 0, 8, 1.4, 'paint_yellow');
+    L.s('container', 60, 50, 0, 'corrugated_rust', 'industrial');
+    L.s('fuelBarrels', -50, -10);
+    L.s('logPile', 20, 60, 1, 7);
+  },
+  guard_post(L) {
+    L.sign(-24, 30, 0, L.poi.name);
+    L.roadside('boomGate', 0, 0, 0, 8);
+    L.s('guardTower', -14, -12, 0, { profile: 'military', sandbags: true });
+    L.b('booth', 12, -10, 0);
+    L.s('jersey', -8, 14, 0); L.s('jersey', 8, 14, 0);
+    L.s('sandbags', 0, -20, 0, 6);
+    L.s('tent', 22, 16, 2, { profile: 'military' });
+    L.s('floodlight', -20, 10, 0, 8);
+  },
+  mil_garage(L) {
+    L.sign(-60, 60, 0, L.poi.name);
+    L.perimeter(-60, -55, 60, 55, 'chain', [{ side: 'S', at: 0, w: 10 }]);
+    L.b('garage', -30, -30, 0, { profile: 'military' });
+    L.b('garage', 0, -30, 0, { profile: 'industrial' });
+    L.b('garage', 30, -30, 0, { profile: 'military' });
+    L.s('militaryTruck', -20, 10, 1);
+    L.s('militaryTruck', 10, 14, 1);
+    L.s('openShed', 40, 20, 1, 12, 8, 4.5);
+    L.s('fuelPump', 40, 40, 0);
+    L.s('fuelBarrels', 48, -6);
+    L.b('booth', 12, 46, 0);
+    L.s('guardTower', -56, 50, 3, { profile: 'military', sandbags: true });
+  },
+  storage_yard(L) {
+    const r = L.rng;
+    L.sign(-70, 70, 0, L.poi.name);
+    L.perimeter(-70, -60, 70, 60, 'chain', [{ side: 'S', at: 0, w: 10 }]);
+    L.b('office', 46, 40, 2, { floors: 1, profile: 'office' });
+    const cols = ['corrugated', 'corrugated_rust', 'corrugated_blue', 'olive'];
+    for (let row = 0; row < 4; row++) for (let i = 0; i < 5; i++) {
+      if (r.chance(0.15)) continue;
+      L.s('container', -50 + i * 16, -40 + row * 16, 0, cols[Math.floor(r.next() * 4)], r.chance(0.2) ? 'military' : 'industrial');
+    }
+    for (const [x, z] of [[-60, 50], [60, -50]]) L.s('floodlight', x, z, 0, 10);
+  },
+  ghost_village(L) {
+    // abandoned years ago: wrecked houses, a gutted church, rubble and overgrowth
+    const r = L.rng;
+    L.sign(-L.poi.radius * 0.8, L.poi.radius * 0.55, 0, L.poi.name);
+    L.alongRoads({ count: 7, arch: ['house', 'house2', 'house', 'shack'], offset: 13, spacing: 22 });
+    L.b('church', 40, 30, 3, { ruin: 1.8, glassChance: 0.02 });
+    L.b('shop', -40, 26, 1, { ruin: 1.6, glassChance: 0.05 });
+    for (let i = 0; i < 4; i++) L.s('wreckCar', -50 + r.next() * 100, -50 + r.next() * 100, r.next() * 6);
+    L.scatterRubble(12);
+    for (let i = 0; i < 14; i++) L.tree(-90 + r.next() * 180, -90 + r.next() * 180, r.chance(0.5) ? 'dead' : 'birch', 0.7 + r.next() * 0.5);
+  },
+  fuel_stop(L) {
+    L.sign(-30, 40, 0, L.poi.name);
+    L.s('canopy', 0, 14, 16, 10);
+    L.s('fuelPump', -4, 14, 0); L.s('fuelPump', 4, 14, 0);
+    L.b('kiosk', -18, -10, 0);
+    L.b('garage', 16, -14, 0, { profile: 'industrial' });
+    L.s('hTank', 34, 10, 1, 8, 1.4, 'paint_white');
+    L.s('fuelBarrels', 30, -24);
+    L.s('streetLight', -10, 26, 0);
+  },
+  hunting_cabin(L) {
+    const r = L.rng;
+    L.b('cabin', 0, 0, r.int(0, 3), { profile: 'hunting' });
+    L.s('woodPile', 8, 6, 0);
+    L.s('logPile', -10, 8, 1, 5);
+    L.s('campfire', 6, 14);
+    L.s('tent', -12, -12, 1, { profile: 'hunting', mat: 'olive' });
+    for (let i = 0; i < 12; i++) { const a = r.next() * Math.PI * 2, d = 16 + r.next() * 20; L.tree(Math.cos(a) * d, Math.sin(a) * d, r.chance(0.6) ? 'pineA' : 'birch', 0.9 + r.next() * 0.4); }
+  },
+  radio_tower(L) {
+    L.s('commMast', 0, 0, 46);
+    L.perimeter(-18, -18, 18, 18, 'chain', [{ side: 'S', at: 6, w: 4 }]);
+    L.b('booth', -8, 8, 0, { profile: 'office' });
+    L.s('fuelBarrels', 8, 10);
+    L.s('hTank', 10, -10, 0, 4, 0.9, 'paint_white');
+  },
+  ranger_outpost(L) {
+    const r = L.rng;
+    L.b('ranger', 0, 0, r.int(0, 3), { profile: 'hunting' });
+    L.s('guardTower', 18, -14, 1, { profile: 'hunting', height: 9 });
+    L.s('woodPile', -12, 8, 0);
+    L.s('campfire', 10, 14);
+    for (let i = 0; i < 10; i++) { const a = r.next() * Math.PI * 2, d = 24 + r.next() * 20; L.tree(Math.cos(a) * d, Math.sin(a) * d, r.chance(0.5) ? 'pineA' : 'pineB', 0.9 + r.next() * 0.4); }
+  },
+  holdout(L) {
+    // isolated raider compound
+    L.sign(-50, 60, 0, L.poi.name);
+    L.perimeter(-45, -40, 45, 45, 'scrap', [{ side: 'S', at: 0, w: 7 }]);
+    for (let i = 0; i < 4; i++) L.b('shack', -26 + (i % 2) * 22, -20 + Math.floor(i / 2) * 22, (i % 2) * 2, { profile: 'camp' });
+    L.b('workshop', 26, 26, 2, { profile: 'camp' });
+    L.s('guardTower', -40, 40, 3, { profile: 'camp', sandbags: true });
+    L.s('guardTower', 40, -36, 1, { profile: 'camp', sandbags: true });
+    L.s('campfire', 0, 6);
+    L.s('fuelBarrels', -30, 30);
+    L.s('container', 30, -10, 1, 'corrugated_rust', 'camp');
   },
   launch_site(L) {
     // Walled launch complex, opened with the key card from the airfield. Inside: rocket pad,
@@ -457,6 +675,10 @@ export const LAYOUTS = {
     L.s('fuelPump', 6, -30, 0);
   },
   underground(L) {
+    // Underground Storage Facility ("the bunker"): fenced compound with the entrance building
+    // and a lift house down to bunker level B2 (see StructureBuilder.bunker).
+    const Y = -400;
+    const p = L.poi;
     L.sign(-50, 60, 0, L.poi.name);
     L.s('bunkerMound', 0, -10, 0, 18, 22);
     L.b('hq', 0, -10, 0, { floors: 1, w: 16, d: 20, floorH: 4, wallMat: 'concrete_dark', furniture: 'warehouse', profile: 'military_high', doors: [{ side: 'S', at: 0, w: 2.6, h: 3, metal: true }], windows: { S: 0, N: 0, E: 0, W: 0 } });
@@ -466,6 +688,9 @@ export const LAYOUTS = {
     L.perimeter(-60, -50, 60, 55, 'chain', [{ side: 'S', at: 0, w: 10 }]);
     L.s('guardTower', -54, 48, 3, { profile: 'military', sandbags: true });
     L.s('tent', 30, 20, 0, { profile: 'military' });
+    L.s('liftHouse', -30, 10, 2, { to: { x: p.x, y: Y + 0.05, z: p.z - 1, yaw: Math.PI }, noCard: true });
+    L.s('container', 40, -20, 1, 'olive', 'military');
+    L.underground(Y, { x: p.x - 30, z: p.z + 14.5, yaw: 0 }, 'bunker');
   },
   quarry(L) {
     L.sign(-90, 90, 0, L.poi.name);

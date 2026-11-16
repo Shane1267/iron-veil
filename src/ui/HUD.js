@@ -215,7 +215,9 @@ export class HUD {
       this.vehicle.append(
         h('div', { class: 'spd' }, String(Math.round(Math.abs(v.speed) * 3.6)), h('small', {}, ' km/h')),
         h('div', { class: 'row' }, h('span', {}, `FUEL ${Math.round(v.fuel)}/${v.t.fuelCap} L`), h('span', {}, `COND ${Math.round((v.health / v.t.health) * 100)}%`), h('span', {}, v.engineOn ? 'ENGINE ON' : 'ENGINE OFF'), h('span', {}, v.lightsOn ? (v.highBeam ? 'HIGH BEAM' : 'LOW BEAM') : 'LIGHTS OFF (L)')),
-        h('div', { class: 'row' }, h('span', {}, 'W/S throttle · A/D steer · Space brake · L lights · E exit')),
+        v.t.flying
+          ? h('div', { class: 'row' }, h('span', {}, `ROTOR ${Math.round(v.rpm * 100)}%`), h('span', {}, `ALT ${Math.round(v.pos.y - g.world.heightAt(v.pos.x, v.pos.z))} m`), h('span', {}, `V/S ${v.vy >= 0 ? '+' : ''}${v.vy.toFixed(1)}`), h('span', {}, 'W/S fwd/back · A/D yaw · Space climb · Shift descend · C seat · E exit'))
+          : h('div', { class: 'row' }, h('span', {}, 'W/S throttle · A/D steer · Space brake · L lights · C change seat · E exit')),
       );
     }
     // build panel

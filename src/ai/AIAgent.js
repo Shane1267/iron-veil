@@ -328,6 +328,12 @@ export class AIAgent {
   update(dt, distToPlayer) {
     if (this.mountedOn) {
       this.model.root.position.copy(this.pos);
+      if (this.vehicleSeat !== undefined) {
+        // seated crew: posed, facing with the vehicle; killed crew slump and leave the seat
+        this.model.root.rotation.y = this.yaw;
+        if (!this.alive) { this.mountedOn.sys?.unseatAgent(this.mountedOn, this); this.mountedOn = null; this.pos.y -= 0.3; }
+        this.model.animate(dt, {});
+      }
       return;
     }
     if (!this.alive) {
@@ -1044,14 +1050,42 @@ export class AIAgent {
     if (this._breach && this._breach.alive) {
       const p = this._breach;
       const dp = hyp(this.pos.x, this.pos.z, p.x, p.z);
+      this._breachT = (this._breachT || 0) + 0.25;
+      // a wall that holds for too long: try another way in
+      if (this._breachT > 45) {
+        this._triedBreach = this._triedBreach || new Set();
+        this._triedBreach.add(p.piece?.id);
+        const alt = this.game.base?.breachPoint(this.pos, base, this._triedBreach);
+        this._breachT = 0;
+        this._attackStructure = null;
+        if (alt) { this._breach = alt; bus.emit('ai:tactic', { type: 'breach-switch', agent: this }); return; }
+      }
       if (dp > 3) { if (!this.path && !this.pathReq) this.moveTo({ x: p.x + p.nx * 2, z: p.z + p.nz * 2 }, 'run'); return; }
       this.path = null;
       this.desiredYaw = Math.atan2(-(p.x - this.pos.x), -(p.z - this.pos.z));
+      // demolition: plant a timed charge on the wall/door, then back off and wait
+      if (this.charges > 0 && !this._planted && this.game.explosives) {
+        const ex = this.game.explosives;
+        const pt = { x: p.x + p.nx * 0.3, y: (p.y || this.pos.y) + 1.0, z: p.z + p.nz * 0.3 };
+        this._planted = ex.plantAt(new this.pos.constructor(pt.x, pt.y, pt.z), { x: p.nx, y: 0, z: p.nz }, { kind: 'breach', owner: this, armed: true, fuse: 8 });
+        this.charges--;
+        bus.emit('ai:tactic', { type: 'plant-charge', agent: this });
+        this.moveTo({ x: p.x + p.nx * 12, z: p.z + p.nz * 12 }, 'run');
+        return;
+      }
+      if (this._planted && this.game.explosives.charges.includes(this._planted)) {
+        // wait at a safe distance until it goes off (or is defused)
+        if (dp < 9 && !this.path && !this.pathReq) this.moveTo({ x: p.x + p.nx * 12, z: p.z + p.nz * 12 }, 'run');
+        return;
+      }
+      this._planted = null;
       this._attackStructure = p;
       return;
     }
     this._attackStructure = null;
+    this._breachT = 0;
     if (d < 6) {
+      this.raidBreached = true;
       const crate = this.game.base?.nearestStorage(this.pos, 30, true);
       if (crate) {
         if (hyp(this.pos.x, this.pos.z, crate.x, crate.z) < 2) {
@@ -1064,7 +1098,7 @@ export class AIAgent {
     }
     if (!this.path && !this.pathReq) {
       this.moveTo(base, 'run', { onFail: () => {
-        this._breach = this.game.base?.breachPoint(this.pos, base) || null;
+        this._breach = this.game.base?.breachPoint(this.pos, base, this._triedBreach) || null;
         if (!this._breach) { this.raidTarget = null; this._enter('return'); }
       } });
     }
@@ -1927,9 +1961,14 @@ export class AIAgent {
       if (!s.alive) { this._attackStructure = null; this._breach = null; this.path = null; }
       else {
         const eye = this.eye.clone();
-        if (this.weapon.data.ammo > 0) this._shoot(eye, { x: s.x, y: s.y + 1.2, z: s.z }, 3, true);
+        const piece = s.piece || s;
+        // raiders with tools pry and hammer (no ammunition wasted); otherwise they shoot it,
+        // and with nothing left they still beat on it (fixed: this used to hit the breach
+        // marker object instead of the wall, so unarmed raiders could never get in)
+        if (this.raidTools && this.breachMode !== 'none') { this.game.base?.damagePiece(piece, 55); this.nextShot = this.time + 1.0; bus.emit('sound', { type: 'meleeHit', x: s.x, y: s.y + 1, z: s.z }); }
+        else if (this.weapon.data.ammo > 0) this._shoot(eye, { x: s.x, y: s.y + 1.2, z: s.z }, 3, true);
         else if (this._reserve() > 0) this._startReload();
-        else { this.game.base?.damagePiece(s, 25); this.nextShot = this.time + 1.0; }
+        else { this.game.base?.damagePiece(piece, 25); this.nextShot = this.time + 1.0; }
       }
     }
   }

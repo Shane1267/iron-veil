@@ -46,28 +46,32 @@ export class PlayerSurvival {
     this.hunger = clamp(this.hunger - dt * 0.022 * rate * exert, 0, 100);
     this.thirst = clamp(this.thirst - dt * 0.030 * rate * exert * (this.temperature > 0.5 ? 1.3 : 1), 0, 100);
 
-    // stamina
+    // stamina (rebalanced): a full bar sprints ~13 s unloaded and refills in ~5 s at rest.
+    // Load only costs extra above half capacity. Gear, fitness, food and stimulants scale drain
+    // and recovery, but drain never drops below 55% of base: no unlimited sprinting.
     const enc = env.encumbrance || 0;
+    const mods = this.staminaMods(env);
+    this.buffT = Math.max(0, (this.buffT || 0) - dt);
     if (env.sprinting) {
-      this.stamina -= dt * (11 + Math.max(0, enc - 0.6) * 12);
-      this.staminaDelay = 1.0;
+      this.stamina -= dt * (7.5 + Math.max(0, enc - 0.5) * 10 * settings.get('staminaWeight')) * mods.drain;
+      this.staminaDelay = 0.6;
     } else if (env.holdBreath) {
-      this.stamina -= dt * 16;
-      this.staminaDelay = 0.8;
+      this.stamina -= dt * 12 * mods.drain;
+      this.staminaDelay = 0.6;
     } else if (env.swimming) {
-      this.stamina -= dt * 4;
+      this.stamina -= dt * 3.5 * mods.drain;
       this.staminaDelay = 0.5;
     } else {
       this.staminaDelay -= dt;
       if (this.staminaDelay <= 0) {
-        const regen = 16 * (this.hunger > 15 ? 1 : 0.5) * (this.thirst > 15 ? 1 : 0.5);
+        const regen = 22 * (this.hunger > 15 ? 1 : 0.5) * (this.thirst > 15 ? 1 : 0.5) * mods.regen * (env.moving ? 0.75 : 1);
         this.stamina += dt * regen;
       }
     }
-    if (env.jumped) { this.stamina -= 9; this.staminaDelay = 0.8; }
+    if (env.jumped) { this.stamina -= 6 * mods.drain; this.staminaDelay = 0.6; }
     this.stamina = clamp(this.stamina, 0, 100);
     if (this.stamina <= 0.5) this.exhausted = true;
-    if (this.exhausted && this.stamina > 30) this.exhausted = false;
+    if (this.exhausted && this.stamina > 20) this.exhausted = false;
 
     // bleeding
     if (this.bleeding > 0) {
@@ -122,7 +126,9 @@ export class PlayerSurvival {
   hit(info, equipment) {
     if (this.dead) return 0;
     const armor = equipment ? equipment.armorFor(info.zone === 'head' ? 'head' : 'torso') * (info.zone === 'head' || info.zone === 'torso' ? 1 : 0) : 0;
-    const dmg = computeDamage({ ...info, armor });
+    let dmg = computeDamage({ ...info, armor });
+    // blast protection (EOD armour) against explosions
+    if (info.cause === 'explosion' && equipment) { let b = 0; for (const s of ['vest', 'body', 'head']) b = Math.max(b, ItemDB.get(equipment.slots[s]?.id)?.equip?.blast || 0); dmg *= 1 - b; }
     if (Math.random() < bleedChance(info.zone, dmg, armor)) {
       this.bleeding = Math.min(3, this.bleeding + 1);
       bus.emit('notify', { text: 'You are bleeding', kind: 'warn' });
@@ -160,6 +166,24 @@ export class PlayerSurvival {
     this.useAction = null;
   }
 
+  /**
+   * Stamina multipliers: settings, fitness skill, worn gear (equip.stamina: drain multiplier),
+   * stimulant buff, and being well fed and watered. env.gearStamina / env.fitness come from Game.
+   */
+  staminaMods(env = {}) {
+    let drain = settings.get('staminaDrain'), regen = settings.get('staminaRegen');
+    if (settings.get('staminaBonuses')) {
+      const fit = env.fitness || 0; // 0..10
+      drain *= 1 - fit * 0.02;
+      regen *= 1 + fit * 0.02;
+      drain *= env.gearStamina || 1;
+      if (this.buffT > 0) { drain *= 0.72; regen *= 1.3; }
+      if (this.hunger > 75 && this.thirst > 75) regen *= 1.15;
+      drain = Math.max(settings.get('staminaDrain') * 0.55, drain);
+    }
+    return { drain, regen };
+  }
+
   /** Apply an item's effect (called on completion). */
   applyItem(def) {
     const u = def.use;
@@ -168,6 +192,7 @@ export class PlayerSurvival {
     if (u.thirst) this.thirst = clamp(this.thirst + u.thirst, 0, 100);
     if (u.health) this.health = clamp(this.health + u.health, 0, 100);
     if (u.stamina) this.stamina = clamp(this.stamina + u.stamina, 0, 100);
+    if (u.staminaBuff) { this.buffT = Math.max(this.buffT || 0, u.staminaBuff); msgs.push(`Energised for ${Math.round(u.staminaBuff / 60)} min`); }
     if (u.stopBleed && this.bleeding) { this.bleeding = 0; msgs.push('Bleeding stopped'); }
     if (u.painkiller) { this.painkiller = u.painkiller; msgs.push('Pain suppressed'); }
     if (u.pain === -1) this.pain = 0;
@@ -175,7 +200,7 @@ export class PlayerSurvival {
   }
 
   serialize() {
-    return { health: this.health, hunger: this.hunger, thirst: this.thirst, stamina: this.stamina, bleeding: this.bleeding, pain: this.pain, painkiller: this.painkiller, temperature: this.temperature, wet: this.wet };
+    return { health: this.health, hunger: this.hunger, thirst: this.thirst, stamina: this.stamina, bleeding: this.bleeding, pain: this.pain, painkiller: this.painkiller, temperature: this.temperature, wet: this.wet, buffT: this.buffT || 0 };
   }
 
   deserialize(o) {
@@ -191,5 +216,6 @@ export class PlayerSurvival {
     this.painkiller = num(o.painkiller, 0, 0, 600);
     this.temperature = num(o.temperature, 0, -1, 1);
     this.wet = num(o.wet, 0, 0, 1);
+    this.buffT = num(o.buffT, 0, 0, 3600);
   }
 }

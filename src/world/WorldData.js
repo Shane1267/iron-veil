@@ -64,6 +64,7 @@ export class WorldData {
 
     this.bridges = [];
     this._findBridges();
+    this._engineerRoads();
   }
 
   // ------------------------------------------------------------- regions
@@ -192,10 +193,13 @@ export class WorldData {
       riverW = smoothstep(half + 10, half, d);
     }
     // roads flatten (bridges skip the river corridor)
-    const road = this.roadQuery(x, z);
-    if (road && !(riv && riv.d < riv.width * 0.5 + 14)) {
+    const road = this.roadQuery(x, z, 38);
+    if (road && !this._underBridge(x, z)) {
       const hw = road.width * 0.5;
-      const w = smoothstep(hw + 7, hw + 0.6, road.d);
+      // fills and cuts get wider side slopes (about 1:1.6) so raised approaches become
+      // embankments rather than walls
+      const extra = Math.min(30, Math.abs(road.h - h) * 1.6);
+      const w = smoothstep(hw + 7 + extra, hw + 0.6, road.d);
       if (w > 0) h = lerp(h, road.h - 0.05, w * (1 - riverW));
     }
     return h;
@@ -325,21 +329,31 @@ export class WorldData {
     this.roads.push(road);
     for (let i = 0; i < pts.length - 1; i++) {
       const seg = { road, i, ax: pts[i][0], az: pts[i][1], bx: pts[i + 1][0], bz: pts[i + 1][1] };
-      this.roadIndex.add(seg, road.width + 12);
+      this.roadIndex.add(seg, road.width + 40);
     }
   }
 
-  roadQuery(x, z) {
+  roadQuery(x, z, reach = 12) {
     const segs = this.roadIndex.query(x, z);
     let best = null;
     for (const s of segs) {
       const r = pointSegDist(x, z, s.ax, s.az, s.bx, s.bz);
       if (!best || r.d - s.road.width * 0.5 < best.d - best.seg.road.width * 0.5) best = { d: r.d, t: r.t, seg: s };
     }
-    if (!best || best.d > best.seg.road.width * 0.5 + 12) return null;
+    if (!best || best.d > best.seg.road.width * 0.5 + reach) return null;
     const R = best.seg.road;
     const h = lerp(R.heights[best.seg.i], R.heights[best.seg.i + 1], best.t);
     return { d: best.d, h, width: R.width, type: R.type, road: R, seg: best.seg, t: best.t };
+  }
+
+  /** Water a road has to bridge: a river channel (with its banks) or the lake. */
+  _crossingWater(x, z) {
+    const r = this.riverQuery(x, z);
+    if (r && r.d < r.width * 0.5 + 14) return r.water;
+    const L = this.lake;
+    const dx = (x - L.center[0]) / L.radius[0], dz = (z - L.center[1]) / L.radius[1];
+    if (dx * dx + dz * dz < 1.25 * 1.25 && this.preFlatten(x, z) < L.level + 1.5) return L.level;
+    return null;
   }
 
   _findBridges() {
@@ -347,11 +361,12 @@ export class WorldData {
       let inBridge = null;
       for (let i = 0; i < road.points.length; i++) {
         const [x, z] = road.points[i];
-        const r = this.riverQuery(x, z);
-        const crossing = r && r.d < r.width * 0.5 + 14;
-        if (crossing && !inBridge) inBridge = { road, start: Math.max(0, i - 1), river: r };
+        const water = this._crossingWater(x, z);
+        const crossing = water !== null;
+        if (crossing && inBridge) inBridge.water = Math.max(inBridge.water, water);
+        if (crossing && !inBridge) inBridge = { road, start: Math.max(0, i - 2), water };
         if (!crossing && inBridge) {
-          inBridge.end = Math.min(road.points.length - 1, i);
+          inBridge.end = Math.min(road.points.length - 1, i + 1);
           this._finishBridge(inBridge);
           inBridge = null;
         }
@@ -363,8 +378,112 @@ export class WorldData {
   _finishBridge(b) {
     const { road, start, end } = b;
     const [ax, az] = road.points[start], [bx, bz] = road.points[end];
-    const deck = Math.max(road.heights[start], road.heights[end], b.river.water + 3.2);
-    this.bridges.push({ road, ax, az, bx, bz, deck, width: road.width + 1.2, type: road.type });
+    const len = Math.hypot(bx - ax, bz - az);
+    const deck = Math.max(Math.min(road.heights[start], road.heights[end]), b.water + (road.type === 'rail' ? 4 : 3.2));
+    // design by road class, length and a stable hash (some rural spans are old and battered)
+    const hsh = hashString32(`${road.id}:${start}`) % 100;
+    const design = road.type === 'rail' ? 'truss' : len > 140 ? 'river' : road.type === 'highway' ? 'highway'
+      : road.type === 'dirt' ? (hsh < 35 ? 'abandoned' : 'rural') : hsh < 25 ? 'damaged' : hsh < 45 ? 'steel' : 'concrete';
+    const segs = [];
+    let minX = Infinity, minZ = Infinity, maxX = -Infinity, maxZ = -Infinity;
+    for (let i = start; i < end; i++) {
+      const [x0, z0] = road.points[i], [x1, z1] = road.points[i + 1];
+      segs.push([x0, z0, x1, z1]);
+      minX = Math.min(minX, x0, x1); maxX = Math.max(maxX, x0, x1); minZ = Math.min(minZ, z0, z1); maxZ = Math.max(maxZ, z0, z1);
+    }
+    this.bridges.push({ road, start, end, ax, az, bx, bz, deck, len, design, segs, minX, minZ, maxX, maxZ, width: road.width + 1.2, type: road.type });
+  }
+
+  /** Distance from (x,z) to a bridge's centre line, with position along it (0..1 of the span). */
+  _bridgeDist(b, x, z, pad) {
+    if (x < b.minX - pad || x > b.maxX + pad || z < b.minZ - pad || z > b.maxZ + pad) return null;
+    let best = null;
+    const n = b.segs.length;
+    for (let k = 0; k < n; k++) {
+      const s = b.segs[k];
+      const r = pointSegDist(x, z, s[0], s[1], s[2], s[3]);
+      if (!best || r.d < best.d) best = { d: r.d, t: (k + r.t) / n };
+    }
+    return best;
+  }
+
+  /** Inside a bridge span corridor (terrain there is left natural under the deck). */
+  _underBridge(x, z) {
+    for (const b of this.bridges) {
+      const r = this._bridgeDist(b, x, z, 30);
+      // the first and last 10 m stay flattened: that ground is the abutment the deck rests on
+      if (r && r.t * b.len > 10 && (1 - r.t) * b.len > 10 && r.d < b.width * 0.5 + 14) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Road engineering: junctions meet at one height, bridge decks are level with their
+   * approaches, and grades are limited (cuts and embankments instead of 35% slopes).
+   */
+  _engineerRoads() {
+    const order = { highway: 0, road: 1, dirt: 2, rail: 3 };
+    const roads = [...this.roads].sort((a, b) => order[a.type] - order[b.type]);
+    const done = new Set();
+    const pins = new Map(); // road -> Map(index -> height)
+    const pin = (road, i, h) => { if (!pins.has(road)) pins.set(road, new Map()); pins.get(road).set(i, h); };
+    // overlapping bridge spans on one road keep the higher deck
+    for (const b of this.bridges) for (let i = b.start; i <= b.end; i++) pin(b.road, i, Math.max(b.deck, pins.get(b.road)?.get(i) ?? -Infinity));
+    for (const b of this.bridges) b.deck = Math.max(...Array.from({ length: b.end - b.start + 1 }, (_, k) => pins.get(b.road).get(b.start + k)));
+    const hard = new Map(); // road -> Set of bridge-pinned indices
+    for (const b of this.bridges) { if (!hard.has(b.road)) hard.set(b.road, new Set()); for (let i = b.start; i <= b.end; i++) hard.get(b.road).add(i); }
+    const isHard = (road, i) => !!hard.get(road)?.has(i);
+    // through a location the road keeps to the location's levelled pad, except close to a
+    // bridge (the deck height wins there and the grade limiter eases the road onto the pad)
+    for (const road of roads) {
+      road.points.forEach(([x, z], i) => {
+        if (isHard(road, i)) return;
+        for (let k = i - 6; k <= i + 6; k++) if (isHard(road, k)) return;
+        for (const p of this.pois) {
+          if (Math.hypot(x - p.x, z - p.z) < p.radius * 0.95) { pin(road, i, this.padded(x, z)); break; }
+        }
+      });
+    }
+    for (const road of roads) {
+      if (road.type !== 'rail') {
+        // ends that join an already engineered road take its height
+        for (const i of [0, road.points.length - 1]) {
+          const [x, z] = road.points[i];
+          if (isHard(road, i)) continue;
+          let best = null;
+          for (const o of done) {
+            if (o.type === 'rail') continue;
+            for (let k = 0; k < o.points.length - 1; k++) {
+              const r = pointSegDist(x, z, o.points[k][0], o.points[k][1], o.points[k + 1][0], o.points[k + 1][1]);
+              if (r.d < o.width * 0.5 + road.width && (!best || r.d < best.d)) best = { d: r.d, h: lerp(o.heights[k], o.heights[k + 1], r.t) };
+            }
+          }
+          if (best) {
+            // a junction decides the height; pad pins right next to it give way
+            pin(road, i, best.h);
+            const P = pins.get(road);
+            for (let k = i - 16; k <= i + 16; k++) if (k !== i && !isHard(road, k)) P.delete(k);
+          }
+        }
+      }
+      const P = pins.get(road) || new Map();
+      const H = road.heights;
+      for (const [i, h] of P) H[i] = h;
+      const maxGrade = { highway: 0.08, road: 0.1, dirt: 0.14, rail: 0.035 }[road.type];
+      for (let pass = 0; pass < 8; pass++) {
+        for (let i = 1; i < H.length; i++) {
+          if (P.has(i)) continue;
+          const s = maxGrade * Math.hypot(road.points[i][0] - road.points[i - 1][0], road.points[i][1] - road.points[i - 1][1]);
+          H[i] = Math.min(H[i - 1] + s, Math.max(H[i - 1] - s, H[i]));
+        }
+        for (let i = H.length - 2; i >= 0; i--) {
+          if (P.has(i)) continue;
+          const s = maxGrade * Math.hypot(road.points[i][0] - road.points[i + 1][0], road.points[i][1] - road.points[i + 1][1]);
+          H[i] = Math.min(H[i + 1] + s, Math.max(H[i + 1] - s, H[i]));
+        }
+      }
+      done.add(road);
+    }
   }
 
   /** Conservative test: could any water surface exist inside this rectangle? */
@@ -384,10 +503,8 @@ export class WorldData {
   /** Deck height if (x,z) lies on a bridge deck, else null. */
   bridgeAt(x, z) {
     for (const b of this.bridges) {
-      if (x < Math.min(b.ax, b.bx) - b.width || x > Math.max(b.ax, b.bx) + b.width) continue;
-      if (z < Math.min(b.az, b.bz) - b.width || z > Math.max(b.az, b.bz) + b.width) continue;
-      const r = pointSegDist(x, z, b.ax, b.az, b.bx, b.bz);
-      if (r.d < b.width * 0.5 && r.t > 0.0 && r.t < 1.0) return b.deck;
+      const r = this._bridgeDist(b, x, z, b.width);
+      if (r && r.d < b.width * 0.5 && r.t >= 0 && r.t <= 1) return b.deck;
     }
     return null;
   }
