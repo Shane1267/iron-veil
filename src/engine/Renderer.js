@@ -60,6 +60,7 @@ export class Renderer {
     this.container = container;
     // Chromebook mode skips multisampling: on integrated GPUs it costs more than it is worth
     this.renderer = new THREE.WebGLRenderer({ antialias: !BOOT.lite, powerPreference: 'high-performance', stencil: false });
+    this._gfxInit();
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
@@ -125,16 +126,20 @@ export class Renderer {
       this.composer.dispose?.();
       this.composer = null;
     }
+    if (this.gfx) { this.gfx.seenLit = false; this.gfx.blackChecks = 0; }
     if (!s.post && !s.ao) {
       this.gradePass = null;
       this.aoPass = null;
       return;
     }
     const size = this.renderer.getDrawingBufferSize(new THREE.Vector2());
-    const rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: 4 });
+    // Half-float targets need EXT_color_buffer_(half_)float; many Chromebook, older Intel and mobile GPUs
+    // lack it, and an unsupported target renders the whole world black. Fall back to 8-bit, and cap MSAA.
+    const g = this.gfx;
+    const rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: g.halfFloat ? THREE.HalfFloatType : THREE.UnsignedByteType, samples: g.samples });
     this.composer = new EffectComposer(this.renderer, rt);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
-    if (s.ao) {
+    if (s.ao && this.gfx.halfFloat) {
       try {
         this.aoPass = new GTAOPass(this.scene, this.camera, size.x, size.y);
         this.aoPass.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.5, thickness: 1.0, scale: 1.0, samples: 12 });
@@ -181,6 +186,88 @@ export class Renderer {
     this.composer.addPass(new OutputPass());
   }
 
+  _gfxInit() {
+    const r = this.renderer, gl = r.getContext();
+    const ext = r.extensions;
+    const has = (n) => { try { return !!ext.has(n); } catch { return false; } };
+    const gl2 = r.capabilities.isWebGL2;
+    const halfFloat = gl2 ? has('EXT_color_buffer_float') || has('EXT_color_buffer_half_float') : false;
+    let maxSamples = 0;
+    try { maxSamples = gl2 ? gl.getParameter(gl.MAX_SAMPLES) | 0 : 0; } catch { maxSamples = 0; }
+    let gpu = '';
+    try { const d = gl.getExtension('WEBGL_debug_renderer_info'); gpu = d ? String(gl.getParameter(d.UNMASKED_RENDERER_WEBGL)) : ''; } catch { gpu = ''; }
+    this.gfx = {
+      gpu, webgl2: gl2, halfFloat, samples: BOOT.lite ? 0 : Math.min(4, maxSamples), maxSamples,
+      shaderErrors: 0, blackChecks: 0, fallback: 0, notes: [],
+    };
+    // a shader that fails to compile on this GPU is counted; the black-frame check below then steps quality down
+    r.debug.onShaderError = (glc, program, vs, fs) => {
+      this.gfx.shaderErrors++;
+      try {
+        const log = `${glc.getProgramInfoLog(program) || ''} ${glc.getShaderInfoLog(fs) || ''} ${glc.getShaderInfoLog(vs) || ''}`.trim().slice(0, 300);
+        if (this.gfx.shaderErrors <= 3) console.error('[Renderer] shader failed on this GPU:', log);
+      } catch { /* ignore */ }
+    };
+    const cv = r.domElement;
+    cv.addEventListener('webglcontextlost', (e) => {
+      e.preventDefault();
+      this.gfx.contextLost = (this.gfx.contextLost || 0) + 1;
+      bus.emit('notify', { text: 'The graphics driver reset. Recovering...', kind: 'warn', key: 'gl-lost' });
+    });
+    cv.addEventListener('webglcontextrestored', () => {
+      bus.emit('notify', { text: 'Graphics recovered. If the world stays black, lower the preset in Settings.', kind: 'info', key: 'gl-lost' });
+      this._buildComposer();
+    });
+  }
+
+  // Black-frame check. Reads a 5x3 grid of pixels straight after drawing (valid without
+  // preserveDrawingBuffer). A correctly drawn frame is never pure black — the sky, fog, grain and
+  // the night ambient all lift it — so several pure-black checks in a row mean this GPU cannot draw
+  // the current setup. Quality then steps down: post-processing off, then shadows off, then the
+  // Chromebook preset (takes effect on reload).
+  _blackCheck(dt) {
+    const g = this.gfx;
+    // only until this setup has drawn one lit frame: a working GPU in a pitch-dark room must not trip it
+    if (!g || g.fallback >= 3 || g.seenLit || this.blackCheckOff) return;
+    // real time, not game time: a GPU drawing two frames a second must still be caught quickly
+    const now = performance.now();
+    if (now - (g._t || 0) < 1500) return;
+    g._t = now;
+    const gl = this.renderer.getContext();
+    if (gl.isContextLost && gl.isContextLost()) return;
+    const w = gl.drawingBufferWidth, h = gl.drawingBufferHeight;
+    if (w < 8 || h < 8) return;
+    const px = new Uint8Array(4);
+    let lit = false;
+    try {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      for (let j = 1; j <= 3 && !lit; j++) for (let i = 1; i <= 5; i++) {
+        gl.readPixels(Math.floor((w * i) / 6), Math.floor((h * j) / 4), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+        if (px[0] + px[1] + px[2] > 0) { lit = true; break; }
+      }
+    } catch { return; }
+    g.blackChecks = lit ? 0 : g.blackChecks + 1;
+    if (lit) { g.seenLit = true; return; }
+    if (g.blackChecks < 3) return;
+    g.blackChecks = 0;
+    g.fallback++;
+    const steps = [
+      ['post-processing', { post: false, ao: false }],
+      ['shadows', { shadows: 0 }],
+      ['Chromebook preset', { preset: 'chromebook' }],
+    ];
+    const [what, patch] = steps[g.fallback - 1];
+    g.notes.push(what);
+    console.warn(`[Renderer] black frames on this GPU (${g.gpu || 'unknown'}): turning off ${what}`);
+    if (patch.preset) {
+      settings.applyPreset('chromebook');
+      bus.emit('notify', { text: 'Your graphics card could not draw the world. Switched to the Chromebook preset: open Settings and reload to apply it fully.', kind: 'warn', key: 'gfx-fallback' });
+    } else {
+      settings.apply({ ...patch, preset: 'custom' });
+      bus.emit('notify', { text: `Your graphics card could not draw the world, so ${what} was turned off. You can change this in Settings.`, kind: 'warn', key: 'gfx-fallback' });
+    }
+  }
+
   resize() {
     const w = this.container.clientWidth || window.innerWidth;
     const h = this.container.clientHeight || window.innerHeight;
@@ -224,6 +311,15 @@ export class Renderer {
       r.clearDepth();
       r.render(this.viewScene, this.viewCamera);
       r.autoClear = true;
+    }
+    this._blackCheck(dt);
+    // shaders that fail to compile usually exceed this GPU's texture-unit limit; shadow maps add the most
+    if (this.gfx && this.gfx.shaderErrors && !this.gfx.shaderFallback) {
+      this.gfx.shaderFallback = true;
+      if (settings.get('shadows') > 0) {
+        settings.apply({ shadows: 0, preset: 'custom' });
+        bus.emit('notify', { text: 'Some objects could not be drawn on your graphics card, so shadows were turned off. You can change this in Settings.', kind: 'warn', key: 'gfx-fallback' });
+      }
     }
     this.stats.calls = r.info.render.calls;
     this.stats.triangles = r.info.render.triangles;

@@ -895,8 +895,10 @@ export class Game {
     try {
       this.update(dt);
     } catch (e) {
-      console.error('[Game] update error', e);
       this._errors = (this._errors || 0) + 1;
+      this._fault('frame', e);
+      // the frame step stopped part-way: still draw, so the player never gets a black world
+      try { this.renderer.render(dt, false); this.ui.update(dt); } catch (e2) { this._fault('render', e2); }
     }
     this.input.endFrame();
   }
@@ -947,19 +949,19 @@ export class Game {
         if (events.fall > 6) { surv.pain = Math.min(1, surv.pain + 0.4); bus.emit('notify', { text: 'You hurt your legs in the fall', kind: 'warn', key: 'fall' }); }
       }
     }
-    this.vehicles.update(dt, input, gameplay ? mouse : null);
+    this._try('vehicles', () => { this.vehicles.update(dt, input, gameplay ? mouse : null); });
     if (inVeh && gameplay && input.hit('interact')) this.vehicles.exit(this.player);
 
-    this.debug.update(dt);
-    this.explosives.update(dt);
-    this.turrets.update(dt);
-    if (gameplay) this.lootResets.update(dt);
-    if (this.started) this.raids.update(gameplay ? dt : 0);
-    this.sunshine.update(gameplay ? dt : 0);
-    if (gameplay) this.helis.update(dt);
-    this.elevator.update(gameplay ? dt : 0);
-    this.wasteland.update(gameplay ? dt : 0);
-    this.nightVision.update(dt);
+    this._try('debug', () => { this.debug.update(dt); });
+    this._try('explosives', () => { this.explosives.update(dt); });
+    this._try('turrets', () => { this.turrets.update(dt); });
+    this._try('lootResets', () => { if (gameplay) this.lootResets.update(dt); });
+    this._try('raids', () => { if (this.started) this.raids.update(gameplay ? dt : 0); });
+    this._try('sunshine', () => { this.sunshine.update(gameplay ? dt : 0); });
+    this._try('helis', () => { if (gameplay) this.helis.update(dt); });
+    this._try('elevator', () => { this.elevator.update(gameplay ? dt : 0); });
+    this._try('wasteland', () => { this.wasteland.update(gameplay ? dt : 0); });
+    this._try('nightVision', () => { this.nightVision.update(dt); });
 
     // survival
     const night = this.lighting.nightFactor || 0;
@@ -974,7 +976,7 @@ export class Game {
     });
     if (pc.sprinting || pc.moving) this.player.skills.gain('survival', dt * 0.002);
     if (pc.sprinting) this.player.skills.gain('fitness', dt * 0.08);
-    this.player.update(dt);
+    this._try('player', () => { this.player.update(dt); });
 
     // weapons
     const fwd = pc.forward(new THREE.Vector3());
@@ -985,7 +987,7 @@ export class Game {
       nearWall = !!h;
     }
     const allowFire = gameplay && !inVeh && !this.base.active && !pc.swimming && !this.player.survival.useAction && !pc.onLadder;
-    this.weapons.update(dt, { input, controller: pc, survival: this.player.survival, allowFire, wheel: gameplay && !this.base.active ? mouse.wheel : 0, mouseDelta: mouse, nearWall, holdBreath });
+    this._try('weapons', () => { this.weapons.update(dt, { input, controller: pc, survival: this.player.survival, allowFire, wheel: gameplay && !this.base.active ? mouse.wheel : 0, mouseDelta: mouse, nearWall, holdBreath }); });
 
     // interaction target
     this.lookTarget = null;
@@ -1043,29 +1045,29 @@ export class Game {
 
     // simulation
     let T = performance.now();
-    this.ballistics.update(dt);
-    this.factions.update(dt);
+    this._try('ballistics', () => { this.ballistics.update(dt); });
+    this._try('factions', () => { this.factions.update(dt); });
     T = this._prof('ballistics', T);
-    this.ai.update(dt);
-    this.events.update(dt);
-    this.events.tick(dt);
+    this._try('ai', () => { this.ai.update(dt); });
+    this._try('events', () => { this.events.update(dt); });
+    this._try('events', () => { this.events.tick(dt); });
     T = this._prof('ai', T);
-    this.base.update(dt);
-    this.npcs.update(dt);
-    this.objectives.update(dt);
+    this._try('base', () => { this.base.update(dt); });
+    this._try('npcs', () => { this.npcs.update(dt); });
+    this._try('objectives', () => { this.objectives.update(dt); });
 
     // world streaming
     const focus = inVeh ? inVeh.pos : pc.pos;
     T = performance.now();
-    this.terrain.update(dt, focus, this.time, 0.25 + this.weather.cur.wind * 0.9);
+    this._try('terrain', () => { this.terrain.update(dt, focus, this.time, 0.25 + this.weather.cur.wind * 0.9); });
     T = this._prof('terrain', T);
-    this.infra.update(dt, focus, this.time);
+    this._try('infra', () => { this.infra.update(dt, focus, this.time); });
     T = this._prof('infra', T);
-    this.pois.update(dt, focus, this.poiBudget);
+    this._try('pois', () => { this.pois.update(dt, focus, this.poiBudget); });
     T = this._prof('pois', T);
 
     // time, weather, lighting
-    this.clock.update(dt);
+    this._try('clock', () => { this.clock.update(dt); });
     this.envT -= dt;
     if (this.envT <= 0) {
       this.envT = 0.25;
@@ -1078,13 +1080,13 @@ export class Game {
       audio.setIndoor(this.indoor);
       this._discovery();
     }
-    this.weather.update(dt, eye, this.indoor, this.clock.scale / 24);
+    this._try('weather', () => { this.weather.update(dt, eye, this.indoor, this.clock.scale / 24); });
     this.terrain.setWet(this.weather.cur.rain * 0.9);
     this.infra.setWet(this.weather.cur.rain * 0.9);
-    this.lighting.update(dt, this.clock.hours, this.weather.cur, focus, this.time);
-    this.lights.update(dt, focus, night);
+    this._try('lighting', () => { this.lighting.update(dt, this.clock.hours, this.weather.cur, focus, this.time); });
+    this._try('lights', () => { this.lights.update(dt, focus, night); });
     for (const f of this.fires) if ((!f.active || f.active()) && Math.hypot(f.x - focus.x, f.z - focus.z) < 60 && Math.random() < dt * 20) this.effects.fireEmbers(f.x, f.y, f.z);
-    this.effects.update(dt, this.renderer.camera);
+    this._try('effects', () => { this.effects.update(dt, this.renderer.camera); });
 
     // audio
     audio.setListener(this.renderer.camera.position, this.renderer.camera.quaternion);
@@ -1109,8 +1111,28 @@ export class Game {
     T = performance.now();
     this.renderer.render(dt, !inVeh && !this.dead && !this.hideViewmodel);
     T = this._prof('render', T);
-    this.ui.update(dt);
+    this._try('ui', () => { this.ui.update(dt); });
     this._prof('ui', T);
+  }
+
+  // Run one system's frame step. A failure is logged once per system and shown to the player, and
+  // the rest of the frame (including drawing) still runs, so one broken system cannot black out the world.
+  _try(name, fn) {
+    try { return fn(); } catch (e) { this._fault(name, e); }
+    return undefined;
+  }
+
+  _fault(name, e) {
+    const F = this.faults || (this.faults = new Map());
+    const f = F.get(name) || { n: 0, msg: '' };
+    f.n++;
+    if (f.n === 1) {
+      f.msg = `${e?.message || e}`.slice(0, 160);
+      f.stack = `${e?.stack || ''}`.split('\n').slice(0, 4).join(' | ').slice(0, 400);
+      console.error(`[Game] ${name} failed`, e);
+      bus.emit('fault', { name, msg: f.msg });
+    }
+    F.set(name, f);
   }
 
   _prof(name, t0) {

@@ -208,6 +208,12 @@ Click the game view to capture the mouse. Releasing the pointer (Esc) opens the 
   pulls to that side; repairing the vehicle fixes them); the launcher sits on the shoulder; culverts
   under road embankments and retaining walls on cut slopes.
 
+## If the world is black
+Some GPUs (often Chromebooks and older or mobile chips) cannot draw the high-precision buffers used for effects. The
+game now detects this and uses simpler buffers. If a frame is still black it turns off post-processing, then shadows,
+then switches to the Chromebook preset, and says so on screen. You can also pick the Chromebook or Low preset in
+Settings yourself.
+
 ## Debug menu
 
 Hold **Tab** and press **3**, enter **3209** on the keypad. ↑/↓ move, Enter selects, ←/→ change values,

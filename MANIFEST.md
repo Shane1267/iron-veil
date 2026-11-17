@@ -78,6 +78,29 @@ guard for missing localStorage. The section below records what the prototype did
   save/load with sentry, farms and trader state: all 9 checks passed across two runs (lights in the
   second run after the flashlight fix), 0 console errors. Unit 56/56; single-player regression 4/4.
 
+## Fix: black world on some devices (2026-11-17)
+Report: after loading in, the world is black (HUD, menus, movement and teleport work), on one device; the same
+account works on another device.
+
+* Cause found and reproduced: post-processing rendered into half-float buffers. GPUs without
+  `EXT_color_buffer_float` / `EXT_color_buffer_half_float` (common on Chromebooks, older Intel and mobile GPUs) cannot
+  draw into those, so every frame came out pure black. Reproduced by hiding those extensions in headless Chrome.
+  Settings are kept per device, which is why the other device behaved differently.
+* `Renderer`: checks the extensions and uses 8-bit buffers when they are missing; MSAA capped to the GPU's
+  `MAX_SAMPLES`; ambient occlusion skipped on those GPUs. `Lighting`: sky reflections (PMREM, always half-float)
+  skipped on those GPUs.
+* Safety nets: a black-frame check reads 15 pixels after drawing; three pure-black checks in a row (real time) turn
+  off post-processing, then shadows, then switch to the Chromebook preset, with a message each time. A shader that
+  fails to compile turns shadows off once. WebGL context loss is handled and the effects are rebuilt on restore.
+* `Game.update`: each system's frame step is isolated (`_try`); one system throwing is logged once and the frame is
+  still drawn, so an error can no longer black out the world.
+* Launch Site: the south wall left a 12 m opening for an 8 m gate (0.5 m slip-through each side). Wall panels are
+  now trimmed to the opening's edges.
+* Tests: without float buffers the High preset now draws with 0 console errors (before: black, 258 errors).
+  Forced black output triggered the fallback and the world returned. Saves made in builds 3842e05, 99ead94
+  and ef23a38 load and play with 0 errors. Gate line blocked at 0.4/1.0/1.6 m across ±9 m. Unit 48/48.
+  Not checked on the player's real device.
+
 ## Update 4: map, Launch Site, wasteland, blueprints, dressing (2026-11-17)
 Request: better map; Launch Site overhaul with an elevator; fewer, longer-lasting batteries; NVG needs a
 battery and a helmet with a mount; rocket on the pad can be blown up (kills the player, southern half

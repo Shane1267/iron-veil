@@ -152,6 +152,10 @@ export class Lighting {
     bus.on('settings:changed', (c) => { if ('shadows' in c) this.applyShadowQuality(); });
 
     this.pmrem = new THREE.PMREMGenerator(renderer);
+    // PMREM always renders to half-float targets; GPUs without float colour buffers cannot, so they skip
+    // sky reflections (hemisphere and sun light still light the scene)
+    const ex = renderer.extensions;
+    this.envOK = renderer.capabilities.isWebGL2 && (ex.has('EXT_color_buffer_float') || ex.has('EXT_color_buffer_half_float'));
     this.envScene = new THREE.Scene();
     this.envSky = new THREE.Mesh(new THREE.SphereGeometry(100, 32, 16), this.skyMat);
     this.envScene.add(this.envSky);
@@ -279,7 +283,7 @@ export class Lighting {
 
     // refresh image-based lighting periodically
     this.envTimer -= dt;
-    if (this.envTimer <= 0) {
+    if (this.envTimer <= 0 && this.envOK) {
       this.envTimer = 12;
       this.envSky.position.set(0, 0, 0);
       this.envGround.material.color.copy(p.hemiGround).multiplyScalar(0.8);

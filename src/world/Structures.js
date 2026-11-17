@@ -865,9 +865,15 @@ export class StructureBuilder extends BuildingGenerator {
       const along = side === 'N' || side === 'S';
       const gaps = gates.filter((g) => g.side === side).map((g) => [len / 2 + g.at - g.w / 2, len / 2 + g.at + g.w / 2]);
       const n = Math.ceil(len / 6);
+      // each 6 m panel is trimmed to the gate opening rather than dropped, so the gate's posts
+      // (which sit just outside the opening) always meet the wall with no gap to slip through
+      const pieces = [];
       for (let i = 0; i < n; i++) {
-        const t0 = (i / n) * len, t1 = ((i + 1) / n) * len;
-        if (gaps.some(([g0, g1]) => t1 > g0 && t0 < g1)) continue;
+        let segs = [[(i / n) * len, ((i + 1) / n) * len]];
+        for (const [g0, g1] of gaps) segs = segs.flatMap(([a, b]) => (b <= g0 || a >= g1 ? [[a, b]] : [[a, Math.min(b, g0)], [Math.max(a, g1), b]].filter(([c, d]) => d - c > 0.05)));
+        for (const sg of segs) pieces.push([i, ...sg]);
+      }
+      for (const [i, t0, t1] of pieces) {
         const tm = (t0 + t1) / 2;
         const lx = along ? ax + tm : ax, lz = along ? az : az + tm;
         const wx = x + lx, wz = z + lz;
