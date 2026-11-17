@@ -67,10 +67,10 @@ upload). No server code or special headers are required. Opening `dist/index.htm
 | Secondary action (lock, refuel, fill water) · climb a ladder to the other end | F |
 | Flashlight (works unarmed too) · inspect weapon | T · Y |
 | Inventory · map · build · crafting · journal | Tab or I · M · G · H · J |
-| Night vision (helmet-mounted goggles) | V |
+| Night vision (goggles on a helmet with a mount, powered by a battery) | V |
 | Throw grenade / smoke / flashbang / fire bottle · choose which | Q · Shift+Q |
 | Build mode: rotate · next/previous piece · pick up a piece you placed | Q · mouse wheel · R |
-| Map marker at your position | N |
+| Map marker at your position · rename a marker | N · right-click it on the map (right-click empty ground adds one) |
 | Vehicle: throttle/brake/steer · handbrake · lights (off → low → high) · exit | W/S/A/D · Space · L · E |
 | Debug menu (code 3209) | hold Tab, press 3 |
 | Pause | Esc |
@@ -173,6 +173,41 @@ Click the game view to capture the mouse. Releasing the pointer (Esc) opens the 
   workshops, vehicle sheds, a fuel farm, a control building and a helipad.
 * **Settings → World / Raids / Survival** hold every option for the above; values are range-checked.
 
+## Map, Launch Site, wasteland and blueprints (update 4)
+
+* **Map (M).** Layer switches (locations, vehicles, markers, roads, grid, danger zones), a search box,
+  icons by type of place, and a hover card with distance, faction, the time until that place's loot
+  resets, coordinates and region. Vehicles you have been near stay on the map, as do crash sites you have
+  found. A waypoint shows a line and distance. Right-click a marker to rename it. Raids and
+  the wasteland are drawn on the map and named in the situation line.
+* **Launch Site rebuilt.** Paved roads, a crawlerway to the pad, blast berms, a fuel farm, an assembly
+  hangar, a transporter, control building, barracks, motor pool and helipad. The way down is a real
+  **elevator**: a winding house on the surface, a cage that closes and a 6.5 second ride (E at the cage,
+  both ways). Loot there is thinner: fewer rolls per crate and guns and armour at about a third of the
+  old chance.
+* **Shoot the rocket.** A rocket-launcher hit on the rocket on the pad sets it off. You die, hostiles
+  within 1.2 km die, nearby vehicles and bases are wrecked, and the **southern half of the map becomes a
+  wasteland for 5 days**: ash ground and vegetation, dust fog, falling ash and radiation. Outdoors in
+  the south you lose health slowly (fast near ground zero); buildings and vehicles shelter you, and
+  **iodine tablets** stop the slow dose for 15 minutes. After 5 days everything returns, rocket included.
+* **Night vision rules.** Goggles only fit helmets with a mount (bump helmet, heavy helmet, visor
+  helmet), not the plain military helmet. They start empty and need a **battery**; one battery lasts
+  about 48 minutes of use and is fitted automatically when you press V. Batteries are rarer in loot
+  (about 40% of the old rate) and the flashlight runs 40 minutes per battery.
+* **Blueprints.** Build menu (G) → Blueprints. *Save* writes your base to a `.blueprint.json` file;
+  *Load file* reads one (yours or someone else's), lists what it costs and what you are missing, and
+  *Build* places the whole thing in front of you once the materials are in your pockets or in your own
+  storage within 40 m. Rotate it in quarter turns first.
+* **Places look lived in.** Benches, lockers, shelves, desks, beds, crates and the other lootable
+  furniture were remodelled, and every location is dressed outdoors by type: pallets, barrels, tyre
+  stacks, skips, fences, wood piles, washing lines, sandbags, cable drums, wrecked furniture, oil
+  stains and so on, kept clear of doors, roads and parked vehicles.
+* **Underground.** The research facility and the bunker have vaulted ceilings with ribs, rough rock
+  walls, cable trays and pipe runs in place of flat boxes.
+* **Also added:** enemies throw grenades at you in cover; tyres can be shot flat (the vehicle slows and
+  pulls to that side; repairing the vehicle fixes them); the launcher sits on the shoulder; culverts
+  under road embankments and retaining walls on cut slopes.
+
 ## Debug menu
 
 Hold **Tab** and press **3**, enter **3209** on the keypad. ↑/↓ move, Enter selects, ←/→ change values,
@@ -180,7 +215,7 @@ Backspace goes back or closes; the number pad works too (8/2/4/6, 5, 0). Pages: 
 any landmark, markers, base, vehicle), Player (heal, god mode, unlimited stamina/ammo/carry, no
 hunger, AI ignore you, max skills), Items (every item by category, kits), World (time, weather, reveal
 map, remove hostiles, spawn squads, restock containers), Base (free building, repairs, produce now,
-refill sentries), Vehicles, Debug (FPS, coordinates, speed). The code is only a lock against opening
+refill sentries, save or copy a blueprint, spawn a demo compound, dismantle), Vehicles (mark all on the map, fix glass, doors and tyres, install helicopter parts), Debug (FPS, coordinates, speed). World also has skip time, detonate or clear the wasteland, open gates, destroy turrets, kill hostiles and loot timers; Items has eight more kits. The code is only a lock against opening
 it by accident — anyone reading the source can see it.
 
 ## First 20 minutes (vertical slice)
@@ -308,10 +343,13 @@ AI difficulty, hunger/thirst rate, world-event frequency, loot restock interval)
 * Changing the **Texture quality** setting is applied after reloading the page.
 * There is no music score.
 * Medical model has no fractures or infections; no tourniquets/splints/antibiotics.
-* Vehicles use simplified arcade-style physics; there is no vehicle damage model per part.
+* Vehicles use simplified arcade-style physics; glass, doors and tyres are damaged individually, the engine and body are not.
 * Single player only (an online co-op prototype was built and then removed to save hosting costs; see MANIFEST).
 * Gamepad is not supported.
-* AI do not throw grenades or use smoke; facility turrets only target the player.
+* AI throw fragmentation grenades at a player in cover but do not use smoke; facility turrets only target the player.
+* Vehicle doors have no collision while open.
+* Blueprints save structure pieces only (not storage contents, turrets' ammunition or door locks) and need fairly level ground.
+* The wasteland changes ground colour, vegetation tint, fog and radiation; buildings in the southern half are not replaced with ruined models.
 * Single-player only: raids, loot resets and helicopters have no network synchronisation.
 * AI do not fly helicopters or drive anything except convoy trucks.
 
@@ -361,7 +399,7 @@ See `MANIFEST.md` for the development manifest (status of every system, remainin
 
 ## Test results
 
-Latest run, after the tactical AI pass (details in `MANIFEST.md`): production build succeeds; **48/48 unit
+Latest run, update 4 (details in `MANIFEST.md`; the seven update 4 browser stages all pass, with regressions listed there). Earlier, after the tactical AI pass: production build succeeds; **48/48 unit
 tests pass**, including six simulated AI firefights; a 56-fight simulator sweep had no stuck agents, no agents
 inside geometry and no shots fired while facing away; the browser playtest passed every stage with 0 console
 errors (12/13 in the full run, the AI-combat stage on a rerun after making it wait for the AI's reaction rather

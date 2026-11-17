@@ -239,7 +239,10 @@ export class Lighting {
     const baseDensity = 2.0 / vd;
     const fogMul = 1 + weather.fog * 6 + weather.rain * 1.5 + oc * 0.35;
     this.scene.fog.color.copy(p.fog);
-    this.scene.fog.density = baseDensity * fogMul;
+    // wasteland: ash haze, dirty orange by day and near black at night
+    const wk = this.wasteK || 0;
+    if (wk > 0) { const lum = Math.max(0.03, (p.fog.r + p.fog.g + p.fog.b) / 3); this.scene.fog.color.lerp(_c1.setRGB(lum * 1.15, lum * 0.82, lum * 0.55), wk * 0.85); }
+    this.scene.fog.density = baseDensity * fogMul * (1 + wk * 1.6);
     this.fogBase = damp(this.fogBase, focus.y - 6, 0.5, dt);
     ATMO.params.x = 1 / lerp(110, 45, clamp(weather.fog, 0, 1));
     ATMO.params.y = this.fogBase;

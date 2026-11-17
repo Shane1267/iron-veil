@@ -397,3 +397,21 @@ body.photo .click-to-play, body.photo .notify, body.photo .notifications { displ
 .raid-panel .rt { font-weight: 700; letter-spacing: 0.14em; color: #ff8a64; margin-bottom: 2px; }
 .raid-panel .rs { margin-top: 4px; color: #ffd2b8; font-style: italic; }
 .sunshine-glare { position: fixed; inset: 0; z-index: 6; pointer-events: none; background: radial-gradient(circle at 50% 50%, #fffef4 0%, #fff8e0 45%, #fff0c8 100%); mix-blend-mode: screen; }
+.mega-flash { position: fixed; inset: 0; z-index: 30; pointer-events: none; background: radial-gradient(circle at 50% 45%, #ffffff 0%, #fff6dc 55%, #ffd9a0 100%); }
+.fallout-chip { position: fixed; left: 50%; top: 64px; transform: translateX(-50%); z-index: 8; padding: 4px 12px; font: 600 11px/1.4 system-ui, sans-serif; letter-spacing: 0.14em; color: #e9dcc0; background: rgba(46, 38, 22, 0.8); border: 1px solid rgba(220, 170, 70, 0.5); pointer-events: none; }
+.fallout-chip.hot { color: #ffd2a0; border-color: #e0442a; background: rgba(60, 14, 8, 0.82); }
+.bp-panel { padding: 6px 4px 10px; display: grid; gap: 14px; overflow: auto; }
+.bp-sec h4 { margin: 0 0 6px; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--amber, #d9a441); font-weight: 600; }
+.bp-sec .d { font-size: 12px; color: var(--ink-dim, #b9b29c); margin: 4px 0 8px; }
+.bp-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
+.bp-name { background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.18); color: inherit; padding: 5px 8px; font: inherit; font-size: 12px; min-width: 180px; }
+.bp-loaded { margin-top: 10px; padding: 10px; border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(0, 0, 0, 0.22); }
+.bp-loaded .n { font-weight: 600; margin-bottom: 6px; }
+.bp-cost { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; font-family: var(--mono, monospace); }
+.bp-cost .miss { color: #e2604a; }
+.map-filters { display: flex; flex-wrap: wrap; gap: 4px; }
+.map-search { width: 100%; box-sizing: border-box; margin: 6px 0 2px; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.16); color: inherit; padding: 5px 8px; font: inherit; font-size: 12px; }
+.map-alert { color: #ffb08a; font-size: 12px; margin-top: 3px; }
+.map-view { position: relative; }
+.map-rename { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; padding: 8px 10px; background: rgba(16, 18, 15, 0.94); border: 1px solid rgba(217, 164, 65, 0.6); font-size: 12px; }
+.map-rename .map-search { width: 180px; margin: 0; }

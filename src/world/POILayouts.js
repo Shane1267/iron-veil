@@ -620,30 +620,73 @@ export const LAYOUTS = {
     L.s('container', 30, -10, 1, 'corrugated_rust', 'camp');
   },
   launch_site(L) {
-    // Walled launch complex, opened with the key card from the airfield. Inside: rocket pad,
-    // control building, hangar, barracks, and a lift house down into the facility.
+    // Walled launch complex, opened with the key card from the airfield. A crawlerway runs
+    // from the assembly building to the pad; fuel farm and blast berms east of it; launch
+    // control, barracks, motor pool and the elevator head house to the west and south.
     const Y = -400;
     const p = L.poi;
     L.sign(-14, 150, 0, L.poi.name);
     L.pave(-150, -130, 150, 130, 'concrete_dark');
+    // internal roads with centre lines, the crawlerway and parking aprons
+    L.pave(-5, -20, 5, 130, 'asphalt');
+    L.pave(-130, -6, 130, 6, 'asphalt');
+    L.pave(52, -40, 68, 110, 'concrete');
+    L.pave(-120, 30, -70, 100, 'asphalt');
+    for (let z = -14; z < 126; z += 9) L.s('paint', 0, z, 0.25, 4, 'paint_white');
+    for (let x = -124; x < 126; x += 9) if (Math.abs(x) > 8) L.s('paint', x, 0, 4, 0.25, 'paint_white');
+    for (let z = -36; z < 108; z += 6) { L.s('paint', 53, z, 0.5, 3, 'paint_yellow'); L.s('paint', 67, z, 0.5, 3, 'paint_yellow'); }
     L.s('securityWall', 0, 0, -150, -130, 150, 130, 4.5, [{ side: 'S', at: 0, w: 8 }], true);
     L.s('keyGate', 0, 130, 0, { w: 8, h: 4.5, name: 'Launch Site gate' });
     L.s('boomGate', 0, 140, 0, 10);
     L.b('booth', 14, 142, 0);
-    L.s('launchPad', 60, -55, 0);
-    L.b('hq', -60, -45, 0, { profile: 'launch_surface' });
-    L.s('hangar', -95, 60, 0, 24, 32, 11);
-    L.b('barracks', 50, 70, 0);
-    L.b('warehouse', 100, 20, 1, { profile: 'launch_surface' });
-    L.s('radarDome', -110, -95);
-    L.s('commMast', -125, -60, 34);
-    L.s('hTank', 115, -105, 0, 12, 2.0, 'paint_white');
-    L.s('hTank', 115, -85, 0, 12, 2.0, 'paint_white');
-    for (const [x, z, r] of [[-144, -124, 0], [144, -124, 1], [144, 124, 2], [-144, 124, 3]]) L.s('guardTower', x, z, r, { profile: 'military', sandbags: true, height: 7 });
-    for (const [x, z] of [[-40, 0], [40, 0], [0, -100], [0, 100]]) L.s('floodlight', x, z, 0, 12);
-    // lift house over the shaft; the facility far below has its own lift back up
-    L.s('liftHouse', 0, 64, 2, { to: { x: p.x, y: Y + 0.05, z: p.z + 63, yaw: 0 } });
-    L.underground(Y, { x: p.x, z: p.z + 59, yaw: Math.PI });
+    // gate chicane and inner checkpoint
+    L.s('jersey', -3, 118, 0); L.s('jersey', 3, 108, 0); L.s('jersey', -3, 98, 0);
+    L.s('sandbags', -9, 112, 1, 6); L.s('sandbags', 9, 104, 1, 6);
+    L.b('booth', -12, 120, 2);
+    // the pad, its berms and the fuel farm
+    L.s('launchPad', 60, -62, 0);
+    L.s('hesco', 30, -100, 30, -30); L.s('hesco', 92, -100, 92, -30); L.s('hesco', 30, -100, 92, -100);
+    L.s('hTank', 118, -110, 0, 14, 2.2, 'paint_white');
+    L.s('hTank', 118, -92, 0, 14, 2.2, 'paint_white');
+    L.s('hTank', 118, -74, 0, 14, 2.2, 'paint_white');
+    L.s('tank', 128, -48, 5, 8, 'paint_white');
+    L.s('pipe', 110, -92, 76, -62, 0.35, 1.2);
+    L.s('pipe', 110, -74, 76, -58, 0.25, 1.8);
+    L.s('fuelBarrels', 104, -40);
+    L.s('waterTower', 132, -20, 20);
+    // vehicle assembly building at the foot of the crawlerway, with a second stage on a transporter
+    L.s('hangar', 60, 96, 2, 30, 34, 16);
+    L.s('transporter', 60, 40, 0);
+    // launch control (bunkered, with antennas), offices, barracks
+    L.b('hq', -70, -55, 0, { profile: 'launch_surface' });
+    L.s('hesco', -92, -78, -48, -78); L.s('hesco', -92, -78, -92, -34);
+    L.s('radarDome', -112, -100);
+    L.s('commMast', -128, -66, 38);
+    L.s('commMast', -40, -108, 22);
+    L.b('office', -30, -50, 0, { floors: 2, profile: 'office' });
+    L.b('barracks', -100, 14, 1);
+    L.b('barracks', -76, 14, 1);
+    L.s('flagpole', -52, -24);
+    // motor pool and hangar
+    L.s('hangar', -98, 68, 0, 24, 32, 11);
+    L.s('militaryTruck', -76, 48, 1);
+    L.s('militaryTruck', -76, 84, 3);
+    L.b('garage', -128, 108, 1, { profile: 'military' });
+    L.s('fuelPump', -112, 112, 0);
+    // stores, containers, helipad
+    L.b('warehouse', 110, 30, 1, { profile: 'launch_surface' });
+    for (let i = 0; i < 4; i++) L.s('container', 96 + i * 9, 62, 1, i % 2 ? 'olive' : 'corrugated', i === 1 ? 'military' : 'industrial');
+    L.s('container', 100, 71, 1, 'olive', 'industrial');
+    L.s('helipad', 112, 104);
+    L.s('tent', 28, 60, 1, { profile: 'military' });
+    // towers and lighting
+    for (const [x, z, r] of [[-144, -124, 0], [144, -124, 1], [144, 124, 2], [-144, 124, 3], [0, -124, 0]]) L.s('guardTower', x, z, r, { profile: 'military', sandbags: true, height: 7 });
+    for (const [x, z] of [[-40, 20], [40, 20], [-20, -100], [20, 100], [130, 80], [-130, -20], [90, 0], [-60, 110]]) L.s('floodlight', x, z, 0, 12);
+    for (let z = -110; z <= 110; z += 44) { L.s('streetLight', -8, z, 1); }
+    // elevator head house over the shaft; the facility far below has its own way up
+    L.s('liftHouse', -30, 64, 1, { to: { x: p.x, y: Y + 0.05, z: p.z + 63, yaw: 0 } });
+    L.s('jersey', -22, 58, 1); L.s('jersey', -22, 70, 1);
+    L.underground(Y, { x: p.x - 26.5, z: p.z + 64, yaw: Math.PI / 2 });
   },
   dam(L) {
     L.sign(-60, 70, 0, L.poi.name);

@@ -476,7 +476,7 @@
    "weight": 0.05,
    "shape": "battery",
    "color": "#c8a23a",
-   "desc": "Recharges flashlights (used automatically)."
+   "desc": "Recharges flashlights (used automatically). Powers flashlights, weapon lights and night vision."
   },
   {
    "id": "tool_hammer",
@@ -550,8 +550,7 @@
     "zones": [
      "head"
     ],
-    "insulation": 0.05,
-    "nvgMount": true
+    "insulation": 0.05
    },
    "desc": "Ballistic helmet with a night-vision mount. Reduces head damage by 45%."
   },
@@ -1266,9 +1265,9 @@
    "nvg": {
     "gain": 5,
     "noise": 0.5,
-    "drain": 0.012
+    "drain": 0.005
    },
-   "desc": "Older night-vision goggles. Mount on a helmet (Inspect the helmet), toggle with V. Grainy. Uses batteries."
+   "desc": "Older night-vision goggles. Only fits helmets with a night-vision mount (bump, heavy and visor helmets): inspect the helmet to mount it, toggle with V. Needs a battery to work; one lasts about half an hour."
   },
   {
    "stack": 1,
@@ -1281,9 +1280,9 @@
    "nvg": {
     "gain": 9,
     "noise": 0.15,
-    "drain": 0.008
+    "drain": 0.0035
    },
-   "desc": "Military night vision. Mount on a helmet, toggle with V. Bright and clear. Uses batteries."
+   "desc": "Military night vision. Only fits helmets with a night-vision mount. Toggle with V. Bright and clear. Needs a battery; one lasts about 45 minutes."
   },
   {
    "stack": 4,
@@ -1782,6 +1781,20 @@
    "color": "#7a5a2a",
    "needsTool": "tool_wrench",
    "desc": "Pump, filters and lines. Helicopter repair part."
+  },
+  {
+   "id": "iodine",
+   "name": "Iodine Tablets",
+   "cat": "medical",
+   "stack": 4,
+   "weight": 0.05,
+   "shape": "pills",
+   "color": "#c8b060",
+   "use": {
+    "time": 1.5,
+    "radProtect": 900
+   },
+   "desc": "Protects you from fallout in a wasteland zone for 15 minutes. Does nothing near ground zero."
   }
  ]
 }

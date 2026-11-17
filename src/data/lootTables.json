@@ -52,9 +52,9 @@
     },
     {
      "item": "battery",
-     "weight": 10.0,
-     "min": 2,
-     "max": 4
+     "weight": 4.0,
+     "min": 1,
+     "max": 2
     },
     {
      "item": "bandage",
@@ -131,6 +131,12 @@
     {
      "item": "glucose",
      "weight": 1
+    },
+    {
+     "item": "iodine",
+     "weight": 1,
+     "min": 1,
+     "max": 2
     }
    ]
   },
@@ -177,9 +183,9 @@
     },
     {
      "item": "battery",
-     "weight": 4,
+     "weight": 1.6,
      "min": 1,
-     "max": 3
+     "max": 1
     },
     {
      "item": "molotov",
@@ -274,9 +280,9 @@
     },
     {
      "item": "battery",
-     "weight": 4,
+     "weight": 1.6,
      "min": 1,
-     "max": 3
+     "max": 1
     },
     {
      "item": "wpn_machete",
@@ -359,9 +365,9 @@
     },
     {
      "item": "battery",
-     "weight": 7.5,
-     "min": 2,
-     "max": 3
+     "weight": 3.0,
+     "min": 1,
+     "max": 1
     },
     {
      "item": "opt_4x",
@@ -468,9 +474,9 @@
     },
     {
      "item": "battery",
-     "weight": 7.5,
-     "min": 2,
-     "max": 5
+     "weight": 3.0,
+     "min": 1,
+     "max": 2
     },
     {
      "item": "spark_plug",
@@ -565,9 +571,9 @@
     },
     {
      "item": "battery",
-     "weight": 4,
+     "weight": 1.6,
      "min": 1,
-     "max": 3
+     "max": 1
     },
     {
      "item": "blood_bag",
@@ -576,6 +582,12 @@
     {
      "item": "surgical_kit",
      "weight": 0.5
+    },
+    {
+     "item": "iodine",
+     "weight": 3,
+     "min": 1,
+     "max": 2
     }
    ]
   },
@@ -646,9 +658,9 @@
     },
     {
      "item": "battery",
-     "weight": 7.5,
-     "min": 2,
-     "max": 3
+     "weight": 3.0,
+     "min": 1,
+     "max": 1
     },
     {
      "item": "mag_ext_9mm",
@@ -689,6 +701,12 @@
     {
      "item": "boots_mil",
      "weight": 2
+    },
+    {
+     "item": "iodine",
+     "weight": 1.5,
+     "min": 1,
+     "max": 2
     }
    ]
   },
@@ -785,9 +803,9 @@
     },
     {
      "item": "battery",
-     "weight": 4,
+     "weight": 1.6,
      "min": 1,
-     "max": 3
+     "max": 1
     },
     {
      "item": "wpn_talon",
@@ -902,7 +920,13 @@
     },
     {
      "item": "mil_battery",
-     "weight": 1
+     "weight": 0.6
+    },
+    {
+     "item": "iodine",
+     "weight": 2,
+     "min": 1,
+     "max": 2
     }
    ]
   },
@@ -979,9 +1003,9 @@
     },
     {
      "item": "battery",
-     "weight": 4,
+     "weight": 1.6,
      "min": 1,
-     "max": 3
+     "max": 1
     },
     {
      "item": "wpn_halberd",
@@ -1089,7 +1113,7 @@
     },
     {
      "item": "mil_battery",
-     "weight": 2
+     "weight": 1.2
     },
     {
      "item": "field_radio",
@@ -1098,6 +1122,12 @@
     {
      "item": "mil_rations",
      "weight": 3
+    },
+    {
+     "item": "iodine",
+     "weight": 2,
+     "min": 1,
+     "max": 2
     }
    ]
   },
@@ -1116,9 +1146,9 @@
     },
     {
      "item": "battery",
-     "weight": 15.0,
-     "min": 3,
-     "max": 6
+     "weight": 6.0,
+     "min": 1,
+     "max": 2
     },
     {
      "item": "medkit",
@@ -1155,6 +1185,12 @@
     {
      "item": "laser_combo",
      "weight": 1
+    },
+    {
+     "item": "iodine",
+     "weight": 3,
+     "min": 1,
+     "max": 2
     }
    ]
   },
@@ -1207,9 +1243,9 @@
     },
     {
      "item": "battery",
-     "weight": 4,
+     "weight": 1.6,
      "min": 1,
-     "max": 3
+     "max": 1
     },
     {
      "item": "glass_pane",
@@ -1238,9 +1274,9 @@
     },
     {
      "item": "battery",
-     "weight": 10.0,
-     "min": 2,
-     "max": 3
+     "weight": 4.0,
+     "min": 1,
+     "max": 1
     },
     {
      "item": "map_vesper",
@@ -1335,9 +1371,9 @@
     },
     {
      "item": "battery",
-     "weight": 4,
+     "weight": 1.6,
      "min": 1,
-     "max": 3
+     "max": 1
     },
     {
      "item": "molotov",
@@ -1400,9 +1436,9 @@
     },
     {
      "item": "battery",
-     "weight": 4,
+     "weight": 1.6,
      "min": 1,
-     "max": 3
+     "max": 1
     },
     {
      "item": "wpn_machete",
@@ -1484,9 +1520,9 @@
     },
     {
      "item": "battery",
-     "weight": 8,
-     "min": 2,
-     "max": 4
+     "weight": 3.2,
+     "min": 1,
+     "max": 2
     },
     {
      "item": "wpn_talon",
@@ -1579,7 +1615,7 @@
     },
     {
      "item": "mil_battery",
-     "weight": 2
+     "weight": 1.2
     },
     {
      "item": "avionics",
@@ -1612,22 +1648,22 @@
   },
   "launch_surface": {
    "rolls": [
-    2,
-    4
+    1,
+    3
    ],
-   "empty": 0.05,
+   "empty": 0.2,
    "entries": [
     {
      "item": "wpn_halberd",
-     "weight": 2
+     "weight": 0.7
     },
     {
      "item": "wpn_kresta",
-     "weight": 3
+     "weight": 1.05
     },
     {
      "item": "wpn_talon",
-     "weight": 3
+     "weight": 1.05
     },
     {
      "item": "ammo_762",
@@ -1659,11 +1695,11 @@
     },
     {
      "item": "vest_plate_light",
-     "weight": 2
+     "weight": 0.7
     },
     {
      "item": "helmet_heavy",
-     "weight": 1,
+     "weight": 0.35,
      "rare": true
     },
     {
@@ -1672,28 +1708,50 @@
     },
     {
      "item": "battery",
-     "weight": 6,
-     "min": 2,
-     "max": 5
+     "weight": 2.4,
+     "min": 1,
+     "max": 2
     },
     {
      "item": "electronics",
      "weight": 4,
      "min": 2,
      "max": 4
+    },
+    {
+     "item": "mil_rations",
+     "weight": 5
+    },
+    {
+     "item": "bandage",
+     "weight": 5,
+     "min": 1,
+     "max": 3
+    },
+    {
+     "item": "cloth",
+     "weight": 4,
+     "min": 1,
+     "max": 4
+    },
+    {
+     "item": "scrap_metal",
+     "weight": 4,
+     "min": 1,
+     "max": 4
     }
    ]
   },
   "launch_armory": {
    "rolls": [
-    3,
-    5
+    2,
+    3
    ],
    "empty": 0,
    "entries": [
     {
      "item": "wpn_goliath",
-     "weight": 1,
+     "weight": 0.35,
      "rare": true
     },
     {
@@ -1704,15 +1762,15 @@
     },
     {
      "item": "wpn_halberd",
-     "weight": 3
+     "weight": 1.05
     },
     {
      "item": "wpn_kresta",
-     "weight": 3
+     "weight": 1.05
     },
     {
      "item": "wpn_anvil",
-     "weight": 2
+     "weight": 0.7
     },
     {
      "item": "ammo_762",
@@ -1778,7 +1836,7 @@
     },
     {
      "item": "wpn_rpg",
-     "weight": 0.5,
+     "weight": 0.17,
      "rare": true
     },
     {
@@ -1798,31 +1856,47 @@
     },
     {
      "item": "vest_eod",
-     "weight": 1,
+     "weight": 0.35,
      "rare": true
     },
     {
      "item": "helmet_visor",
-     "weight": 1,
+     "weight": 0.35,
      "rare": true
+    },
+    {
+     "item": "ammo_9mm",
+     "weight": 6,
+     "min": 20,
+     "max": 50
+    },
+    {
+     "item": "mil_rations",
+     "weight": 3
+    },
+    {
+     "item": "bolts",
+     "weight": 4,
+     "min": 4,
+     "max": 12
     }
    ]
   },
   "launch_lab": {
    "rolls": [
     2,
-    4
+    3
    ],
    "empty": 0,
    "entries": [
     {
      "item": "nvg_gen3",
-     "weight": 2,
+     "weight": 0.7,
      "rare": true
     },
     {
      "item": "nvg_gen1",
-     "weight": 3
+     "weight": 1.05
     },
     {
      "item": "medkit",
@@ -1848,9 +1922,9 @@
     },
     {
      "item": "battery",
-     "weight": 8,
-     "min": 4,
-     "max": 10
+     "weight": 3.2,
+     "min": 1,
+     "max": 2
     },
     {
      "item": "car_battery",
@@ -1868,7 +1942,13 @@
     },
     {
      "item": "mil_battery",
-     "weight": 3,
+     "weight": 1.8,
+     "min": 1,
+     "max": 2
+    },
+    {
+     "item": "iodine",
+     "weight": 4,
      "min": 1,
      "max": 2
     }
@@ -1876,14 +1956,14 @@
   },
   "launch_vault": {
    "rolls": [
-    4,
-    6
+    3,
+    4
    ],
    "empty": 0,
    "entries": [
     {
      "item": "wpn_goliath",
-     "weight": 3,
+     "weight": 1.05,
      "rare": true
     },
     {
@@ -1894,22 +1974,22 @@
     },
     {
      "item": "vest_plate_heavy",
-     "weight": 4,
+     "weight": 1.4,
      "rare": true
     },
     {
      "item": "helmet_heavy",
-     "weight": 4,
+     "weight": 1.4,
      "rare": true
     },
     {
      "item": "nvg_gen3",
-     "weight": 4,
+     "weight": 1.4,
      "rare": true
     },
     {
      "item": "pack_frame",
-     "weight": 3
+     "weight": 1.05
     },
     {
      "item": "c4",
@@ -1955,15 +2035,15 @@
     },
     {
      "item": "wpn_halberd",
-     "weight": 3
+     "weight": 1.05
     },
     {
      "item": "wpn_kresta",
-     "weight": 2
+     "weight": 0.7
     },
     {
      "item": "vest_assault",
-     "weight": 2
+     "weight": 0.7
     },
     {
      "item": "ammo_762",
@@ -2016,13 +2096,13 @@
     },
     {
      "item": "battery",
-     "weight": 5,
-     "min": 2,
-     "max": 6
+     "weight": 2.0,
+     "min": 1,
+     "max": 2
     },
     {
      "item": "mil_battery",
-     "weight": 2,
+     "weight": 1.2,
      "min": 1,
      "max": 2
     },
@@ -2045,6 +2125,12 @@
     {
      "item": "explosive_compound",
      "weight": 1
+    },
+    {
+     "item": "iodine",
+     "weight": 2,
+     "min": 1,
+     "max": 2
     }
    ]
   },
@@ -2395,7 +2481,7 @@
    "entries": [
     {
      "item": "mil_battery",
-     "weight": 3,
+     "weight": 1.8,
      "min": 1,
      "max": 3
     },
@@ -2489,7 +2575,7 @@
     },
     {
      "item": "mil_battery",
-     "weight": 2
+     "weight": 1.2
     }
    ]
   },

@@ -52,6 +52,7 @@ export class PlayerSurvival {
     const enc = env.encumbrance || 0;
     const mods = this.staminaMods(env);
     this.buffT = Math.max(0, (this.buffT || 0) - dt);
+    this.radT = Math.max(0, (this.radT || 0) - dt);
     if (env.sprinting) {
       this.stamina -= dt * (7.5 + Math.max(0, enc - 0.5) * 10 * settings.get('staminaWeight')) * mods.drain;
       this.staminaDelay = 0.6;
@@ -192,6 +193,7 @@ export class PlayerSurvival {
     if (u.thirst) this.thirst = clamp(this.thirst + u.thirst, 0, 100);
     if (u.health) this.health = clamp(this.health + u.health, 0, 100);
     if (u.stamina) this.stamina = clamp(this.stamina + u.stamina, 0, 100);
+    if (u.radProtect) { this.radT = Math.max(this.radT || 0, u.radProtect); msgs.push(`Protected from fallout for ${Math.round(u.radProtect / 60)} min`); }
     if (u.staminaBuff) { this.buffT = Math.max(this.buffT || 0, u.staminaBuff); msgs.push(`Energised for ${Math.round(u.staminaBuff / 60)} min`); }
     if (u.stopBleed && this.bleeding) { this.bleeding = 0; msgs.push('Bleeding stopped'); }
     if (u.painkiller) { this.painkiller = u.painkiller; msgs.push('Pain suppressed'); }
@@ -200,7 +202,7 @@ export class PlayerSurvival {
   }
 
   serialize() {
-    return { health: this.health, hunger: this.hunger, thirst: this.thirst, stamina: this.stamina, bleeding: this.bleeding, pain: this.pain, painkiller: this.painkiller, temperature: this.temperature, wet: this.wet, buffT: this.buffT || 0 };
+    return { health: this.health, hunger: this.hunger, thirst: this.thirst, stamina: this.stamina, bleeding: this.bleeding, pain: this.pain, painkiller: this.painkiller, temperature: this.temperature, wet: this.wet, buffT: this.buffT || 0, radT: this.radT || 0 };
   }
 
   deserialize(o) {
@@ -217,5 +219,6 @@ export class PlayerSurvival {
     this.temperature = num(o.temperature, 0, -1, 1);
     this.wet = num(o.wet, 0, 0, 1);
     this.buffT = num(o.buffT, 0, 0, 3600);
+    this.radT = num(o.radT, 0, 0, 7200);
   }
 }

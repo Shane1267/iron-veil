@@ -614,6 +614,8 @@ export class WeaponController {
     rx += this.recoil.rot;
     px += this.recoil.side;
 
+    // launchers ride on the shoulder: tube beside the head, rear end behind the camera
+    if (this.model?.frontLoad) { py += 0.1; pz += 0.2; px += 0.02; }
     this.vm.position.set(px + this.sway.lx + bx + bobX, py + this.sway.ly + by + bobY, pz);
     _e.set(rx + this.sway.ly * 2, ry + this.sway.lx * 3, rz);
     this.vm.quaternion.setFromEuler(_e);
@@ -697,7 +699,7 @@ export class WeaponController {
     if (src) {
       const d = src.stack.data || (src.stack.data = { charge: 1 });
       if (d.charge === undefined) d.charge = 1;
-      d.charge -= dt / 900; // ~15 minutes per battery
+      d.charge -= dt / 2400; // ~40 minutes per battery
       if (d.charge <= 0) {
         const inv = this.equipment().inventory;
         if (inv.remove('mil_battery', 1)) { d.charge = 4; bus.emit('notify', { text: 'Military power cell fitted', kind: 'info' }); } else if (inv.remove('battery', 1)) { d.charge = 1; bus.emit('notify', { text: 'Battery replaced', kind: 'info' }); }

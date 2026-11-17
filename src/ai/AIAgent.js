@@ -1225,6 +1225,37 @@ export class AIAgent {
     return out.slice(0, 3);
   }
 
+  /**
+   * Throw a grenade (frag, or a fire bottle for raiders) at where the target was last seen.
+   * Only at 12–38 m, when the target has been out of sight for a few seconds but located
+   * recently, with no friend near the landing point, and not more than once every 25 s.
+   * The grenade is a real item in the agent's inventory (it is not dropped if thrown).
+   */
+  _tryGrenade(t, tp, dist, visible, since) {
+    const ex = this.game.explosives;
+    if (!ex || this.game.sim) return false;
+    if (this.time < (this._nadeT || 0) || visible || since < 2.5 || since > 14 || dist < 12 || dist > 38) return false;
+    const id = this.inventory.count('grenade_frag') > 0 ? 'grenade_frag' : this.inventory.count('molotov') > 0 ? 'molotov' : null;
+    if (!id) { this._nadeT = this.time + 60; return false; }
+    for (const m of this.squad?.members || []) if (m !== this && m.alive && hyp(m.pos.x, m.pos.z, tp.x, tp.z) < 11) return false;
+    // needs a clear arc: nothing right in front of the thrower
+    const dx = tp.x - this.pos.x, dz = tp.z - this.pos.z;
+    const ux = dx / dist, uz = dz / dist;
+    if (!this.game.physics.lineOfSight(this.pos.x, this.pos.y + 1.7, this.pos.z, this.pos.x + ux * 4, this.pos.y + 3.2, this.pos.z + uz * 4)) { this._nadeT = this.time + 6; return false; }
+    this.inventory.remove(id, 1);
+    this._nadeT = this.time + 25;
+    const dy = (tp.y ?? this.pos.y) - this.pos.y;
+    const ang = 0.72; // ~41 degrees
+    const v = Math.sqrt((9.8 * dist * dist) / Math.max(0.5, 2 * Math.cos(ang) ** 2 * (dist * Math.tan(ang) - dy + 1.5)));
+    const V3 = this.pos.constructor;
+    const err = 1 + (this.rng.next() - 0.5) * 0.14;
+    ex.spawn(id, new V3(this.pos.x + ux * 0.5, this.pos.y + 1.6, this.pos.z + uz * 0.5), new V3(ux * Math.cos(ang) * v * err, Math.sin(ang) * v, uz * Math.cos(ang) * v * err), this);
+    this.desiredYaw = Math.atan2(-dx, -dz);
+    this._tactic('grenade');
+    this.nextShot = this.time + 1.2;
+    return true;
+  }
+
   _combatThink() {
     let t = this.target;
     if (!t || !t.alive) {
@@ -1244,6 +1275,9 @@ export class AIAgent {
     const threats = this._threats();
     const preferred = this._preferredRange();
     const atCover = this._atCover();
+
+    // --- grenades: flush a target that has gone to ground behind cover
+    if (this._tryGrenade(t, tp, dist, visible, since)) return;
 
     // --- ammunition
     if (!this._usable()) {

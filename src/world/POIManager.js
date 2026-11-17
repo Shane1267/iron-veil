@@ -6,6 +6,7 @@ import { RNG, hashString } from '../core/MathUtil.js';
 import { bus } from '../core/EventBus.js';
 import { settings } from '../core/SettingsManager.js';
 import { Frame } from './BuildingGenerator.js';
+import { dress } from './Props.js';
 
 // Streams points of interest in and out around the player. A POI's layout is first
 // recorded as a list of commands, executed across several frames within a time budget,
@@ -168,13 +169,15 @@ export class POIManager {
     const B = new BoxBuilder(this.materials);
     const ctx = {
       physics: this.physics, owner: `poi:${poi.id}`, colliders: [], doors: [], glass: [], containers: [], spots: [], ladders: [], clearZones: [],
-      lights: [], fires: [], pumps: [], signs: [], waterDiscs: [], radios: [], buildings: [], trees: [], npcs: [], gates: [], lifts: [], turrets: [],
+      lights: [], fires: [], pumps: [], signs: [], waterDiscs: [], radios: [], buildings: [], trees: [], npcs: [], gates: [], lifts: [], turrets: [], rockets: [],
     };
     const S = new StructureBuilder(B, ctx, rng);
     const commands = [];
     const L = this._layoutAPI(poi, S, rng, commands, ctx);
     const fn = LAYOUTS[poi.type];
     if (fn) fn(L); else console.warn('[POI] no layout for type', poi.type);
+    // set dressing last: wall props and yard clutter around whatever the layout placed
+    commands.push(() => dress(S, ctx, this.world, poi, rng));
     this.building = { poi, B, S, ctx, commands, i: 0, rng };
   }
 
@@ -248,6 +251,35 @@ export class POIManager {
       inter.push(this.interactables.add({ id: `${id}:i`, kind: 'keygate', x: gd.breach ? gd.x : gd.ix ?? gd.x, y: gd.y + 1.2, z: gd.breach ? gd.z : gd.iz ?? gd.z, radius: 2.2, label: () => (gate.open ? `${gd.name} (${gd.breach ? 'blown open' : 'open'})` : gd.breach ? `${gd.name} — sealed. It will take a demolition charge.` : `${gd.name}: swipe key card`), data: { gate } }));
       return gate;
     });
+    // the launch vehicle: its own mesh and collider so it can be blown up and come back
+    let rocket = null;
+    for (const rd of ctx.rockets || []) {
+      const K = new BoxBuilder(this.materials);
+      const W = 'paint_white';
+      K.cylinder(W, 0, 12.5, 0, 1.75, 1.75, 23, 24);                // core stage
+      K.cylinder('black', 0, 6, 0, 1.78, 1.78, 0.5, 24);
+      K.cylinder('paint_red', 0, 16.5, 0, 1.78, 1.78, 1.2, 24);     // livery band
+      K.cylinder('black', 0, 24.2, 0, 1.78, 1.78, 0.4, 24);
+      K.cylinder('metal_dark', 0, 0.6, 0, 1.2, 1.9, 1.4, 16);       // engine skirt
+      for (const a of [0, 1, 2, 3]) K.cylinder('metal_dark', Math.cos(a * 1.5708) * 0.8, -0.1, Math.sin(a * 1.5708) * 0.8, 0.3, 0.55, 0.9, 10); // nozzles
+      K.cylinder(W, 0, 27.4, 0, 1.45, 1.75, 6, 24);                 // upper stage taper
+      K.cylinder(W, 0, 32.4, 0, 0.9, 1.45, 4, 20);                  // fairing
+      K.cylinder('paint_red', 0, 35.6, 0, 0.05, 0.9, 2.4, 16);      // nose
+      for (const a of [0, 1, 2, 3]) {                                // strap-on boosters and fins
+        const c = Math.cos(a * 1.5708 + 0.785), s2 = Math.sin(a * 1.5708 + 0.785);
+        K.cylinder(W, c * 2.5, 7.5, s2 * 2.5, 0.75, 0.75, 13, 14);
+        K.cylinder('paint_red', c * 2.5, 15, s2 * 2.5, 0.05, 0.75, 2.2, 12);
+        K.cylinder('metal_dark', c * 2.5, 0.7, s2 * 2.5, 0.5, 0.8, 1.0, 10);
+        K.box('paint_red', c * 3.5, 2.6, s2 * 3.5, 0.12, 3.2, 1.5, { rotY: -(a * 1.5708 + 0.785) + Math.PI / 2 });
+        K.box('metal_dark', c * 2.0, 10, s2 * 2.0, 0.5, 0.2, 0.3, { rotY: -(a * 1.5708 + 0.785) });
+      }
+      const mesh = K.build();
+      mesh.position.set(rd.x, rd.y + 1.4, rd.z);
+      mesh.castShadow = true;
+      group.add(mesh);
+      const collider = this.physics.addCylinder(rd.x, rd.z, 3.3, rd.y, rd.y + 37, { material: 'metal', owner: ctx.owner, tag: 'rocket' });
+      rocket = { x: rd.x, y: rd.y, z: rd.z, mesh, collider, crater: null };
+    }
     ctx.lifts.forEach((l, i) => inter.push(this.interactables.add({ id: `${poi.id}:lift${i}`, kind: 'lift', x: l.x, y: l.y + 1.2, z: l.z, radius: 1.8, label: l.label, data: { lift: l } })));
     ctx.radios.forEach((r, i) => inter.push(this.interactables.add({ id: `${poi.id}:radio${i}`, kind: 'radio', x: r.x, y: r.y, z: r.z, radius: 1.6, label: 'Use radio', data: { poi: poi.id } })));
     // signs
@@ -293,7 +325,7 @@ export class POIManager {
     this.scene.add(group);
     const rt = {
       poi, group, doors, glassMesh, glass: ctx.glass, colliders: ctx.colliders, interactables: inter, spots: ctx.spots, containers: ctx.containers,
-      lights: ctx.lights, fires: ctx.fires, ladders: ctx.ladders, buildings: ctx.buildings, npcs: ctx.npcs, gates, turrets: ctx.turrets,
+      lights: ctx.lights, fires: ctx.fires, ladders: ctx.ladders, buildings: ctx.buildings, npcs: ctx.npcs, gates, turrets: ctx.turrets, rocket,
     };
     this.active.set(poi.id, rt);
     bus.emit('poi:built', rt);
@@ -414,6 +446,21 @@ export class POIManager {
             case 'container': { const [rot, color, profile] = args; S.shippingContainer(x, y, z, rot || 0, color, profile); break; }
             case 'securityWall': { const [x0, z0, x1, z1, h, gates] = args; S.securityWall(x, y, z, x0, z0, x1, z1, h, gates, gy); break; }
             case 'hayBale': S.cyl(new Frame(x, y, z, 0), 'hay', 0, 0.65, 0, 0.65, 1.3, 12, { rotX: Math.PI / 2 }); break;
+            case 'paint': { const [w, d, mat] = args; S.B.box(mat || 'paint_white', x, y + 0.17, z, w, 0.012, d); break; }
+            case 'transporter': {
+              // crawler-transporter carrying an upper stage towards the pad
+              const f = new Frame(x, y, z, args[0] || 0);
+              for (const [lx, lz] of [[-3.2, -4], [3.2, -4], [-3.2, 4], [3.2, 4]]) { S.box(f, 'black', lx, 0.7, lz, 1.6, 1.4, 4.2); S.box(f, 'metal_dark', lx, 0.7, lz, 1.7, 0.5, 3.4, { collide: false }); }
+              S.box(f, 'metal_dark', 0, 1.9, 0, 9, 0.9, 11);
+              S.box(f, 'hazard', 0, 1.9, 5.52, 9, 0.5, 0.02, { collide: false }); S.box(f, 'hazard', 0, 1.9, -5.52, 9, 0.5, 0.02, { collide: false });
+              for (const lz of [-3, 3]) { S.box(f, 'paint_yellow', 0, 2.9, lz, 4.4, 1.1, 0.5, { collide: false }); }
+              S.cyl(f, 'paint_white', 0, 4.4, 0, 1.5, 9.5, 18, { rotX: Math.PI / 2 });
+              S.cyl(f, 'black', 0, 4.4, -3.2, 1.53, 0.4, 18, { rotX: Math.PI / 2, collide: false });
+              S.cyl(f, 'paint_red', 0, 4.4, 2.6, 1.53, 0.9, 18, { rotX: Math.PI / 2, collide: false });
+              S.cyl(f, 'metal_dark', 0, 4.4, 5.2, 0.9, 1.0, 14, { rotX: Math.PI / 2, rBot: 1.3, collide: false });
+              S.box(f, 'metal', 3.9, 2.9, 4.6, 1.0, 1.2, 1.2); S.box(f, 'glass', 3.9, 3.2, 5.22, 0.8, 0.5, 0.02, { collide: false });
+              break;
+            }
             case 'fuelBarrels': {
               const n = 3 + rng.int(0, 4);
               for (let i = 0; i < n; i++) {

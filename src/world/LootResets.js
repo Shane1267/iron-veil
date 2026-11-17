@@ -15,6 +15,9 @@ export class LootResets {
     this.log = [];
   }
 
+  get major() { return MAJOR_POIS; }
+  interval(m) { return Math.max(2, settings.get(m.setting) || 24) * 60; }
+
   update(dt) {
     this.t -= dt;
     if (this.t > 0) return;

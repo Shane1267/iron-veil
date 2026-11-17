@@ -280,7 +280,7 @@ export class Explosives {
     else if (t === 'smoke') this._smoke(x, y, z, p.def);
     else if (t === 'flash') this._stun(x, y, z, p.def);
     else if (t === 'fire') this._fire(x, y, z, p.def);
-    else if (t === 'rocket') this.explode(x, y, z, { radius: p.def.radius || 6, damage: p.def.damage || 300, structure: p.def.structure || 1400, vehicle: p.def.vehicle || 1600, owner: p.owner });
+    else if (t === 'rocket') { bus.emit('rocket:impact', { x, y, z }); this.explode(x, y, z, { radius: p.def.radius || 6, damage: p.def.damage || 300, structure: p.def.structure || 1400, vehicle: p.def.vehicle || 1600, owner: p.owner }); }
   }
 
   // ------------------------------------------------------------ per frame

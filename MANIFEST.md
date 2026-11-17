@@ -78,6 +78,53 @@ guard for missing localStorage. The section below records what the prototype did
   save/load with sentry, farms and trader state: all 9 checks passed across two runs (lights in the
   second run after the flashlight fix), 0 console errors. Unit 56/56; single-player regression 4/4.
 
+## Update 4: map, Launch Site, wasteland, blueprints, dressing (2026-11-17)
+Request: better map; Launch Site overhaul with an elevator; fewer, longer-lasting batteries; NVG needs a
+battery and a helmet with a mount; rocket on the pad can be blown up (kills the player, southern half
+becomes a wasteland for 5 days); better lootable furniture; more clutter around structures; bunker
+carved from rock; less loot at the Launch Site; blueprint save/import; bigger dev menu; items missed
+earlier.
+
+### Done
+* `MapUI`: layers, search, hover card (distance, faction, loot reset timer, region), bridges, grid,
+  known vehicles, crash sites, raid ring, wasteland hatch and ground zero, marker labels and rename.
+* Launch Site layout rewritten (`POILayouts.launch_site`, `Structures.launchPad`, lift head house);
+  `Elevator.js` cab ride between surface and facility. Rocket is its own mesh and collider.
+* `Wasteland.js`: rocket hit → blast, 5-day wasteland south of z=0 (terrain and vegetation shader tint,
+  fog, ash, radiation with shelter and iodine), saved and restored, reset after 5 days.
+* Loot: battery weights ×0.4; Launch Site profiles fewer rolls, guns/armour ×0.35. Measured over
+  seeded rolls: 12.3 batteries per 100 homes; 0.11 guns and 0.03 armour per armoury crate; 0.28 guns and
+  0.31 armour per vault crate.
+* NVG: mount required (plain military helmet has none), battery required, 48 min per battery.
+* `Props.js` (about 45 props and decals) dresses every POI by style; `BuildingGenerator` furniture
+  library remodelled; `_vaultDress` for the facility and bunker.
+* `Blueprints.js` + Blueprints tab: save to file, load, cost and missing list, rotate, build from
+  pockets and own storage.
+* Debug menu: 8 kits, world/base/vehicle tools listed in the README.
+* Missed earlier, now added: AI grenades, launcher shoulder pose, shootable tyres, culverts and
+  retaining walls.
+
+### Test results (software WebGL, chromebook preset 960×540; not measured on real GPUs)
+* Unit 48/48. Road audit clean (16 roads, 10 bridges, 0 floating/sunk/steep points).
+* `tests/e2e/update4.mjs`, 7 stages, each passed in its final run with 0 console errors (run in groups):
+  batteries-nvg-loot, blueprints, dressing-and-furniture, launch-site-elevator, rocket-wasteland
+  (player dead, 5 days, rocket gone, crater; survives save/load; clears and rocket returns),
+  ai-grenades-tyres, map.
+* Regression after the last code change: playtest new-game/weapons/kill-ai/save-load 4/4; update2 launch-site
+  pass; update3 vehicles-drive-all (14), bunker-sunshine, new-locations (16) and save-load pass. The lift
+  waits in the update2 and update3 tests were lengthened from 60 s to 240 s because the elevator ride is now
+  6.5 game seconds, which takes over a minute in software rendering. Other update2/update3 stages were
+  not rerun.
+
+### Not done or limited (honest list)
+* Open vehicle doors still have no collision.
+* The wasteland does not swap southern buildings for ruined models; it is ground, vegetation, fog,
+  particles and radiation.
+* Blueprints store structure pieces only and refuse ground with more than 4 m of fall.
+* "Make other stuff more visually pleasing" was covered by furniture, props, the bunker, the facility
+  and the Launch Site; weapons, characters and vehicles were not remodelled in this update.
+* No audio or real-GPU check: the game was run only in headless Chrome with software rendering.
+
 ## Update 3: vehicles, roads, raids, building, bunker, helicopters (2026-11-16)
 Work order: audit first, fix broken systems, then new content. Engine: Three.js + Vite, no external
 assets or frameworks; every model is built in code. Multiplayer was removed earlier at the owner's
@@ -163,8 +210,7 @@ would own if networking returned.
 * AI raiders use timed charges and tools; they do not use rockets or grenades.
 * Raid away from home is an estimate, not a simulation.
 * The rocket launcher is held like a rifle (no shoulder pose); reload animation is a rocket sliding in.
-* Vehicle doors have no physical collision while open; damaged or missing wheels are not modelled
-  (burnt wrecks lose their tyres).
+* Vehicle doors have no physical collision while open (tyres became shootable in update 4).
 * Culverts and retaining walls are not separate models: embankments and bridges cover those cases.
 * Helicopter flight is assisted (hover hold); there is no free cyclic roll, and AI do not fly.
 * Performance was measured only in software WebGL in the test environment, not on real GPUs.

@@ -70,6 +70,7 @@ export class Vehicle {
     this.bodyY = this.pos.y;
     this.vy = 0;
     this.transient = !!rec.transient;
+    this.known = !!rec.known;
     this.destroyed = this.health <= 0;
     const m = this.t.flying ? buildHelicopter(this.t, this.game.materials, { wreck: !!rec.wreck }) : buildVehicle(this.t, this.game.materials);
     this.rpm = 0;
@@ -81,6 +82,7 @@ export class Vehicle {
     this.windows = m.windows;
     // restore broken glass / missing doors from a save
     if (Array.isArray(rec.glass)) rec.glass.forEach((g, i) => { const w = this.windows[i]; if (!w || !g) return; w.hp = Math.min(w.maxHp, g.hp ?? w.maxHp); if (g.broken) this._shatter(w, true); else this._crackStage(w); });
+    if (Array.isArray(rec.flats)) rec.flats.forEach((f, i) => { if (f && m.wheels[i]) this.damageWheel(m.wheels[i], 1e6, true); });
     if (Array.isArray(rec.doorsGone)) for (const i of rec.doorsGone) if (this.doors[i]) this._loseDoor(this.doors[i], true);
     for (const l of m.wheels) void l;
     this._buildLamps();
@@ -170,10 +172,10 @@ export class Vehicle {
     for (const h of hits) {
       const p = h.part;
       if (!p.col) {
-        const mat = p.kind === 'glass' ? (p.win.armored ? 'armorglass' : 'glass') : p.kind === 'engine' ? 'engine' : p.kind === 'canvas' ? 'fabric' : p.mat === 'armor' ? 'armor' : 'carbody';
+        const mat = p.kind === 'wheel' ? 'fabric' : p.kind === 'glass' ? (p.win.armored ? 'armorglass' : 'glass') : p.kind === 'engine' ? 'engine' : p.kind === 'canvas' ? 'fabric' : p.mat === 'armor' ? 'armor' : 'carbody';
         p.col = {
           type: 'obb', material: mat, owner: `veh:${this.id}`, tag: 'vehicle', vehicle: this, blocksShots: true, blocksMove: false,
-          blocksSight: p.kind !== 'glass' && p.kind !== 'canvas' ? true : p.kind === 'canvas', enabled: true,
+          blocksSight: p.kind === 'wheel' ? false : p.kind !== 'glass' && p.kind !== 'canvas' ? true : p.kind === 'canvas', enabled: true,
           onBulletHit: (dmg, shot) => this._partHit(p, dmg, shot),
         };
       }
@@ -188,10 +190,29 @@ export class Vehicle {
   _partHit(p, dmg, shot) {
     const mul = settings.get('vehicleDamage') ?? 1;
     if (p.kind === 'glass') { this.damageGlass(p.win, dmg, shot); return; }
+    if (p.kind === 'wheel') { this.damageWheel(p.wheel, dmg); return; }
     if (p.kind === 'engine') this.damage(dmg * 0.6 * mul);
     else this.damage(dmg * (this.t.armored ? 0.05 : 0.3) * mul);
     if (p.kind === 'door') { const d = this.doors[p.door]; d.hp -= dmg; if (d.hp <= 0 && !this.t.armored) this._loseDoor(d); }
   }
+
+  /** Tyres can be shot out: a flat sits on its rim, slows the vehicle and drags it to that side. */
+  damageWheel(w, dmg, silent = false) {
+    if (w.flat) return;
+    w.hp -= dmg;
+    if (w.hp > 0) return;
+    w.flat = true;
+    w.spin.scale.set(1, 0.8, 0.8);
+    w.steer.position.y = w.y * 0.92;
+    if (!silent) {
+      w.steer.getWorldPosition(_v3);
+      bus.emit('sound', { type: 'tyrePop', x: _v3.x, y: _v3.y, z: _v3.z });
+      this.game.effects.emit(_v3.x, _v3.y, _v3.z, { color: [0.5, 0.5, 0.5], count: 8, speed: 2, size: 0.25, life: 0.8, gravity: -0.5, grow: 1.5, alpha: 0.5 });
+      if (this.driver === 'player') bus.emit('notify', { text: 'Tyre shot out', kind: 'warn', key: 'tyre' });
+    }
+  }
+
+  get flats() { let n = 0, pull = 0; for (const w of this.mesh.wheels) if (w.flat) { n++; pull += w.side * (w.front ? 1 : 0.4); } return { n, pull }; }
 
   /** Damage one window: cracks in three stages, then shatters (sound, shards, opening). */
   damageGlass(w, dmg) {
@@ -353,15 +374,18 @@ export class Vehicle {
       this.engineOn = false;
       if (this.driver === 'player') bus.emit('notify', { text: 'Engine flooded', kind: 'warn' });
     }
+    const flat = this.flats;
     let throttle = controls?.throttle || 0;
     this.braking = !!controls?.brake || (throttle < 0 && this.speed > 0.5);
     const steerIn = controls?.steer || 0;
     if (!this.engineOn) throttle = 0;
     const maxSteer = 0.6 * t.steer / 0.55 * (1 - Math.min(0.65, Math.abs(this.speed) / t.maxSpeed * 0.7));
-    this.steer = damp(this.steer, steerIn * maxSteer, 6, dt);
+    this.steer = damp(this.steer, steerIn * maxSteer - flat.pull * 0.05 * Math.min(1, Math.abs(this.speed) / 6), 6, dt);
     const mass = t.mass;
     let acc = 0;
-    if (throttle > 0) acc += (t.engine / mass) * throttle * (1 - Math.max(0, this.speed) / t.maxSpeed);
+    const vmax = t.maxSpeed * Math.max(0.2, 1 - flat.n * 0.22);
+    if (throttle > 0) acc += (t.engine / mass) * throttle * (1 - Math.max(0, this.speed) / vmax);
+    acc -= Math.sign(this.speed) * flat.n * 0.9;
     if (throttle < 0) {
       if (this.speed > 0.5) acc -= 9 * -throttle;
       else acc += (t.engine / mass) * throttle * 0.6 * (1 - Math.max(0, -this.speed) / t.reverse);
@@ -416,7 +440,8 @@ export class Vehicle {
       const h = world.heightAt(x, z);
       return deck !== null && deck > h - 0.5 ? deck : h;
     };
-    const fl = gh(-Wt, S.axleF), fr = gh(Wt, S.axleF), bl = gh(-Wt, S.axleR), br = gh(Wt, S.axleR);
+    const sag = (i) => (this.mesh.wheels[i]?.flat ? this.mesh.wheelRadius * 0.2 : 0);
+    const fl = gh(-Wt, S.axleF) - sag(0), fr = gh(Wt, S.axleF) - sag(1), bl = gh(-Wt, S.axleR) - sag(2), br = gh(Wt, S.axleR) - sag(3);
     const target = (fl + fr + bl + br) / 4;
     const span = S.axleR - S.axleF;
     const targetPitch = Math.atan2((fl + fr) / 2 - (bl + br) / 2, span);
@@ -546,7 +571,7 @@ export class Vehicle {
   serialize() {
     return {
       id: this.id, type: this.type, x: this.pos.x, y: this.pos.y, z: this.pos.z, rot: this.yaw, fuel: this.fuel, health: this.health, needs: this.needs,
-      glass: this.windows.map((w) => ({ hp: Math.round(w.hp), broken: w.broken })), doorsGone: this.doors.filter((d) => d.missing).map((d) => d.idx),
+      glass: this.windows.map((w) => ({ hp: Math.round(w.hp), broken: w.broken })), doorsGone: this.doors.filter((d) => d.missing).map((d) => d.idx), flats: this.mesh.wheels.map((w) => (w.flat ? 1 : 0)), known: !!this.known,
     };
   }
 }
@@ -656,6 +681,7 @@ export class VehicleSystem {
     if (!door || !v.seatsForDoor(door).includes(idx)) door = v.doors.find((d) => v.seatsForDoor(d).includes(idx)) || door;
     v.occupants.set(idx, 'player');
     this.current = v;
+    v.known = true; // shown on the map from now on
     this.seatIndex = idx;
     const seat = v.seats[idx];
     if (seat.driver) v.driver = 'player';
@@ -753,9 +779,10 @@ export class VehicleSystem {
     }
     const strict = settings.get('vehicleRepair') === 'strict';
     const kit = inv.count('repair_kit') > 0;
-    if (v.health < v.t.health && !v.destroyed && (kit || (inv.count('tool_wrench') > 0 && inv.count('mech_parts') > 0))) {
+    if ((v.health < v.t.health || v.flats.n > 0) && !v.destroyed && (kit || (inv.count('tool_wrench') > 0 && inv.count('mech_parts') > 0))) {
       if (kit) inv.remove('repair_kit', 1); else inv.remove('mech_parts', strict ? 2 : 1);
       v.health = Math.min(v.t.health, v.health + v.t.health * (kit ? 0.6 : strict ? 0.25 : 0.35));
+      for (const w of v.mesh.wheels) if (w.flat) { w.flat = false; w.hp = 90; w.spin.scale.set(1, 1, 1); w.steer.position.y = w.y; }
       return { ok: true, msg: kit ? 'Repaired vehicle with a repair kit' : 'Repaired vehicle' };
     }
     // replace broken glass with a glass pane + tools

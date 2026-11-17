@@ -18,6 +18,8 @@ const FAR = 512;
 const NEAR_R = 3;
 
 const windUniforms = { uTime: { value: 0 }, uWind: { value: 0.4 } };
+// wasteland: 0..1 strength of the ash tint applied to ground and plants south of z = 0
+export const wasteUniforms = { uWaste: { value: 0 } };
 const _tint = new THREE.Color();
 const fract = (v) => v - Math.floor(v);
 
@@ -27,10 +29,11 @@ function addWind(material, strength = 1, grass = false) {
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uTime = windUniforms.uTime;
     shader.uniforms.uWind = windUniforms.uWind;
+    shader.uniforms.uWaste = wasteUniforms.uWaste;
     if (grass) shader.uniforms.noiseMap = grassUniforms.noiseMap;
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>
-        uniform float uTime; uniform float uWind;
+        uniform float uTime; uniform float uWind; uniform float uWaste; varying float vWaste;
         ${grass ? 'uniform sampler2D noiseMap; varying vec3 vGTint;' : ''}`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>
         {
@@ -40,6 +43,7 @@ function addWind(material, strength = 1, grass = false) {
           #endif
           wp = modelMatrix * wp;
           float ph = wp.x * 0.13 + wp.z * 0.11;
+          vWaste = uWaste * smoothstep(-60.0, 60.0, wp.z);
           float k = ${grass ? 'position.y * 1.6' : 'pow(max(position.y, 0.0) / 14.0, 2.0)'} * ${strength.toFixed(2)};
           // slow sway plus faster small flutter
           float gust = 0.75 + 0.25 * sin(uTime * 0.31 + wp.x * 0.011);
@@ -68,8 +72,13 @@ function addWind(material, strength = 1, grass = false) {
         .replace('#include <common>', '#include <common>\nvarying vec3 vGTint;')
         .replace('#include <color_fragment>', '#include <color_fragment>\n diffuseColor.rgb *= vGTint;');
     }
+    // wasteland: leaves and grass scorched to ash-brown
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying float vWaste;')
+      .replace('#include <color_fragment>', `#include <color_fragment>
+        { float wl = dot(diffuseColor.rgb, vec3(0.3, 0.5, 0.2)); diffuseColor.rgb = mix(diffuseColor.rgb, vec3(wl) * vec3(0.62, 0.5, 0.4), vWaste * 0.92); }`);
   };
-  material.customProgramCacheKey = () => `wind-${strength}-${grass}-v4`;
+  material.customProgramCacheKey = () => `wind-${strength}-${grass}-v5`;
 }
 
 export class TerrainManager {
@@ -135,6 +144,7 @@ export class TerrainManager {
       dirtN: { value: dirt.normalMap }, rockN: { value: rock.normalMap }, sandN: { value: sand.normalMap },
       noiseMap: { value: f.noise(256) },
       uWet: { value: 0 },
+      uWaste: wasteUniforms.uWaste,
     };
     mat.onBeforeCompile = (shader) => {
       Object.assign(shader.uniforms, this.terrainUniforms);
@@ -147,7 +157,7 @@ export class TerrainManager {
           vWPos = (modelMatrix * vec4(position, 1.0)).xyz;`);
       shader.fragmentShader = shader.fragmentShader
         .replace('#include <common>', `#include <common>
-          uniform sampler2D dirtMap, rockMap, sandMap, dirtN, rockN, sandN, noiseMap; uniform float uWet;
+          uniform sampler2D dirtMap, rockMap, sandMap, dirtN, rockN, sandN, noiseMap; uniform float uWet; uniform float uWaste;
           varying vec4 vSplat; varying vec3 vWNormal; varying vec3 vWPos;
           // weights: grass, dirt, sand, rock, wheat, plowed
           float tW[6];
@@ -204,6 +214,9 @@ export class TerrainManager {
           vec3 cp = cd * vec3(0.72, 0.66, 0.6) * (0.65 + fur * 0.5);
           vec3 tcol = cg * tW[0] + cd * tW[1] + cs * tW[2] + cr * tW[3] * 1.12 + cw * tW[4] + cp * tW[5];
           tcol *= 1.0 - uWet * 0.3 * (1.0 - tW[3] * 0.4);
+          { float wk = uWaste * smoothstep(-60.0, 60.0, vWPos.z); float wl = dot(tcol, vec3(0.3, 0.5, 0.2));
+            vec3 ash = vec3(wl) * mix(vec3(0.5, 0.46, 0.42), vec3(0.78, 0.74, 0.7), tMac2.g) * (0.75 + tMac.r * 0.4);
+            tcol = mix(tcol, ash, wk * 0.9); }
           diffuseColor.rgb *= tcol;`)
         .replace('#include <color_fragment>', `
           #if defined( USE_COLOR )
@@ -226,7 +239,7 @@ export class TerrainManager {
       shader.fragmentShader = shader.fragmentShader.replace('void terrainWeights(){', `vec2 dirSelVec(){ return mix(vec2(1.0, 0.0), vec2(0.0, 1.0), step(0.5, tHash(floor(vWPos.xz / 140.0)))); }
           void terrainWeights(){`);
     };
-    mat.customProgramCacheKey = () => 'terrain-splat-v2';
+    mat.customProgramCacheKey = () => 'terrain-splat-v3';
     this.material = mat;
   }
 

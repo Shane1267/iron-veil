@@ -296,7 +296,7 @@ export class InventoryUI {
   _nvgUI(s) {
     const row = h('div', { class: 'attach-row' });
     const cur = s.data?.nvg;
-    if (cur) row.appendChild(h('span', { class: 'attach on', title: 'Click to remove', onclick: () => this._nvgOff(s) }, `${ItemDB.get(cur).name} (${Math.round((s.data.nvgCharge ?? 1) * 100)}%) ✕`));
+    if (cur) row.appendChild(h('span', { class: 'attach on', title: 'Click to remove', onclick: () => this._nvgOff(s) }, `${ItemDB.get(cur).name} (${(s.data.nvgCharge ?? 0) <= 0 ? 'no battery' : Math.round(Math.min(1, s.data.nvgCharge) * 100) + '%'}) ✕`));
     for (const id of ['nvg_gen1', 'nvg_gen3']) {
       if (id === cur || this.inv.count(id) < 1) continue;
       row.appendChild(h('span', { class: 'attach', title: 'Click to mount', onclick: () => this._nvgOn(s, id) }, `+ ${ItemDB.get(id).name}`));
@@ -311,7 +311,8 @@ export class InventoryUI {
     s.data = s.data || {};
     const prev = s.data.nvg;
     s.data.nvg = id;
-    s.data.nvgCharge = s.data.nvgCharge ?? 1;
+    s.data.nvgCharge = s.data.nvgCharge ?? 0; // goggles come without a battery
+    if (s.data.nvgCharge <= 0) bus.emit('notify', { text: 'Night vision mounted — it needs a battery (fitted from your pockets when you press V)', kind: 'info' });
     if (prev) { const left = this.inv.add({ id: prev, qty: 1 }); if (left) this.game.dropItem({ id: prev, qty: 1 }); }
     bus.emit('sound', { type: 'click', ui: true });
     this.changed();

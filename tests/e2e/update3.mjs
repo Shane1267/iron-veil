@@ -477,7 +477,7 @@ await check('bunker-sunshine', async () => {
   await ev(() => { window.__IV.game.debug.flags.invisible = true; });
   const lift = await ev(() => { const g = window.__IV.game; const rt = g.pois.active.get('storage'); const it = rt.interactables.find((x) => x.kind === 'lift' && x.data.lift.to.y < -100); if (it) g._interact(it); return !!it; });
   assert(lift, 'no lift down');
-  await page.waitForFunction(() => window.__IV.game.player.controller.pos.y < -300 && !window.__IV.game._riding, null, { timeout: 60000 });
+  await page.waitForFunction(() => window.__IV.game.player.controller.pos.y < -300 && !window.__IV.game._riding, null, { timeout: 240000 });
   await gs(2);
   await shot('s-bunker-lift-room');
   const a = await ev(() => {

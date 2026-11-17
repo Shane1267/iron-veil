@@ -43,6 +43,9 @@ import { LootResets } from '../world/LootResets.js';
 import { RaidDirector } from '../ai/RaidDirector.js';
 import { Sunshine } from '../weapons/Sunshine.js';
 import { Helicopters } from '../vehicles/Helicopters.js';
+import { Elevator } from '../world/Elevator.js';
+import { Wasteland } from '../world/Wasteland.js';
+import { Blueprints } from '../basebuilding/Blueprints.js';
 import { FacilityTurrets } from '../world/FacilityTurrets.js';
 
 // Top-level orchestrator: owns every system, runs the frame loop, routes input to
@@ -107,6 +110,9 @@ export class Game {
     this.raids = new RaidDirector(this);
     this.sunshine = new Sunshine(this);
     this.helis = new Helicopters(this);
+    this.elevator = new Elevator(this);
+    this.wasteland = new Wasteland(this);
+    this.blueprints = new Blueprints(this);
     this.openGates = new Set();
 
     this.started = false;
@@ -378,6 +384,8 @@ export class Game {
     this.raids.deserialize(null);
     this.sunshine.clear();
     this.helis.deserialize(null);
+    this.elevator.cancel();
+    this.wasteland.deserialize(null);
     this.nightVision.on = false;
     this.discovered.clear();
     this.fog.data.fill(0);
@@ -503,7 +511,7 @@ export class Game {
       world: {
         clock: this.clock.serialize(), weather: this.weather.serialize(), discovered: [...this.discovered],
         fog: Array.from(this.fog.data).join(''), markers: this.markers, waypoint: this.waypoint, journal: this.journalPages,
-        gates: [...this.openGates], turretsDown: this.turrets.serialize(), lootResets: this.lootResets.serialize(), raids: this.raids.serialize(), helis: this.helis.serialize(),
+        gates: [...this.openGates], turretsDown: this.turrets.serialize(), lootResets: this.lootResets.serialize(), raids: this.raids.serialize(), helis: this.helis.serialize(), wasteland: this.wasteland.serialize(),
       },
       objectives: this.objectives.serialize(),
       loot: this.loot.serialize(),
@@ -579,6 +587,7 @@ export class Game {
     this.lootResets.deserialize(d.world.lootResets);
     this.raids.deserialize(d.world.raids);
     this.helis.deserialize(d.world.helis);
+    this.wasteland.deserialize(d.world.wasteland);
     this._restorePiles();
     const slot = d.player?.weaponSlot;
     this.weapons.select(slot && this.player.equipment.slots[slot] ? slot : null);
@@ -808,22 +817,10 @@ export class Game {
 
   /** Lift ride: a short fade to black, then you step out at the other end. */
   _ride(to) {
-    if (!to || this._riding) return;
-    this._riding = true;
-    const fade = document.createElement('div');
-    fade.className = 'lift-fade';
-    document.body.appendChild(fade);
-    bus.emit('sound', { type: 'engineStart', x: this.player.controller.pos.x, y: this.player.controller.pos.y, z: this.player.controller.pos.z });
-    setTimeout(() => {
-      const pc = this.player.controller;
-      // destinations on the surface give no height: stand on whatever is there
-      const y = Number.isFinite(to.y) ? to.y : this.physics.groundHeight(to.x, to.z, 0.35, this.world.heightAt(to.x, to.z) + 3);
-      pc.teleport(to.x, y + 0.05, to.z, to.yaw ?? pc.yaw);
-      pc.vel?.set?.(0, 0, 0);
-      this.envT = 0;
-      setTimeout(() => { fade.classList.add('out'); setTimeout(() => { fade.remove(); this._riding = false; }, 600); }, 700);
-    }, 650);
+    this.elevator.ride(to);
   }
+
+  get _riding() { return this.elevator.riding; }
 
   /** A ladder within reach: at its foot (climb up) or at its top (climb down). */
   _ladderNear() {
@@ -960,6 +957,8 @@ export class Game {
     if (this.started) this.raids.update(gameplay ? dt : 0);
     this.sunshine.update(gameplay ? dt : 0);
     if (gameplay) this.helis.update(dt);
+    this.elevator.update(gameplay ? dt : 0);
+    this.wasteland.update(gameplay ? dt : 0);
     this.nightVision.update(dt);
 
     // survival

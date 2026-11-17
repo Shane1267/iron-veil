@@ -895,46 +895,169 @@ export class StructureBuilder extends BuildingGenerator {
   }
 
   /** Rocket on its pad with a service gantry and flame trench. */
+  /**
+   * Underground finish for one room or tunnel (local coords in frame F): a curved vault under
+   * the flat slab, steel or rock ribs, hewn rock bulging through where the lining stops,
+   * coved wall tops, cable trays, pipes, floor drains and stains. Purely visual (no colliders).
+   * o: {rock: carved-stone look, bare: skip}
+   */
+  _vaultDress(F, x0, z0, x1, z1, h, o = {}) {
+    if (o.bare) return;
+    const N = { collide: false };
+    const w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+    const alongZ = d >= w;
+    const span = alongZ ? w : d, len = alongZ ? d : w;
+    const tunnel = span <= 6.5;
+    let seed = Math.abs(Math.round(x0 * 31 + z0 * 17 + h * 7)) + 11;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    const lining = o.rock ? 'rock' : 'concrete';
+    const put = (mat, a, y, t, sw, sh, sl, rot = 0) => {
+      // a: across the span from the centre, t: along the length from the centre
+      if (alongZ) this.box(F, mat, cx + a, y, cz + t, sw, sh, sl, { collide: false, rotZ: rot });
+      else this.box(F, mat, cx + t, y, cz + a, sl, sh, sw, { collide: false, rotX: -rot });
+    };
+    if (tunnel) {
+      // barrel vault: seven slabs following an arc from the wall heads to the crown
+      const rise = Math.min(1.5, h * 0.34), R = span / 2;
+      const segs = 7;
+      for (let i = 0; i < segs; i++) {
+        const a0 = Math.PI * (i / segs), a1 = Math.PI * ((i + 1) / segs), am = (a0 + a1) / 2;
+        const px = Math.cos(am) * R, py = h - rise + Math.sin(am) * rise;
+        const chord = Math.hypot((Math.cos(a1) - Math.cos(a0)) * R, (Math.sin(a1) - Math.sin(a0)) * rise) + 0.06;
+        const tilt = Math.atan2((Math.sin(a1) - Math.sin(a0)) * rise, (Math.cos(a1) - Math.cos(a0)) * R);
+        put(lining, px * 0.985, py + 0.12, 0, chord, 0.3, len, tilt);
+      }
+      // ribs every 6 m: posts and a three-piece arch
+      const ribM = o.rock ? 'rust' : 'metal_dark';
+      for (let t = -len / 2 + 3; t < len / 2 - 1; t += 6) {
+        for (const sx of [-1, 1]) put(ribM, sx * (R - 0.12), (h - rise) / 2, t, 0.16, h - rise, 0.22);
+        for (let i = 0; i < 5; i++) {
+          const a0 = Math.PI * (i / 5), a1 = Math.PI * ((i + 1) / 5), am = (a0 + a1) / 2;
+          const chord = Math.hypot((Math.cos(a1) - Math.cos(a0)) * R, (Math.sin(a1) - Math.sin(a0)) * rise) + 0.04;
+          put(ribM, Math.cos(am) * (R - 0.14), h - rise + Math.sin(am) * (rise - 0.14), t, chord, 0.16, 0.22, Math.atan2((Math.sin(a1) - Math.sin(a0)) * rise, (Math.cos(a1) - Math.cos(a0)) * R));
+        }
+      }
+      // cable tray on one side, two pipes on the other, a drain channel down the middle
+      put('metal_dark', -(R - 0.32), h - rise - 0.25, 0, 0.36, 0.05, len);
+      for (const k of [-0.1, 0, 0.1]) put('black', -(R - 0.32) + k, h - rise - 0.2, 0, 0.05, 0.05, len);
+      put(o.rock ? 'rust' : 'paint_red', R - 0.24, h - rise - 0.3, 0, 0.16, 0.16, len);
+      put('metal', R - 0.24, h - rise - 0.62, 0, 0.1, 0.1, len);
+      for (let t = -len / 2 + 2; t < len / 2; t += 4) { put('metal_dark', R - 0.2, h - rise - 0.45, t, 0.3, 0.5, 0.06); put('metal_dark', -(R - 0.3), h - rise - 0.14, t, 0.4, 0.22, 0.05); }
+      put('metal_dark', 0, 0.012, 0, 0.3, 0.02, len - 0.4);
+      for (let t = -len / 2 + 1; t < len / 2; t += 0.5) put('black', 0, 0.026, t, 0.26, 0.004, 0.06);
+    } else {
+      // rooms: coved wall heads (chamfer strips), ceiling beams, pilasters, a duct with grilles
+      for (const sx of [-1, 1]) {
+        put(lining, sx * (span / 2 - 0.3), h - 0.3, 0, 0.9, 0.3, len, sx * -0.72);
+        put(lining, sx * (span / 2 - 0.1), h - 0.75, 0, 0.5, 0.3, len, sx * -1.25);
+      }
+      for (let t = -len / 2 + 2.5; t < len / 2 - 1; t += 5) {
+        put('concrete_dark', 0, h - 0.18, t, span, 0.36, 0.4);
+        for (const sx of [-1, 1]) put('concrete_dark', sx * (span / 2 - 0.14), h / 2, t, 0.28, h, 0.5);
+      }
+      put('metal', span * 0.22, h - 0.62, 0, 0.6, 0.4, len * 0.86);
+      for (let t = -len * 0.4; t < len * 0.4; t += 3.5) put('black', span * 0.22, h - 0.83, t, 0.4, 0.02, 0.5);
+      put('metal_dark', -span * 0.3, h - 0.5, 0, 0.3, 0.05, len * 0.9);
+    }
+    // hewn rock showing through: irregular blocks low on the walls and at the wall heads
+    if (o.rock) {
+      const n = Math.round(len / (tunnel ? 2.2 : 3));
+      for (let i = 0; i < n; i++) {
+        const t = -len / 2 + (i + rnd()) * (len / n);
+        const sx = rnd() < 0.5 ? -1 : 1;
+        const low = rnd() < 0.6;
+        const sw = 0.25 + rnd() * 0.5, sh = 0.4 + rnd() * 1.1, sl = 0.6 + rnd() * 1.4;
+        put('rock', sx * (span / 2 - sw * 0.35), low ? sh / 2 - 0.05 : h - (tunnel ? 1.5 : 0.9) - rnd() * 0.5, t, sw, sh, sl, (rnd() - 0.5) * 0.5);
+      }
+      for (let i = 0; i < Math.round(len / 7); i++) put('dirt', (rnd() - 0.5) * span * 0.6, 0.015, -len / 2 + rnd() * len, 0.8 + rnd() * 1.2, 0.01, 0.8 + rnd() * 1.5);
+    } else {
+      for (let i = 0; i < Math.round(len / 9); i++) put('black', (rnd() - 0.5) * span * 0.6, 0.015, -len / 2 + rnd() * len, 0.6 + rnd() * 1.0, 0.008, 0.6 + rnd() * 1.2);
+    }
+    void N;
+  }
+
   launchPad(x, y, z, rot) {
     const f = new Frame(x, y, z, rot);
-    this.box(f, 'concrete_dark', 0, 0.3, 0, 26, 0.6, 26);
-    this.box(f, 'black', 0, 0.62, 9, 6, 0.05, 8, { collide: false });
-    // rocket: stages, interstage bands, nose cone and fins
-    this.cyl(f, 'paint_white', 0, 0.6 + 12, 0, 1.7, 24, 20);
-    this.cyl(f, 'black', 0, 0.6 + 8, 0, 1.72, 0.6, 20, { collide: false });
-    this.cyl(f, 'black', 0, 0.6 + 18, 0, 1.72, 0.6, 20, { collide: false });
-    this.cyl(f, 'paint_white', 0, 0.6 + 27, 0, 1.4, 6, 20, { rBot: 1.7, collide: false });
-    this.cyl(f, 'paint_white', 0, 0.6 + 32, 0, 0.05, 4, 16, { rBot: 1.4, collide: false });
-    for (const a of [0, 1, 2, 3]) {
-      const lx = Math.cos((a * Math.PI) / 2 + 0.785) * 2.1, lz = Math.sin((a * Math.PI) / 2 + 0.785) * 2.1;
-      this.box(f, 'paint_red', lx, 2.6, lz, 0.15, 3.5, 1.6, { collide: false, rotY: (a * Math.PI) / 2 + 0.785 });
+    // raised octagonal hardstand with a flame trench, hazard edging and a deluge ring
+    this.box(f, 'concrete_dark', 0, 0.3, 0, 30, 0.6, 30);
+    for (const a of [0, 1, 2, 3]) this.box(f, 'concrete', Math.cos(a * Math.PI / 2 + Math.PI / 4) * 19, 0.3, Math.sin(a * Math.PI / 2 + Math.PI / 4) * 19, 12, 0.6, 12, { rotY: Math.PI / 4, collide: false });
+    this.box(f, 'black', 0, 0.63, 11, 5, 0.05, 14, { collide: false }); // flame trench
+    this.box(f, 'metal_dark', 0, 0.66, 11, 5.4, 0.04, 0.5, { collide: false });
+    for (const [lx, lz, w, d] of [[0, -14.7, 30, 0.6], [0, 14.7, 30, 0.6], [-14.7, 0, 0.6, 30], [14.7, 0, 0.6, 30]]) this.box(f, 'hazard', lx, 0.62, lz, w, 0.03, d, { collide: false });
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; this.cyl(f, 'metal', Math.cos(a) * 5.2, 0.9, Math.sin(a) * 5.2, 0.09, 0.6, 6, { collide: false }); }
+    // launch mount: four hold-down posts
+    for (const a of [0, 1, 2, 3]) this.box(f, 'metal_dark', Math.cos(a * Math.PI / 2) * 2.6, 1.2, Math.sin(a * Math.PI / 2) * 2.6, 1.0, 1.2, 1.0);
+    // service gantry with platforms, cross bracing, swing arms and a crane jib
+    for (const [lx, lz] of [[-8, -2], [-4.4, -2], [-8, 2], [-4.4, 2]]) this.box(f, 'paint_red', lx, 20.6, lz, 0.45, 40, 0.45);
+    for (let i = 0; i < 13; i++) {
+      this.box(f, 'metal_dark', -6.2, 3 + i * 3, 0, 4.2, 0.2, 4.6, { collide: i % 4 === 0 });
+      for (const sz of [-2, 2]) this.box(f, i % 2 ? 'paint_white' : 'paint_red', -6.2, 1.5 + i * 3, sz, 3.9, 0.12, 0.12, { collide: false, rotZ: i % 2 ? 0.66 : -0.66 });
+      this.box(f, 'metal', -6.2, 3.6 + i * 3, 2.25, 4.2, 0.05, 0.05, { collide: false });
     }
-    // gantry tower with arms
-    for (const [lx, lz] of [[-6, -1.5], [-3, -1.5], [-6, 1.5], [-3, 1.5]]) this.box(f, 'paint_red', lx, 18.6, lz, 0.4, 36, 0.4);
-    for (let i = 0; i < 12; i++) {
-      this.box(f, 'metal_dark', -4.5, 3 + i * 3, 0, 3.4, 0.25, 3.4, { collide: i % 4 === 0 });
-      this.box(f, 'paint_red', -4.5, 1.5 + i * 3, -1.5, 3.2, 0.12, 0.12, { collide: false, rotZ: i % 2 ? 0.7 : -0.7 });
+    for (const yy of [10, 19, 28, 34]) { this.box(f, 'metal_dark', -3.0, yy, 0, 3.4, 0.5, 1.3, { collide: false }); this.box(f, 'paint_yellow', -1.5, yy, 0, 0.4, 0.7, 1.5, { collide: false }); }
+    this.box(f, 'paint_red', -4.0, 40.8, 0, 9, 0.5, 0.5, { collide: false });
+    this.box(f, 'emissive_lamp', -6.2, 41.4, 0, 0.4, 0.4, 0.4, { collide: false });
+    this.cyl(f, 'black', -1.6, 22, 1.2, 0.12, 30, 6, { collide: false }); // umbilical
+    // four lightning masts
+    for (const [lx, lz] of [[-13, -13], [13, -13], [-13, 13], [13, 13]]) {
+      this.cyl(f, 'metal', lx, 24.6, lz, 0.14, 48, 8, { rBot: 0.4 });
+      this.box(f, 'emissive_lamp', lx, 48.7, lz, 0.25, 0.25, 0.25, { collide: false });
+      this.box(f, 'metal_dark', lx, 0.9, lz, 1.4, 0.6, 1.4, { collide: false });
     }
-    for (const yy of [10, 20, 28]) this.box(f, 'metal_dark', -2.4, yy, 0, 2.6, 0.5, 1.2, { collide: false });
-    this.box(f, 'emissive_lamp', -4.5, 37, 0, 0.4, 0.4, 0.4, { collide: false });
+    // propellant spheres with pipe runs to the mount
+    for (const [lx, lz, m] of [[12, -6, 'paint_white'], [12, 2, 'paint_white']]) {
+      this.B.sphere(m, f.wx(lx, lz), f.y + 3.4, f.wz(lx, lz), 2.4);
+      this.cyl(f, 'metal_dark', lx, 1.2, lz, 0.5, 1.4, 8);
+      this.cyl(f, 'metal', lx / 2 + 1.3, 1.0, lz, 0.14, lx - 2.6, 8, { rotZ: Math.PI / 2, collide: false });
+      this.box(f, 'paint_yellow', lx, 3.4, lz + 2.42, 1.2, 0.5, 0.02, { collide: false });
+    }
+    // pad floodlights
+    for (const [lx, lz] of [[-12, 12], [12, 12]]) { this.cyl(f, 'metal_dark', lx, 4.6, lz, 0.1, 8, 6, { collide: false }); this.box(f, 'emissive_lamp', lx, 8.7, lz, 0.9, 0.3, 0.2, { collide: false }); this.ctx.lights.push({ x: f.wx(lx, lz), y: y + 8.4, z: f.wz(lx, lz), color: 0xf0f4ff, intensity: 10, range: 30 }); }
+    // the rocket itself is a separate object (it can be destroyed)
+    (this.ctx.rockets = this.ctx.rockets || []).push({ x: f.wx(0, 0), y: y + 0.6, z: f.wz(0, 0) });
   }
 
   /** Small concrete lift house over the shaft into the facility. */
   liftHouse(x, y, z, rot, opts = {}) {
     const f = new Frame(x, y, z, rot);
-    const w = 8, d = 8, h = 4.2;
-    this.box(f, 'concrete', 0, 0.1, 0, w, 0.2, d);
+    const w = 8, d = 8, h = 4.6;
+    // headhouse: concrete shell with a wide front opening, hazard-edged threshold
+    this.box(f, 'concrete_dark', 0, 0.1, 0, w, 0.2, d);
     this.box(f, 'concrete', -w / 2, h / 2, 0, 0.4, h, d);
     this.box(f, 'concrete', w / 2, h / 2, 0, 0.4, h, d);
     this.box(f, 'concrete', 0, h / 2, -d / 2, w, h, 0.4);
-    this.box(f, 'concrete', -w / 2 + 1.5, h / 2, d / 2, 3, h, 0.4);
-    this.box(f, 'concrete', w / 2 - 1.5, h / 2, d / 2, 3, h, 0.4);
-    this.box(f, 'concrete_dark', 0, h + 0.2, 0, w + 0.6, 0.4, d + 0.6);
-    this.box(f, 'metal_dark', 0, 1.6, -d / 2 + 0.35, 2.6, 3.0, 0.2, { collide: false });
-    this.box(f, 'paint_yellow', 0, 3.25, -d / 2 + 0.36, 2.8, 0.2, 0.05, { collide: false });
-    this.box(f, 'emissive_lamp', 0, h - 0.15, 0, 1.2, 0.08, 0.5, { collide: false });
-    this.ctx.lights.push({ x, y: y + h - 0.5, z, color: 0xd8e4ff, intensity: 5, range: 10 });
-    this.ctx.lifts.push({ x: f.wx(0, -d / 2 + 1.4), y, z: f.wz(0, -d / 2 + 1.4), label: opts.noCard ? 'Take the lift down' : 'Take the lift down (key card)', needsCard: !opts.noCard, to: opts.to });
+    this.box(f, 'concrete', -w / 2 + 1.4, h / 2, d / 2, 2.8, h, 0.4);
+    this.box(f, 'concrete', w / 2 - 1.4, h / 2, d / 2, 2.8, h, 0.4);
+    this.box(f, 'concrete', 0, h - 0.5, d / 2, 2.6, 1.0, 0.4);
+    this.box(f, 'concrete_dark', 0, h + 0.2, 0, w + 0.8, 0.4, d + 0.8);
+    this.box(f, 'hazard', 0, 0.21, d / 2, 2.4, 0.02, 0.5, { collide: false });
+    this.box(f, 'hazard', 0, h - 1.05, d / 2 + 0.21, 2.6, 0.2, 0.02, { collide: false });
+    // winding tower above the shaft with sheave wheel and cables
+    for (const [lx, lz] of [[-1.6, -3.2], [1.6, -3.2], [-1.6, -0.4], [1.6, -0.4]]) this.box(f, 'metal_dark', lx, h + 3.4, lz, 0.2, 6.0, 0.2, { collide: false });
+    for (const yy of [h + 2, h + 4, h + 6.2]) { this.box(f, 'metal_dark', 0, yy, -3.2, 3.4, 0.14, 0.14, { collide: false }); this.box(f, 'metal_dark', 0, yy, -0.4, 3.4, 0.14, 0.14, { collide: false }); this.box(f, 'metal_dark', -1.6, yy, -1.8, 0.14, 0.14, 2.9, { collide: false }); this.box(f, 'metal_dark', 1.6, yy, -1.8, 0.14, 0.14, 2.9, { collide: false }); }
+    this.cyl(f, 'paint_yellow', 0, h + 6.6, -1.8, 1.0, 0.16, 16, { rotZ: Math.PI / 2, collide: false });
+    this.cyl(f, 'metal_dark', 0, h + 6.6, -1.8, 0.2, 0.5, 8, { rotZ: Math.PI / 2, collide: false });
+    this.box(f, 'corrugated', 0, h + 7.5, -1.8, 3.8, 0.1, 3.4, { collide: false });
+    this.box(f, 'emissive_red', 0, h + 7.7, -1.8, 0.2, 0.2, 0.2, { collide: false });
+    // the car: cage with open scissor gate, floor plate, lamp, call panel
+    this.box(f, 'metal_dark', 0, 0.23, -d / 2 + 1.7, 2.8, 0.06, 2.8, { collide: false });
+    for (const [lx, lz] of [[-1.4, -3.1], [1.4, -3.1], [-1.4, -0.9], [1.4, -0.9]]) this.box(f, 'paint_yellow', lx, 1.5, lz + (d / 2 - 4) + 0.6, 0.1, 2.6, 0.1, { collide: false });
+    this.box(f, 'metal_dark', 0, 2.82, -d / 2 + 1.7, 2.9, 0.08, 2.9, { collide: false });
+    for (const sx of [-1.4, 1.4]) for (let i = 0; i < 9; i++) this.box(f, 'metal', sx, 1.5, -d / 2 + 0.5 + i * 0.3, 0.02, 2.5, 0.02, { collide: false });
+    for (let i = 0; i < 9; i++) this.box(f, 'metal', -1.2 + i * 0.3, 1.5, -d / 2 + 0.32, 0.02, 2.5, 0.02, { collide: false });
+    for (let i = 0; i < 4; i++) this.box(f, 'metal', -1.3 + i * 0.12, 1.4, -d / 2 + 3.1, 0.03, 2.4, 0.03, { collide: false }); // folded gate
+    this.box(f, 'emissive_lamp', 0, 2.76, -d / 2 + 1.7, 0.8, 0.04, 0.4, { collide: false });
+    this.box(f, 'metal', 1.9, 1.4, d / 2 - 0.45, 0.3, 0.45, 0.1, { collide: false });
+    this.box(f, 'emissive_red', 1.9, 1.5, d / 2 - 0.39, 0.06, 0.06, 0.02, { collide: false });
+    this.box(f, 'paint_yellow', -2.6, 2.4, -d / 2 + 0.22, 1.6, 0.5, 0.02, { collide: false });
+    // machinery: motor, control cabinet, cable drum, pipes
+    this.box(f, 'olive', -2.9, 0.7, -2.2, 1.2, 1.0, 1.6);
+    this.cyl(f, 'metal_dark', -2.9, 1.5, -2.2, 0.4, 1.0, 12, { rotX: Math.PI / 2, collide: false });
+    this.box(f, 'metal', 2.9, 1.1, -2.6, 0.9, 1.8, 0.5);
+    this.box(f, 'black', 2.9, 1.5, -2.34, 0.6, 0.5, 0.01, { collide: false });
+    this.cyl(f, 'paint_red', 3.5, 2.6, 0, 0.07, d - 0.6, 6, { rotX: Math.PI / 2, collide: false });
+    this.ctx.lights.push({ x, y: y + h - 0.6, z, color: 0xffe8c0, intensity: 6, range: 11 });
+    this.ctx.lifts.push({ x: f.wx(0, -d / 2 + 1.7), y, z: f.wz(0, -d / 2 + 1.7), label: opts.noCard ? 'Elevator: go down' : 'Elevator: go down (key card)', needsCard: !opts.noCard, to: opts.to });
   }
 
   /**
@@ -985,8 +1108,9 @@ export class StructureBuilder extends BuildingGenerator {
       const n = Math.max(1, Math.round(Math.max(w, d) / 10));
       for (let i = 0; i < n; i++) {
         const k = (i + 0.5) / n;
-        if (w > d) lamp(x0 + w * k, cz, h); else lamp(cx, z0 + d * k, h);
+        if (w > d) lamp(x0 + w * k, cz, h - (Math.min(w, d) <= 6.5 ? 0.25 : 0)); else lamp(cx, z0 + d * k, h - (Math.min(w, d) <= 6.5 ? 0.25 : 0));
       }
+      self._vaultDress(F, x0, z0, x1, z1, h, { rock: !!opts.rock, bare: !!opts.bare });
     };
     const crate = (lx, lz, profile, name = 'Supply Crate', kind = 'crate') => {
       if (kind === 'gunrack') { self.box(F, 'metal_dark', lx, 0.95, lz, 1.4, 1.9, 0.5); }
@@ -1003,7 +1127,7 @@ export class StructureBuilder extends BuildingGenerator {
     room(-5, 58, 5, 68, 4.2, { N: [[0, 4]] });
     this.box(F, 'metal_dark', 0, 1.6, 67.6, 2.6, 3.0, 0.2, { collide: false });
     this.box(F, 'paint_yellow', 0, 3.25, 67.5, 2.8, 0.2, 0.05, { collide: false });
-    this.ctx.lifts.push({ x: x, y: Y, z: z + 66.4, label: 'Take the lift up', to: liftTop });
+    this.ctx.lifts.push({ x: x, y: Y, z: z + 66.4, label: 'Elevator: go up', to: liftTop });
     // main tunnel north-south
     room(-3, -60, 3, 58, 4.6, { S: [[0, 4]], N: [[0, 4]], E: [[0, 5], [40, 4]], W: [[0, 5]] });
     // cross tunnel and its rooms
@@ -1064,8 +1188,8 @@ export class StructureBuilder extends BuildingGenerator {
         const seg = (s0, s1) => {
           if (s1 - s0 < 0.05) return;
           const m = (s0 + s1) / 2;
-          if (along) self.box(F, opts.wall || 'concrete', m, h / 2, az + (side === 'N' ? -T / 2 : T / 2), s1 - s0, h, T);
-          else self.box(F, opts.wall || 'concrete', ax + (side === 'W' ? -T / 2 : T / 2), h / 2, m, T, h, s1 - s0);
+          if (along) self.box(F, opts.wall || 'rock', m, h / 2, az + (side === 'N' ? -T / 2 : T / 2), s1 - s0, h, T);
+          else self.box(F, opts.wall || 'rock', ax + (side === 'W' ? -T / 2 : T / 2), h / 2, m, T, h, s1 - s0);
         };
         for (const [g0, g1] of gs) {
           seg(t, g0);
@@ -1082,7 +1206,9 @@ export class StructureBuilder extends BuildingGenerator {
         else for (const xx of [x0 + 0.2, x1 - 0.2]) self.box(F, 'paint_yellow', xx, 0.01, cz, 0.12, 0.02, d, { collide: false });
       }
       const n = Math.max(1, Math.round(Math.max(w, d) / 10));
-      for (let i = 0; i < n; i++) { const k = (i + 0.5) / n; if (w > d) lamp(x0 + w * k, cz, h, opts.light, opts.lightI); else lamp(cx, z0 + d * k, h, opts.light, opts.lightI); }
+      const lh = h - (Math.min(w, d) <= 6.5 ? 0.25 : 0);
+      for (let i = 0; i < n; i++) { const k = (i + 0.5) / n; if (w > d) lamp(x0 + w * k, cz, lh, opts.light, opts.lightI); else lamp(cx, z0 + d * k, lh, opts.light, opts.lightI); }
+      self._vaultDress(F, x0, z0, x1, z1, h, { rock: opts.rock !== false, bare: !!opts.bare });
     };
     const crate = (lx, lz, profile, name = 'Supply Crate', kind = 'crate', cap = 12) => {
       if (kind === 'gunrack') self.box(F, 'metal_dark', lx, 0.95, lz, 1.4, 1.9, 0.5);
@@ -1105,7 +1231,7 @@ export class StructureBuilder extends BuildingGenerator {
     room(-5, -6, 5, 4, 4.2, { N: [[0, 4]] });
     this.box(F, 'metal_dark', 0, 1.6, -5.6, 2.6, 3.0, 0.2, { collide: false });
     this.box(F, 'paint_yellow', 0, 3.25, -5.7, 2.8, 0.2, 0.05, { collide: false });
-    this.ctx.lifts.push({ x, y: Y, z: z - 4.4, label: 'Take the lift up', to: liftTop });
+    this.ctx.lifts.push({ x, y: Y, z: z - 4.4, label: 'Elevator: go up', to: liftTop });
     wallSign(0, 3.6, Math.PI, 'BUNKER 7 — LEVEL B2');
     // spine corridor
     room(-2.5, 4, 2.5, 70, 4.4, { S: [[0, 4]], N: [[0, 4]], W: [[15, 3], [35, 3], [55, 3]], E: [[15, 3], [36, 3], [55, 3.2]] });

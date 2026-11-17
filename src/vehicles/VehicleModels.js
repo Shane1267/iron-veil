@@ -670,7 +670,10 @@ export function buildVehicle(t, materials) {
     }
     steer.add(spinG);
     steer.position.set(sx * (W / 2 - tyreW / 2 - 0.02), wr, z);
-    wheels.push({ steer, spin: spinG, front, side: sx, flat: false });
+    const wh = { steer, spin: spinG, front, side: sx, flat: false, hp: S.armored ? 400 : 90, y: wr };
+    wheels.push(wh);
+    const wx = sx * (W / 2 - tyreW / 2 - 0.02);
+    hit.push({ min: [wx - tyreW / 2, 0, z - wr], max: [wx + tyreW / 2, wr * 2, z + wr], mat: 'rubber', kind: 'wheel', wheel: wh });
   }
 
   // ------------------------------------------------------------------ lamps

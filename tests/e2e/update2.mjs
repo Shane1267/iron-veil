@@ -208,7 +208,7 @@ await check('launch-site', async () => {
   // ride the lift down
   const lift = await ev(() => { const g = window.__IV.game; const rt = g.pois.active.get('launch_site'); const it = rt.interactables.find((x) => x.kind === 'lift' && x.data.lift.needsCard); g._interact(it); return !!it; });
   if (!lift) throw new Error('no lift');
-  await page.waitForFunction(() => window.__IV.game.player.controller.pos.y < -300 && !window.__IV.game._riding, null, { timeout: 60000 });
+  await page.waitForFunction(() => window.__IV.game.player.controller.pos.y < -300 && !window.__IV.game._riding, null, { timeout: 240000 });
   await gs(2);
   const under = await ev(() => { const g = window.__IV.game, pc = g.player.controller; return { y: +pc.pos.y.toFixed(2), turrets: g.turrets.list.length, underground: g.lighting.underground, grounded: pc.grounded }; });
   if (under.turrets < 4 || !under.underground) throw new Error(JSON.stringify(under));
@@ -247,7 +247,7 @@ await check('launch-site', async () => {
   });
   // lift back up
   await ev(() => { const g = window.__IV.game; const rt = g.pois.active.get('launch_site'); const it = rt.interactables.find((x) => x.kind === 'lift' && !x.data.lift.needsCard); g.player.controller.teleport(it.x, it.y - 1.15, it.z, 0); g._interact(it); });
-  await page.waitForFunction(() => window.__IV.game.player.controller.pos.y > -100 && !window.__IV.game._riding, null, { timeout: 60000 });
+  await page.waitForFunction(() => window.__IV.game.player.controller.pos.y > -100 && !window.__IV.game._riding, null, { timeout: 240000 });
   await ev(() => { window.__IV.game.debug.flags.invisible = false; });
   return { under, turretShots: fired, turretKilled: kill === false, vault, loot };
 });

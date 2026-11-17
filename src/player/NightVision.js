@@ -60,7 +60,7 @@ export class NightVision {
       return;
     }
     const d = this.helmet().data;
-    if ((d.nvgCharge ?? 1) <= 0 && !this._newBattery(d)) { bus.emit('notify', { text: 'Night vision: no batteries', kind: 'warn' }); return; }
+    if ((d.nvgCharge ?? 0) <= 0 && !this._newBattery(d)) { bus.emit('notify', { text: 'Night vision needs a battery — you have none', kind: 'warn' }); return; }
     this.on = !this.on;
     bus.emit('sound', { type: 'click', ui: true });
   }
@@ -79,7 +79,7 @@ export class NightVision {
     if (this.on && (!gog || g.player.survival.dead)) this.on = false;
     if (this.on) {
       const d = this.helmet().data;
-      if (d.nvgCharge === undefined) d.nvgCharge = 1;
+      if (d.nvgCharge === undefined) d.nvgCharge = 0;
       d.nvgCharge -= (dt * (gog.nvg.drain || 0.01)) / 10;
       if (d.nvgCharge <= 0 && !this._newBattery(d)) { d.nvgCharge = 0; this.on = false; bus.emit('notify', { text: 'Night vision: battery dead', kind: 'warn' }); }
     }
@@ -105,6 +105,6 @@ export class NightVision {
   get status() {
     const hm = this.helmet();
     if (!this.on || !hm) return null;
-    return `NV ${Math.round(Math.min(1, hm.data.nvgCharge ?? 1) * 100)}%${(hm.data.nvgCharge ?? 1) > 1 ? ' (mil cell)' : ''}`;
+    return `NV ${Math.round(Math.min(1, hm.data.nvgCharge ?? 0) * 100)}%${(hm.data.nvgCharge ?? 0) > 1 ? ' (mil cell)' : ''}`;
   }
 }

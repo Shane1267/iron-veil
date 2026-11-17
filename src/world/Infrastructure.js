@@ -161,7 +161,7 @@ export class Infrastructure {
     const tile = { key: k, group, near, colliders: [], interactables: [] };
     const pieces = this.pieces.get(k) || [];
     for (const p of pieces) {
-      if (p.kind === 'road') this._roadPiece(p, group, tile, near);
+      if (p.kind === 'road') { this._roadPiece(p, group, tile, near); if (near) this._earthworks(p, group); }
       else if (p.kind === 'rail') this._railPiece(p, group, near);
       else if (p.kind === 'river') this._riverPiece(p, group);
     }
@@ -341,6 +341,60 @@ export class Infrastructure {
     m.renderOrder = 2;
     m.name = 'lake';
     this.scene.add(m);
+  }
+
+  /**
+   * Engineering details along a road piece: where the road runs on a fill of more than 2 m a
+   * concrete culvert passes under it (pipe with headwalls on both sides), and where it sits in
+   * a cut of more than 2.2 m a stepped retaining wall holds the bank on that side. Visual only:
+   * the terrain itself already carries the embankment and the cut.
+   */
+  _earthworks(p, group) {
+    const road = p.ref;
+    if (!road || road.type === 'rail') return;
+    const kit = new BoxBuilder(this.materials);
+    let any = false;
+    const i0 = p.i0, i1 = p.i1;
+    for (let i = Math.max(1, i0); i < Math.min(road.points.length - 1, i1); i++) {
+      const [x, z] = road.points[i], [nx, nz] = road.points[i + 1];
+      if (this.world.bridgeAt(x, z) !== null) continue;
+      { const np = this.world.nearestPOI(x, z); if (np.poi && np.d < np.poi.radius + 10) continue; }
+      const dx = nx - x, dz = nz - z, l = Math.hypot(dx, dz) || 1;
+      const ang = Math.atan2(dx, dz);
+      const px = -dz / l, pz = dx / l; // across the road
+      const hw = road.width / 2;
+      const hR = road.heights[i];
+      const raw = this.world.heightRaw(x, z);
+      if (hR - raw > 2.0 && i % 5 === 0) {
+        // culvert: pipe across under the road, headwalls at the toe of the embankment
+        const reach = hw + 2.5 + (hR - raw) * 1.4;
+        const y = Math.min(this.world.heightAt(x + px * reach, z + pz * reach), this.world.heightAt(x - px * reach, z - pz * reach)) + 0.55;
+        kit.cylinder('concrete_dark', x, y, z, 0.6, 0.6, reach * 2, 12, { rotX: Math.PI / 2, rotY: ang + Math.PI / 2, open: true });
+        for (const sd of [-1, 1]) {
+          const ex = x + px * reach * sd, ez = z + pz * reach * sd;
+          kit.box('concrete', ex, y + 0.25, ez, 2.6, 1.9, 0.3, { rotY: ang });
+          kit.box('black', ex + px * 0.16 * sd, y, ez + pz * 0.16 * sd, 1.0, 1.0, 0.02, { rotY: ang });
+          for (const w2 of [-1, 1]) kit.box('concrete', ex + Math.sin(ang) * 1.5 * w2 + px * 0.6 * sd, y - 0.1, ez + Math.cos(ang) * 1.5 * w2 + pz * 0.6 * sd, 0.3, 1.2, 1.4, { rotY: ang + w2 * sd * 0.5 });
+        }
+        any = true;
+      }
+      for (const sd of [-1, 1]) {
+        const ex = x + px * (hw + 2.2) * sd, ez = z + pz * (hw + 2.2) * sd;
+        const bank = this.world.heightRaw(x + px * (hw + 7) * sd, z + pz * (hw + 7) * sd) - hR;
+        if (bank > 2.2) {
+          const hgt = Math.min(4.5, bank * 0.75);
+          kit.box('concrete', ex, hR + hgt / 2 - 0.3, ez, 0.5, hgt + 0.6, l + 0.3, { rotY: ang });
+          kit.box('concrete_dark', ex, hR + hgt + 0.05, ez, 0.7, 0.14, l + 0.3, { rotY: ang });
+          if (i % 2 === 0) kit.box('concrete_dark', ex - px * 0.4 * sd, hR + hgt / 2 - 0.3, ez - pz * 0.4 * sd, 0.5, hgt + 0.4, 0.6, { rotY: ang });
+          if (i % 3 === 0) kit.box('black', ex - px * 0.27 * sd, hR + 0.5, ez - pz * 0.27 * sd, 0.02, 0.16, 0.16, { rotY: ang }); // weep hole
+          any = true;
+        }
+      }
+    }
+    if (!any) return;
+    const mesh = kit.build();
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    group.add(mesh);
   }
 
   /**

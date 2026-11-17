@@ -316,6 +316,37 @@ export class AudioManager {
         this._tone(out, t0, 0.4, { type: 'square', freq: 300, to: 40, gain: 0.15 });
         break;
       }
+      case 'tyrePop': {
+        const out = this._out('world', pos, { verb: 0.2 });
+        this._noise(this.white, out, t0, 0.5, { type: 'bandpass', freq: 1800, q: 0.8, gain: 0.7, decay: 0.35 });
+        this._tone(out, t0, 0.08, { type: 'square', freq: 180, to: 60, gain: 0.3 });
+        break;
+      }
+      case 'liftStart': {
+        const out = this._out('world', pos, { verb: 0.4 });
+        this._tone(out, t0, 6.3, { type: 'sawtooth', freq: 48, to: 62, gain: 0.07, attack: 0.8 });
+        this._noise(this.pink, out, t0, 6.3, { type: 'lowpass', freq: 420, q: 0.6, gain: 0.16, decay: 6 });
+        this._noise(this.white, out, t0, 0.35, { type: 'bandpass', freq: 1400, q: 2, gain: 0.25, decay: 0.2 });
+        break;
+      }
+      case 'liftChime': {
+        const out = this._out('ui');
+        this._tone(out, t0, 0.5, { type: 'sine', freq: 880, gain: 0.12 });
+        this._tone(out, t0 + 0.22, 0.7, { type: 'sine', freq: 660, gain: 0.12 });
+        break;
+      }
+      case 'geiger': {
+        const out = this._out('ui');
+        this._noise(this.white, out, t0, 0.012, { type: 'highpass', freq: 3000, q: 0.5, gain: 0.3, decay: 0.01 });
+        break;
+      }
+      case 'megaBlast': {
+        const out = this._out('ui');
+        this._noise(this.pink, out, t0, 7, { type: 'lowpass', freq: 500, q: 0.4, gain: 1.6, decay: 5 });
+        this._tone(out, t0, 6, { type: 'sine', freq: 38, to: 18, gain: 1.0 });
+        this._noise(this.white, out, t0, 1.2, { type: 'lowpass', freq: 5000, q: 0.3, gain: 1.0, decay: 0.8 });
+        break;
+      }
       case 'glassCrack': {
         const out = this._out('world', pos, { verb: 0.1 });
         this._noise(this.white, out, t0, 0.08, { type: 'highpass', freq: 2500, q: 0.8, gain: 0.35, decay: 0.06 });
